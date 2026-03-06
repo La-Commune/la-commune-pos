@@ -3,20 +3,51 @@
   "short_name": "LC POS",
   "description": "Sistema de punto de venta — La Commune Café",
   "start_url": "/mesas",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0C0B09",
   "theme_color": "#0C0B09",
   "orientation": "any",
+  "categories": ["business", "productivity"],
+  "lang": "es-MX",
   "icons": [
     {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nueva Orden",
+      "short_name": "Orden",
+      "url": "/ordenes",
+      "description": "Crear una nueva orden"
+    },
+    {
+      "name": "Cocina (KDS)",
+      "short_name": "KDS",
+      "url": "/kds",
+      "description": "Ver pantalla de cocina"
+    },
+    {
+      "name": "Cobrar",
+      "short_name": "Cobros",
+      "url": "/cobros",
+      "description": "Cobrar una orden"
     }
   ]
 }

@@ -2,6 +2,7 @@
 
 import Sidebar from "@/components/layouts/Sidebar";
 import Navbar from "@/components/layouts/Navbar";
+import ToastContainer from "@/components/ui/Toast";
 import { useUIStore } from "@/store/ui.store";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,7 @@ export default function POSLayout({
         <Navbar />
         <main className="p-8 bg-surface-1 min-h-[calc(100vh-3.5rem)]">{children}</main>
       </div>
+      <ToastContainer />
     </div>
   );
 }
