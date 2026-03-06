@@ -1,10 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Wifi, WifiOff, RefreshCw, User, Clock, LogOut, ChevronDown } from "lucide-react";
+import { Wifi, WifiOff, RefreshCw, User, Clock, LogOut, ChevronDown, Palette, Moon, Sun, Sparkles } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useSyncStore } from "@/store/sync.store";
 import { useAuthStore } from "@/store/auth.store";
 import { cn } from "@/lib/utils";
+
+const themeOptions = [
+  { id: "dark-pastel", label: "Dark Pastel", icon: Moon, desc: "Lavanda + pasteles" },
+  { id: "dark-vibrant", label: "Dark Vibrant", icon: Sparkles, desc: "Coral vibrante" },
+  { id: "light-glass", label: "Light Glass", icon: Sun, desc: "Claro + cristal" },
+] as const;
 
 function LiveClock() {
   const [time, setTime] = useState<string>("");
@@ -34,13 +41,80 @@ function LiveClock() {
   );
 }
 
+function ThemeSwitcher() {
+  const { theme, setTheme } = useTheme();
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) return null;
+
+  const current = themeOptions.find((t) => t.id === theme) ?? themeOptions[0];
+  const CurrentIcon = current.icon;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-text-45 hover:text-text-70 hover:bg-surface-3 transition-all duration-200"
+        title="Cambiar tema"
+      >
+        <CurrentIcon size={15} />
+        <Palette size={13} />
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-12 w-52 p-1.5 bg-surface-3 border border-border rounded-xl shadow-lg z-50">
+            <p className="px-3 pt-2 pb-1.5 text-[10px] font-medium text-text-25 uppercase tracking-widest">
+              Tema
+            </p>
+            {themeOptions.map((opt) => {
+              const Icon = opt.icon;
+              const isActive = theme === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => {
+                    setTheme(opt.id);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200",
+                    isActive
+                      ? "bg-accent-soft text-accent"
+                      : "text-text-70 hover:text-text-100 hover:bg-surface-4"
+                  )}
+                >
+                  <Icon size={16} className={isActive ? "text-accent" : "text-text-45"} />
+                  <div>
+                    <span className={cn("text-xs font-medium block", isActive && "text-accent")}>
+                      {opt.label}
+                    </span>
+                    <span className="text-[10px] text-text-45">{opt.desc}</span>
+                  </div>
+                  {isActive && (
+                    <div className="ml-auto w-2 h-2 rounded-full bg-accent" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function Navbar() {
   const { isOnline, pendingActions, isSyncing } = useSyncStore();
   const { user, logout } = useAuthStore();
   const [menuUsuario, setMenuUsuario] = useState(false);
 
   return (
-    <header className="h-14 bg-surface-1/80 backdrop-blur-xl border-b border-border flex items-center justify-between px-6">
+    <header className="h-14 bg-surface-1/80 backdrop-blur-xl border-b border-border flex items-center justify-between px-6 relative z-50">
       <div id="navbar-title" className="flex items-center gap-3">
         <h1 className="text-[15px] font-semibold text-text-100 tracking-tight">
           La Commune POS
@@ -71,6 +145,8 @@ export default function Navbar() {
         </div>
 
         <LiveClock />
+
+        <ThemeSwitcher />
 
         {user && (
           <div className="relative">
