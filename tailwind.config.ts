@@ -52,8 +52,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ['"DM Serif Display"', "serif"],
-        sans: ['"DM Sans"', "system-ui", "sans-serif"],
+        display: ['"Libre Baskerville"', "serif"],
+        sans: ['"Source Sans 3"', "system-ui", "sans-serif"],
       },
       borderRadius: {
         sm: "8px",
