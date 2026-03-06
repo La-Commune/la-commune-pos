@@ -163,7 +163,7 @@ export default function FidelidadPage() {
 
         {/* Panel de detalle */}
         {clienteSeleccionado ? (
-          <div className="w-80 flex-shrink-0 bg-surface-2 border-l border-border p-5 overflow-y-auto">
+          <div className="flex-shrink-0 bg-surface-2 border-l border-border p-5 overflow-y-auto" style={{ width: "var(--panel-xl)" }}>
             <div className="text-center mb-5">
               <div className="w-16 h-16 rounded-xl bg-surface-3 flex items-center justify-center mx-auto mb-3">
                 <span className="text-lg font-medium text-text-45">
@@ -267,7 +267,7 @@ export default function FidelidadPage() {
             </div>
           </div>
         ) : (
-          <div className="w-80 flex-shrink-0 flex items-center justify-center bg-surface-2 border-l border-border">
+          <div className="flex-shrink-0 flex items-center justify-center bg-surface-2 border-l border-border" style={{ width: "var(--panel-xl)" }}>
             <div className="text-center">
               <Heart size={28} className="text-text-25 mx-auto mb-2 opacity-30" />
               <p className="text-text-25 text-xs uppercase tracking-widest">
