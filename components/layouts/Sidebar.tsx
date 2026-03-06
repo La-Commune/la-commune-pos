@@ -38,19 +38,19 @@ export default function Sidebar() {
       initial={false}
       animate={{ width: sidebarCollapsed ? 72 : 240 }}
       transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-      className="fixed left-0 top-0 bottom-0 z-40 flex flex-col bg-surface-1 border-r border-border"
+      className="fixed left-0 top-0 bottom-0 z-40 flex flex-col bg-surface-0 border-r border-border"
     >
       {/* Logo */}
       <div className="flex items-center h-16 px-4 border-b border-border">
         <Link href="/mesas" className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-md bg-accent-mid flex items-center justify-center flex-shrink-0">
-            <span className="font-display text-accent text-sm">LC</span>
+          <div className="w-9 h-9 rounded-md bg-surface-2 flex items-center justify-center flex-shrink-0">
+            <span className="font-display text-text-100 text-sm">LC</span>
           </div>
           {!sidebarCollapsed && (
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="font-display text-text-100 text-lg truncate"
+              className="font-display text-text-100 text-lg tracking-wider truncate"
             >
               La Commune
             </motion.span>
@@ -59,7 +59,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
+      <nav className="flex-1 py-5 px-3 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -69,17 +69,17 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150",
+                "flex items-center gap-3 px-3 py-2.5 rounded-sm text-[13px] transition-all duration-300",
                 isActive
-                  ? "bg-accent-mid text-text-100 shadow-sm"
-                  : "text-text-70 hover:text-text-100 hover:bg-surface-2"
+                  ? "bg-[rgba(255,255,255,0.04)] text-text-100 font-medium"
+                  : "text-text-25 hover:text-text-45 hover:bg-[rgba(255,255,255,0.02)]"
               )}
             >
               <Icon
-                size={20}
+                size={18}
                 className={cn(
-                  "flex-shrink-0",
-                  isActive ? "text-accent" : "text-text-45"
+                  "flex-shrink-0 transition-opacity duration-300",
+                  isActive ? "opacity-70" : "opacity-25"
                 )}
               />
               {!sidebarCollapsed && (
@@ -100,7 +100,7 @@ export default function Sidebar() {
       <div className="p-2 border-t border-border">
         <button
           onClick={() => collapseSidebar(!sidebarCollapsed)}
-          className="w-full flex items-center justify-center py-2 rounded-md text-text-45 hover:text-text-70 hover:bg-surface-2 transition-colors"
+          className="w-full flex items-center justify-center py-2 rounded-sm text-text-25 hover:text-text-45 hover:bg-[rgba(255,255,255,0.02)] transition-all duration-300"
         >
           {sidebarCollapsed ? (
             <ChevronRight size={18} />
