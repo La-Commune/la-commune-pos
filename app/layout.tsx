@@ -36,10 +36,10 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased bg-surface-0 text-text-100">
         <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
+          attribute="data-theme"
+          defaultTheme="dark-pastel"
+          themes={["dark-pastel", "dark-vibrant", "light-glass"]}
           enableSystem={false}
-          disableTransitionOnChange
         >
           <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
