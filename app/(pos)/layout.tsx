@@ -22,7 +22,7 @@ export default function POSLayout({
         )}
       >
         <Navbar />
-        <main className="p-6">{children}</main>
+        <main className="p-8 bg-surface-1 min-h-[calc(100vh-3.5rem)]">{children}</main>
       </div>
     </div>
   );

@@ -27,7 +27,6 @@ const config: Config = {
           DEFAULT: "var(--accent)",
           soft: "var(--accent-soft)",
           mid: "var(--accent-mid)",
-          strong: "var(--accent-strong)",
         },
         border: {
           DEFAULT: "var(--border)",

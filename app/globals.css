@@ -25,10 +25,6 @@
   --accent: #A89680;
   --accent-soft: rgba(168,150,128,0.10);
   --accent-mid: rgba(168,150,128,0.18);
-  --accent-strong: rgba(168,150,128,0.28);
-
-  /* ── Glow ── warm ambient */
-  --glow-warm: rgba(168,150,128,0.06);
 
   /* ── Categories ── monochrome warm tint */
   --cat-1: #9A9488;
@@ -46,6 +42,9 @@
   --warn-bg: rgba(176,154,92,0.09);
   --err-bg: rgba(168,96,96,0.09);
   --info-bg: rgba(104,136,160,0.09);
+
+  /* ── Timing ── */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 * {
@@ -93,45 +92,51 @@ body {
   }
 }
 
-/* ── Reusable warm components ── */
+/* ── Buttons ── per palette spec */
 
-/* Primary button — warm stone accent */
+/* Primary — cream inverted: text-100 bg, surface-0 text */
 .btn-primary {
-  background: var(--accent);
+  background: var(--text-100);
   color: var(--surface-0);
-  font-weight: 500;
-  transition: background 150ms, box-shadow 150ms;
+  font-weight: 600;
+  border: none;
+  transition: all 0.35s var(--ease);
+  letter-spacing: 0.01em;
 }
 .btn-primary:hover {
-  background: #B5A48F;
-  box-shadow: 0 2px 12px rgba(168,150,128,0.25);
-}
-.btn-primary:active {
-  background: #9B8A74;
+  opacity: 0.88;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(237,232,223,0.06);
 }
 .btn-primary:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   pointer-events: none;
 }
 
-/* Secondary button — warm surface */
+/* Secondary — surface-3 with border */
 .btn-secondary {
   background: var(--surface-3);
-  color: var(--text-100);
+  color: var(--text-70);
   font-weight: 500;
-  transition: background 150ms;
+  border: 1px solid var(--border);
+  transition: all 0.35s var(--ease);
 }
 .btn-secondary:hover {
-  background: var(--surface-4);
+  border-color: var(--border-hover);
+  color: var(--text-100);
+  transform: translateY(-1px);
 }
 
-/* Warm card */
-.card-warm {
-  background: var(--surface-1);
+/* Ghost — transparent with border */
+.btn-ghost {
+  background: transparent;
+  color: var(--text-25);
+  font-weight: 500;
   border: 1px solid var(--border);
-  transition: border-color 200ms, box-shadow 200ms;
+  transition: all 0.35s var(--ease);
 }
-.card-warm:hover {
+.btn-ghost:hover {
   border-color: var(--border-hover);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15), 0 0 0 1px var(--glow-warm);
+  color: var(--text-45);
+  transform: translateY(-1px);
 }

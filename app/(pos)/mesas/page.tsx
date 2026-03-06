@@ -15,75 +15,54 @@ const MOCK_MESAS = [
 ];
 
 const estadoConfig = {
-  disponible: { label: "Disponible", color: "bg-status-ok", bgColor: "bg-status-ok-bg", border: "border-status-ok/20" },
-  ocupada: { label: "Ocupada", color: "bg-status-err", bgColor: "bg-status-err-bg", border: "border-status-err/20" },
-  reservada: { label: "Reservada", color: "bg-status-warn", bgColor: "bg-status-warn-bg", border: "border-status-warn/20" },
-  preparando: { label: "Preparando", color: "bg-status-info", bgColor: "bg-status-info-bg", border: "border-status-info/20" },
+  disponible: { label: "Disponible", numColor: "text-status-ok", pillBg: "bg-status-ok-bg", pillText: "text-status-ok" },
+  ocupada: { label: "Ocupada", numColor: "text-status-err", pillBg: "bg-status-err-bg", pillText: "text-status-err" },
+  reservada: { label: "Reservada", numColor: "text-status-warn", pillBg: "bg-status-warn-bg", pillText: "text-status-warn" },
+  preparando: { label: "Preparando", numColor: "text-text-70", pillBg: "bg-[rgba(255,255,255,0.04)]", pillText: "text-text-70" },
 };
 
 export default function MesasPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <LayoutGrid size={24} className="text-accent" />
-          <h1 className="text-2xl font-display text-text-100">Mesas</h1>
-          <span className="text-sm text-text-45 ml-2">
+          <h1 className="text-lg font-medium text-text-100 tracking-tight">Mesas</h1>
+          <span className="text-xs font-medium px-3.5 py-1 rounded-full border border-border text-text-45">
             {MOCK_MESAS.length} mesas
           </span>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 rounded-md btn-primary text-sm">
+        <button className="flex items-center gap-2 px-5 py-2.5 rounded-sm btn-ghost text-[13px]">
           <Plus size={16} />
           Nueva mesa
         </button>
       </div>
 
-      {/* Status legend */}
-      <div className="flex items-center gap-4 mb-6">
-        {Object.entries(estadoConfig).map(([key, config]) => (
-          <div key={key} className="flex items-center gap-2 text-xs text-text-70">
-            <div className={cn("w-2.5 h-2.5 rounded-full", config.color)} />
-            {config.label}
-          </div>
-        ))}
-      </div>
-
       {/* Grid de mesas */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
         {MOCK_MESAS.map((mesa) => {
           const config = estadoConfig[mesa.estado];
           return (
             <button
               key={mesa.id}
-              className={cn(
-                "relative p-5 rounded-lg border text-left transition-all duration-150",
-                "hover:shadow-md hover:scale-[1.02] active:scale-[0.98]",
-                "bg-surface-1",
-                config.border
-              )}
+              className="relative p-5 rounded-md bg-surface-2 border border-border text-center transition-all duration-[400ms] ease-smooth hover:-translate-y-0.5 hover:border-border-hover cursor-pointer"
             >
-              {/* Status dot */}
-              <div
-                className={cn(
-                  "absolute top-3 right-3 w-2.5 h-2.5 rounded-full",
-                  config.color
-                )}
-              />
-
               {/* Numero */}
-              <div className="text-3xl font-display text-text-100 mb-2">
+              <div className={cn("text-[22px] font-bold mb-1 tracking-tight tabular-nums", config.numColor)}>
                 {mesa.numero}
               </div>
 
               {/* Info */}
-              <div className="text-xs text-text-45 space-y-0.5">
-                <p>{mesa.ubicacion}</p>
-                <p>{mesa.capacidad} personas</p>
+              <div className="text-[11px] text-text-25 mb-2.5">
+                {mesa.ubicacion} · {mesa.capacidad}p
               </div>
 
-              {/* Estado label */}
-              <div className="mt-3 text-xs font-medium text-text-70">
+              {/* Estado pill */}
+              <div className={cn(
+                "inline-block text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-sm",
+                config.pillBg,
+                config.pillText
+              )}>
                 {config.label}
               </div>
             </button>

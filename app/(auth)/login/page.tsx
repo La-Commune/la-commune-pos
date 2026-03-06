@@ -21,17 +21,17 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-10">
-          <div className="w-16 h-16 rounded-lg bg-accent-mid flex items-center justify-center mx-auto mb-4 shadow-md">
-            <span className="font-display text-accent text-2xl">LC</span>
+          <div className="w-16 h-16 rounded-md bg-surface-2 border border-border flex items-center justify-center mx-auto mb-4">
+            <span className="font-display text-text-100 text-2xl">LC</span>
           </div>
-          <h1 className="font-display text-2xl text-text-100">La Commune</h1>
-          <p className="text-text-45 text-sm mt-1">Punto de Venta</p>
+          <h1 className="font-display text-2xl text-text-100 tracking-wide">La Commune</h1>
+          <p className="text-text-25 text-sm mt-1">Punto de Venta</p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-text-70 mb-1.5">
+            <label className="block text-[11px] font-medium text-text-25 mb-1.5 uppercase tracking-wider">
               Email
             </label>
             <input
@@ -40,12 +40,12 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="barista@lacommune.mx"
               required
-              className="w-full px-3 py-2.5 rounded-md bg-surface-1 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-accent focus:bg-surface-2 transition-colors"
+              className="w-full px-3 py-2.5 rounded-sm bg-surface-1 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-border-hover transition-all duration-300"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-text-70 mb-1.5">
+            <label className="block text-[11px] font-medium text-text-25 mb-1.5 uppercase tracking-wider">
               Contrasena
             </label>
             <div className="relative">
@@ -55,12 +55,12 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full px-3 py-2.5 rounded-md bg-surface-1 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-accent focus:bg-surface-2 transition-colors pr-10"
+                className="w-full px-3 py-2.5 rounded-sm bg-surface-1 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-border-hover transition-all duration-300 pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-45 hover:text-text-70"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-25 hover:text-text-45 transition-colors duration-300"
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -70,15 +70,15 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md btn-primary text-sm disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-sm btn-primary text-[13px]"
           >
             <LogIn size={16} />
             {isLoading ? "Entrando..." : "Iniciar sesion"}
           </button>
         </form>
 
-        <p className="text-center text-text-25 text-xs mt-8">
-          La Commune &middot; Mineral de la Reforma, MX
+        <p className="text-center text-text-25 text-[11px] mt-8 uppercase tracking-widest">
+          La Commune &middot; Mineral de la Reforma
         </p>
       </div>
     </div>
