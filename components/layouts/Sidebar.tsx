@@ -19,14 +19,14 @@ import { useUIStore } from "@/store/ui.store";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/mesas", label: "Mesas", icon: LayoutGrid },
-  { href: "/ordenes", label: "Ordenes", icon: ClipboardList },
-  { href: "/menu", label: "Menu", icon: UtensilsCrossed },
-  { href: "/kds", label: "Cocina", icon: ChefHat },
-  { href: "/cobros", label: "Cobros", icon: CreditCard },
-  { href: "/reportes", label: "Reportes", icon: BarChart3 },
-  { href: "/usuarios", label: "Usuarios", icon: Users },
-  { href: "/fidelidad", label: "Fidelidad", icon: Heart },
+  { href: "/mesas", label: "Mesas", icon: LayoutGrid, color: "#7EC8E3" },
+  { href: "/ordenes", label: "Órdenes", icon: ClipboardList, color: "#9B8AFB" },
+  { href: "/menu", label: "Menú", icon: UtensilsCrossed, color: "#81D4A8" },
+  { href: "/kds", label: "Cocina", icon: ChefHat, color: "#FFB347" },
+  { href: "/cobros", label: "Cobros", icon: CreditCard, color: "#F5C26B" },
+  { href: "/reportes", label: "Reportes", icon: BarChart3, color: "#60A5FA" },
+  { href: "/usuarios", label: "Usuarios", icon: Users, color: "#F2A7C3" },
+  { href: "/fidelidad", label: "Fidelidad", icon: Heart, color: "#B8A9EA" },
 ];
 
 export default function Sidebar() {
@@ -36,30 +36,36 @@ export default function Sidebar() {
   return (
     <motion.aside
       initial={false}
-      animate={{ width: sidebarCollapsed ? 72 : 240 }}
-      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-      className="fixed left-0 top-0 bottom-0 z-40 flex flex-col bg-surface-0 border-r border-border"
+      animate={{ width: sidebarCollapsed ? 76 : 240 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      className="fixed left-0 top-0 bottom-0 z-40 flex flex-col bg-surface-1 border-r border-border"
     >
       {/* Logo */}
       <div className="flex items-center h-16 px-4 border-b border-border">
         <Link href="/mesas" className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-md bg-surface-2 flex items-center justify-center flex-shrink-0">
-            <span className="font-display text-text-100 text-sm">LC</span>
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-accent to-[#7B6CE0] flex items-center justify-center flex-shrink-0 shadow-glow">
+            <span className="text-white font-bold text-sm tracking-tight">LC</span>
           </div>
           {!sidebarCollapsed && (
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="font-display text-text-100 text-lg tracking-wider truncate"
+            <motion.div
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.05 }}
+              className="min-w-0"
             >
-              La Commune
-            </motion.span>
+              <span className="font-semibold text-text-100 text-[15px] tracking-tight block">
+                La Commune
+              </span>
+              <span className="text-[10px] text-text-45 uppercase tracking-widest">
+                Punto de venta
+              </span>
+            </motion.div>
           )}
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-5 px-3 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -69,19 +75,34 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-sm text-[13px] transition-all duration-300",
+                "group flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-200",
                 isActive
-                  ? "bg-[rgba(255,255,255,0.04)] text-text-100 font-medium"
-                  : "text-text-25 hover:text-text-45 hover:bg-[rgba(255,255,255,0.02)]"
+                  ? "bg-[rgba(255,255,255,0.06)] text-text-100"
+                  : "text-text-45 hover:text-text-70 hover:bg-[rgba(255,255,255,0.03)]"
               )}
             >
-              <Icon
-                size={18}
+              <div
                 className={cn(
-                  "flex-shrink-0 transition-opacity duration-300",
-                  isActive ? "opacity-70" : "opacity-25"
+                  "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200",
+                  isActive
+                    ? "shadow-sm"
+                    : "bg-transparent group-hover:bg-[rgba(255,255,255,0.03)]"
                 )}
-              />
+                style={
+                  isActive
+                    ? { backgroundColor: `${item.color}15`, color: item.color }
+                    : undefined
+                }
+              >
+                <Icon
+                  size={18}
+                  style={isActive ? { color: item.color } : undefined}
+                  className={cn(
+                    "transition-all duration-200",
+                    !isActive && "text-text-45 group-hover:text-text-70"
+                  )}
+                />
+              </div>
               {!sidebarCollapsed && (
                 <motion.span
                   initial={{ opacity: 0 }}
@@ -91,21 +112,27 @@ export default function Sidebar() {
                   {item.label}
                 </motion.span>
               )}
+              {isActive && !sidebarCollapsed && (
+                <div
+                  className="ml-auto w-1.5 h-1.5 rounded-full"
+                  style={{ backgroundColor: item.color }}
+                />
+              )}
             </Link>
           );
         })}
       </nav>
 
       {/* Collapse toggle */}
-      <div className="p-2 border-t border-border">
+      <div className="p-3 border-t border-border">
         <button
           onClick={() => collapseSidebar(!sidebarCollapsed)}
-          className="w-full flex items-center justify-center py-2 rounded-sm text-text-25 hover:text-text-45 hover:bg-[rgba(255,255,255,0.02)] transition-all duration-300"
+          className="w-full flex items-center justify-center py-2.5 rounded-lg text-text-45 hover:text-text-70 hover:bg-[rgba(255,255,255,0.03)] transition-all duration-200"
         >
           {sidebarCollapsed ? (
-            <ChevronRight size={18} />
+            <ChevronRight size={16} />
           ) : (
-            <ChevronLeft size={18} />
+            <ChevronLeft size={16} />
           )}
         </button>
       </div>

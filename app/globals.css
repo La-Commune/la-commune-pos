@@ -3,45 +3,53 @@
 @tailwind utilities;
 
 :root {
-  /* ── Surfaces ── warm dark tones */
-  --surface-0: #0C0B09;
-  --surface-1: #13120F;
-  --surface-2: #1A1915;
-  --surface-3: #23221D;
-  --surface-4: #2D2C26;
+  /* ── Surfaces ── deep blue-charcoal */
+  --surface-0: #0B0E14;
+  --surface-1: #111520;
+  --surface-2: #171C2A;
+  --surface-3: #1E2435;
+  --surface-4: #262D40;
 
-  /* ── Borders ── warm translucent */
-  --border: rgba(200,190,170,0.07);
-  --border-hover: rgba(200,190,170,0.12);
-  --border-active: rgba(200,190,170,0.18);
+  /* ── Glass ── frosted panel effect */
+  --glass: rgba(23, 28, 42, 0.65);
+  --glass-border: rgba(255,255,255, 0.06);
+  --glass-hover: rgba(255,255,255, 0.10);
 
-  /* ── Text ── warm cream spectrum */
-  --text-100: #EDE8DF;
-  --text-70: #A8A196;
-  --text-45: #6B665D;
-  --text-25: #3F3B35;
+  /* ── Borders ── */
+  --border: rgba(255,255,255, 0.06);
+  --border-hover: rgba(255,255,255, 0.12);
+  --border-active: rgba(255,255,255, 0.18);
 
-  /* ── Accent ── barely-there warm stone */
-  --accent: #A89680;
-  --accent-soft: rgba(168,150,128,0.10);
-  --accent-mid: rgba(168,150,128,0.18);
+  /* ── Text ── cool white spectrum */
+  --text-100: #F0F0F5;
+  --text-70: #9DA3B3;
+  --text-45: #5E6578;
+  --text-25: #363D50;
 
-  /* ── Categories ── monochrome warm tint */
-  --cat-1: #9A9488;
-  --cat-2: #8A8578;
-  --cat-3: #7A756A;
-  --cat-4: #A8A090;
-  --cat-5: #94907E;
+  /* ── Accent ── soft lavender */
+  --accent: #9B8AFB;
+  --accent-soft: rgba(155,138,251,0.10);
+  --accent-mid: rgba(155,138,251,0.22);
 
-  /* ── Status ── muted, functional only */
-  --ok: #6B9B74;
-  --warn: #B09A5C;
-  --err: #A86060;
-  --info: #6888A0;
-  --ok-bg: rgba(107,155,116,0.09);
-  --warn-bg: rgba(176,154,92,0.09);
-  --err-bg: rgba(168,96,96,0.09);
-  --info-bg: rgba(104,136,160,0.09);
+  /* ── Category pastels ── unique color per menu category */
+  --cat-bebidas: #7EC8E3;
+  --cat-cafe: #C4A87C;
+  --cat-postres: #F2A7C3;
+  --cat-comida: #81D4A8;
+  --cat-panaderia: #F5C26B;
+  --cat-ensaladas: #A8E6CF;
+  --cat-desayunos: #FFB347;
+  --cat-especiales: #B8A9EA;
+
+  /* ── Status ── vibrant, readable */
+  --ok: #4ADE80;
+  --warn: #FACC15;
+  --err: #F87171;
+  --info: #60A5FA;
+  --ok-bg: rgba(74,222,128,0.10);
+  --warn-bg: rgba(250,204,21,0.10);
+  --err-bg: rgba(248,113,113,0.10);
+  --info-bg: rgba(96,165,250,0.10);
 
   /* ── Timing ── */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -52,7 +60,7 @@
 }
 
 body {
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   background: var(--surface-0);
   color: var(--text-100);
   -webkit-font-smoothing: antialiased;
@@ -66,15 +74,15 @@ body {
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--text-25);
-  border-radius: 3px;
+  border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-45);
@@ -92,51 +100,64 @@ body {
   }
 }
 
-/* ── Buttons ── per palette spec */
+/* ── Glass card effect ── */
+.glass-card {
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+}
+.glass-card:hover {
+  border-color: var(--glass-hover);
+}
 
-/* Primary — cream inverted: text-100 bg, surface-0 text */
+/* ── Buttons ── */
+
 .btn-primary {
-  background: var(--text-100);
-  color: var(--surface-0);
+  background: linear-gradient(135deg, var(--accent) 0%, #7B6CE0 100%);
+  color: #ffffff;
   font-weight: 600;
   border: none;
-  transition: all 0.35s var(--ease);
+  border-radius: 12px;
+  transition: all 0.3s var(--ease);
   letter-spacing: 0.01em;
 }
 .btn-primary:hover {
-  opacity: 0.88;
+  opacity: 0.9;
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(237,232,223,0.06);
+  box-shadow: 0 8px 24px rgba(155,138,251,0.25);
 }
 .btn-primary:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   pointer-events: none;
 }
 
-/* Secondary — surface-3 with border */
 .btn-secondary {
   background: var(--surface-3);
   color: var(--text-70);
   font-weight: 500;
   border: 1px solid var(--border);
-  transition: all 0.35s var(--ease);
+  border-radius: 12px;
+  transition: all 0.3s var(--ease);
 }
 .btn-secondary:hover {
   border-color: var(--border-hover);
   color: var(--text-100);
+  background: var(--surface-4);
   transform: translateY(-1px);
 }
 
-/* Ghost — transparent with border */
 .btn-ghost {
   background: transparent;
-  color: var(--text-25);
+  color: var(--text-45);
   font-weight: 500;
   border: 1px solid var(--border);
-  transition: all 0.35s var(--ease);
+  border-radius: 12px;
+  transition: all 0.3s var(--ease);
 }
 .btn-ghost:hover {
   border-color: var(--border-hover);
-  color: var(--text-45);
+  color: var(--text-70);
   transform: translateY(-1px);
 }

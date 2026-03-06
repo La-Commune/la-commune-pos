@@ -1,52 +1,128 @@
-// La Commune POS — Service Worker
-const CACHE_NAME = "lc-pos-v1";
-const STATIC_ASSETS = [
+// La Commune POS — Service Worker v2
+const CACHE_VERSION = 2;
+const STATIC_CACHE = `lc-pos-static-v${CACHE_VERSION}`;
+const DYNAMIC_CACHE = `lc-pos-dynamic-v${CACHE_VERSION}`;
+const MAX_DYNAMIC_ITEMS = 50;
+
+// Rutas de la app que se pre-cachean al instalar
+const APP_SHELL = [
   "/",
   "/mesas",
+  "/ordenes",
+  "/kds",
+  "/menu",
+  "/cobros",
+  "/reportes",
+  "/usuarios",
+  "/fidelidad",
   "/manifest.json",
 ];
 
-// Install — cache static assets
+// Recursos que NUNCA se cachean
+const NEVER_CACHE = [
+  "/api/",
+  "supabase.co",
+  "supabase.in",
+  "chrome-extension://",
+];
+
+// ── Install ──
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(STATIC_CACHE).then((cache) => cache.addAll(APP_SHELL))
   );
   self.skipWaiting();
 });
 
-// Activate — clean old caches
+// ── Activate — limpiar caches antiguos ──
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        keys
+          .filter((key) => key !== STATIC_CACHE && key !== DYNAMIC_CACHE)
+          .map((key) => caches.delete(key))
       )
     )
   );
   self.clients.claim();
 });
 
-// Fetch — network first, fallback to cache
+// ── Fetch — estrategia por tipo de recurso ──
 self.addEventListener("fetch", (event) => {
-  // Skip non-GET and API requests
-  if (event.request.method !== "GET") return;
-  if (event.request.url.includes("/api/")) return;
+  const { request } = event;
+  const url = new URL(request.url);
 
+  // Ignorar non-GET
+  if (request.method !== "GET") return;
+
+  // Ignorar recursos que no se cachean
+  if (NEVER_CACHE.some((pattern) => request.url.includes(pattern))) return;
+
+  // Navegación (páginas HTML): Network first → cache → offline fallback
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(STATIC_CACHE).then((c) => c.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() =>
+          caches.match(request).then((cached) => cached || caches.match("/"))
+        )
+    );
+    return;
+  }
+
+  // Assets estáticos (JS, CSS, fonts, imágenes): Cache first → network
+  if (
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/icons/") ||
+    url.pathname.endsWith(".woff2") ||
+    url.pathname.endsWith(".woff")
+  ) {
+    event.respondWith(
+      caches.match(request).then(
+        (cached) =>
+          cached ||
+          fetch(request).then((response) => {
+            if (response.ok) {
+              const clone = response.clone();
+              caches.open(STATIC_CACHE).then((c) => c.put(request, clone));
+            }
+            return response;
+          })
+      )
+    );
+    return;
+  }
+
+  // Todo lo demás: Network first → cache dinámico
   event.respondWith(
-    fetch(event.request)
+    fetch(request)
       .then((response) => {
-        // Clone and cache successful responses
         if (response.ok) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          caches.open(DYNAMIC_CACHE).then((cache) => {
+            cache.put(request, clone);
+            // Limitar tamaño del cache dinámico
+            cache.keys().then((keys) => {
+              if (keys.length > MAX_DYNAMIC_ITEMS) {
+                cache.delete(keys[0]);
+              }
+            });
+          });
         }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(request))
   );
 });
 
-// Background sync for offline actions
+// ── Background Sync ──
 self.addEventListener("sync", (event) => {
   if (event.tag === "sync-offline-actions") {
     event.waitUntil(syncOfflineActions());
@@ -54,9 +130,15 @@ self.addEventListener("sync", (event) => {
 });
 
 async function syncOfflineActions() {
-  // Notify the client to process the offline queue
-  const clients = await self.clients.matchAll();
-  clients.forEach((client) => {
+  const allClients = await self.clients.matchAll();
+  allClients.forEach((client) => {
     client.postMessage({ type: "SYNC_OFFLINE_QUEUE" });
   });
 }
+
+// ── Mensajes del cliente ──
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
