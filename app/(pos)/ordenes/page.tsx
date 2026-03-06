@@ -104,7 +104,7 @@ export default function OrdenesPage() {
   };
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-3.5rem-4rem)]">
+    <div className="flex h-[calc(100vh-3.5rem-4rem)]" style={{ gap: "var(--density-gap)" }}>
       {/* ── Panel izquierdo: Órdenes activas o selector de productos ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Tabs - Segmented Control Style */}
@@ -269,7 +269,7 @@ export default function OrdenesPage() {
       </div>
 
       {/* ── Panel derecho: Carrito / Detalle de orden ── */}
-      <div className="w-96 flex-shrink-0 bg-surface-2 border-l border-border rounded-2xl mr-2 flex flex-col shadow-xl shadow-black/20">
+      <div className="flex-shrink-0 bg-surface-2 border-l border-border rounded-2xl mr-2 flex flex-col shadow-xl shadow-black/20" style={{ width: "var(--panel-lg)" }}>
         {vista === "nueva" ? (
           /* ── Carrito ── */
           <>

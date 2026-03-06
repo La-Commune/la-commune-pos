@@ -66,9 +66,9 @@ export default function MenuPage() {
     MOCK_CATEGORIAS.find((c) => c.id === id)?.nombre ?? "";
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-3.5rem-4rem)]">
+    <div className="flex h-[calc(100vh-3.5rem-4rem)]" style={{ gap: "var(--density-gap)" }}>
       {/* ── Sidebar de Categorías ── */}
-      <div className="w-56 flex-shrink-0 flex flex-col">
+      <div className="flex-shrink-0 flex flex-col" style={{ width: "var(--panel-sm)" }}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[11px] font-medium text-text-25 uppercase tracking-widest">
             Categorías
@@ -283,7 +283,7 @@ export default function MenuPage() {
 
       {/* ── Panel de Detalle ── */}
       {productoDetalle && (
-        <div className="w-80 flex-shrink-0 bg-surface-2 border-l border-border p-5 overflow-y-auto">
+        <div className="flex-shrink-0 bg-surface-2 border-l border-border p-5 overflow-y-auto" style={{ width: "var(--panel-xl)" }}>
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-[11px] font-medium text-text-25 uppercase tracking-widest">
               Detalle

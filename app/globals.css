@@ -3,185 +3,386 @@
 @tailwind utilities;
 
 /* ══════════════════════════════════════════════
-   THEME 1: Dark Pastel (default)
-   Deep blue-charcoal + lavender accent + pastels
+   THEME 1 — Neo-Minimal Warm
+   Premium, limpio, cálido. Linear/Notion vibe.
    ══════════════════════════════════════════════ */
 :root,
-[data-theme="dark-pastel"] {
-  /* ── Surfaces ── deep blue-charcoal */
-  --surface-0: #0B0E14;
-  --surface-1: #111520;
-  --surface-2: #171C2A;
-  --surface-3: #1E2435;
-  --surface-4: #262D40;
+[data-theme="neo-minimal-warm"] {
+  /* Surfaces: warm dark */
+  --surface-0: #161418;
+  --surface-1: #1D1B20;
+  --surface-2: #262329;
+  --surface-3: #312E36;
+  --surface-4: #3C3842;
 
-  /* ── Glass ── frosted panel effect */
-  --glass: rgba(23, 28, 42, 0.65);
-  --glass-border: rgba(255,255,255, 0.06);
-  --glass-hover: rgba(255,255,255, 0.10);
+  /* Glass */
+  --glass: rgba(29, 27, 32, 0.55);
+  --glass-border: rgba(255,255,255, 0.05);
+  --glass-hover: rgba(255,255,255, 0.09);
+  --glass-blur: 14px;
 
-  /* ── Borders ── */
+  /* Borders */
   --border: rgba(255,255,255, 0.06);
-  --border-hover: rgba(255,255,255, 0.12);
-  --border-active: rgba(255,255,255, 0.18);
+  --border-hover: rgba(255,255,255, 0.11);
+  --border-active: rgba(255,255,255, 0.16);
 
-  /* ── Text ── cool white spectrum */
-  --text-100: #F0F0F5;
-  --text-70: #9DA3B3;
-  --text-45: #5E6578;
-  --text-25: #363D50;
+  /* Text: warm whites */
+  --text-100: #F5F2EE;
+  --text-70: #B5AFA6;
+  --text-45: #79736C;
+  --text-25: #45403B;
 
-  /* ── Accent ── soft lavender */
-  --accent: #9B8AFB;
-  --accent-soft: rgba(155,138,251,0.10);
-  --accent-mid: rgba(155,138,251,0.22);
+  /* Accent: warm amber */
+  --accent: #C49A3C;
+  --accent-soft: rgba(196,154,60, 0.09);
+  --accent-mid: rgba(196,154,60, 0.18);
 
-  /* ── Category pastels ── */
-  --cat-bebidas: #7EC8E3;
-  --cat-cafe: #C4A87C;
-  --cat-postres: #F2A7C3;
-  --cat-comida: #81D4A8;
-  --cat-panaderia: #F5C26B;
-  --cat-ensaladas: #A8E6CF;
-  --cat-desayunos: #FFB347;
-  --cat-especiales: #B8A9EA;
+  /* Categories: earthy muted */
+  --cat-bebidas: #7AADBE;
+  --cat-cafe: #B89E73;
+  --cat-postres: #C98EA3;
+  --cat-comida: #7AAD8E;
+  --cat-panaderia: #D4A94D;
+  --cat-ensaladas: #8BC0A6;
+  --cat-desayunos: #D49A5A;
+  --cat-especiales: #A398C4;
 
-  /* ── Status ── vibrant */
-  --ok: #4ADE80;
-  --warn: #FACC15;
-  --err: #F87171;
-  --info: #60A5FA;
-  --ok-bg: rgba(74,222,128,0.10);
-  --warn-bg: rgba(250,204,21,0.10);
-  --err-bg: rgba(248,113,113,0.10);
-  --info-bg: rgba(96,165,250,0.10);
+  /* Status: muted, premium */
+  --ok: #6BAE7A;
+  --warn: #BDA55A;
+  --err: #B06565;
+  --info: #6C8FAD;
+  --ok-bg: rgba(107,174,122, 0.09);
+  --warn-bg: rgba(189,165,90, 0.09);
+  --err-bg: rgba(176,101,101, 0.09);
+  --info-bg: rgba(108,143,173, 0.09);
 
-  /* ── Timing ── */
+  /* Radius: large, premium */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
+  --radius-full: 9999px;
+
+  /* Shadows: almost none */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.10);
+  --shadow-card: none;
+  --shadow-btn: none;
+  --shadow-modal: 0 20px 60px rgba(0,0,0,0.25);
+  --shadow-glow: none;
+
+  /* Typography */
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+
+  /* Button */
+  --btn-gradient: linear-gradient(135deg, #C49A3C 0%, #A67E2A 100%);
+  --btn-glow: rgba(196,154,60, 0.15);
+
+  /* Timing */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
-
-  /* ── Btn gradient ── */
-  --btn-gradient: linear-gradient(135deg, #9B8AFB 0%, #7B6CE0 100%);
-  --btn-glow: rgba(155,138,251,0.25);
 }
 
 /* ══════════════════════════════════════════════
-   THEME 2: Dark Vibrant
-   Neutral dark + single vibrant coral accent
+   THEME 2 — Sci-Fi Gradient
+   Futurista, neón, cinematic. Cyberpunk vibe.
    ══════════════════════════════════════════════ */
-[data-theme="dark-vibrant"] {
-  /* ── Surfaces ── neutral charcoal */
-  --surface-0: #09090B;
-  --surface-1: #111113;
-  --surface-2: #18181B;
-  --surface-3: #212124;
-  --surface-4: #2A2A2E;
+[data-theme="sci-fi-gradient"] {
+  --surface-0: #04060A;
+  --surface-1: #0A0E16;
+  --surface-2: #111822;
+  --surface-3: #1A2230;
+  --surface-4: #232D3E;
 
-  /* ── Glass ── */
-  --glass: rgba(24, 24, 27, 0.70);
-  --glass-border: rgba(255,255,255, 0.07);
-  --glass-hover: rgba(255,255,255, 0.12);
+  --glass: rgba(10, 14, 22, 0.75);
+  --glass-border: rgba(0,229,255, 0.08);
+  --glass-hover: rgba(0,229,255, 0.15);
+  --glass-blur: 24px;
 
-  /* ── Borders ── */
+  --border: rgba(0,229,255, 0.08);
+  --border-hover: rgba(0,229,255, 0.16);
+  --border-active: rgba(0,229,255, 0.24);
+
+  --text-100: #EAFBFF;
+  --text-70: #8AB8C8;
+  --text-45: #4A7A8E;
+  --text-25: #263848;
+
+  --accent: #00D4F5;
+  --accent-soft: rgba(0,212,245, 0.08);
+  --accent-mid: rgba(0,212,245, 0.18);
+
+  --cat-bebidas: #00D4F5;
+  --cat-cafe: #00F5B8;
+  --cat-postres: #F500D4;
+  --cat-comida: #00F560;
+  --cat-panaderia: #F5C400;
+  --cat-ensaladas: #00F5A0;
+  --cat-desayunos: #F58000;
+  --cat-especiales: #A000F5;
+
+  --ok: #00FF7F;
+  --warn: #FFB800;
+  --err: #FF2D55;
+  --info: #00D4F5;
+  --ok-bg: rgba(0,255,127, 0.10);
+  --warn-bg: rgba(255,184,0, 0.10);
+  --err-bg: rgba(255,45,85, 0.10);
+  --info-bg: rgba(0,212,245, 0.10);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 22px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 0 8px rgba(0,212,245, 0.15);
+  --shadow-md: 0 0 16px rgba(0,212,245, 0.20);
+  --shadow-lg: 0 0 32px rgba(0,212,245, 0.25);
+  --shadow-card: 0 0 12px rgba(0,212,245, 0.12), 0 4px 20px rgba(0,0,0,0.30);
+  --shadow-btn: 0 0 20px rgba(0,212,245, 0.30);
+  --shadow-modal: 0 0 60px rgba(0,212,245, 0.15), 0 20px 60px rgba(0,0,0,0.50);
+  --shadow-glow: 0 0 24px rgba(0,212,245, 0.40);
+
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+
+  --btn-gradient: linear-gradient(135deg, #00D4F5 0%, #0088AA 100%);
+  --btn-glow: rgba(0,212,245, 0.35);
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ══════════════════════════════════════════════
+   THEME 3 — Soft Neumorphism
+   Táctil, físico, botones que puedes presionar.
+   ══════════════════════════════════════════════ */
+[data-theme="soft-neumorphism"] {
+  --surface-0: #2C2C34;
+  --surface-1: #33333C;
+  --surface-2: #3A3A44;
+  --surface-3: #42424D;
+  --surface-4: #4B4B57;
+
+  --glass: rgba(58, 58, 68, 0.60);
+  --glass-border: rgba(255,255,255, 0.04);
+  --glass-hover: rgba(255,255,255, 0.08);
+  --glass-blur: 10px;
+
+  --border: rgba(255,255,255, 0.04);
+  --border-hover: rgba(255,255,255, 0.08);
+  --border-active: rgba(255,255,255, 0.12);
+
+  --text-100: #EDEDF0;
+  --text-70: #A8A8B0;
+  --text-45: #6E6E78;
+  --text-25: #4A4A52;
+
+  --accent: #8E8EAA;
+  --accent-soft: rgba(142,142,170, 0.10);
+  --accent-mid: rgba(142,142,170, 0.20);
+
+  --cat-bebidas: #7AADBE;
+  --cat-cafe: #B89E73;
+  --cat-postres: #BE7A9E;
+  --cat-comida: #7AAD8E;
+  --cat-panaderia: #C4A050;
+  --cat-ensaladas: #8BC0A6;
+  --cat-desayunos: #C49A5A;
+  --cat-especiales: #9A8EBE;
+
+  --ok: #6BAE7A;
+  --warn: #B5A050;
+  --err: #AE6B6B;
+  --info: #6B8EAE;
+  --ok-bg: rgba(107,174,122, 0.10);
+  --warn-bg: rgba(181,160,80, 0.10);
+  --err-bg: rgba(174,107,107, 0.10);
+  --info-bg: rgba(107,142,174, 0.10);
+
+  --radius-sm: 14px;
+  --radius-md: 18px;
+  --radius-lg: 22px;
+  --radius-xl: 26px;
+  --radius-2xl: 30px;
+  --radius-full: 9999px;
+
+  /* Neumorphic: raised cards */
+  --shadow-sm:
+    3px 3px 8px rgba(0,0,0, 0.25),
+    -3px -3px 8px rgba(255,255,255, 0.05);
+  --shadow-md:
+    5px 5px 14px rgba(0,0,0, 0.28),
+    -5px -5px 14px rgba(255,255,255, 0.05);
+  --shadow-lg:
+    8px 8px 24px rgba(0,0,0, 0.30),
+    -8px -8px 24px rgba(255,255,255, 0.05);
+  --shadow-card:
+    6px 6px 18px rgba(0,0,0, 0.28),
+    -6px -6px 18px rgba(255,255,255, 0.05);
+  --shadow-btn:
+    4px 4px 12px rgba(0,0,0, 0.25),
+    -4px -4px 12px rgba(255,255,255, 0.05);
+  --shadow-modal:
+    12px 12px 40px rgba(0,0,0, 0.35),
+    -12px -12px 40px rgba(255,255,255, 0.04);
+  --shadow-glow: none;
+
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+
+  --btn-gradient: linear-gradient(145deg, #42424D 0%, #3A3A44 100%);
+  --btn-glow: none;
+
+  --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ══════════════════════════════════════════════
+   THEME 4 — Glass Layered
+   Elegante, Apple Vision Pro, capas de cristal.
+   ══════════════════════════════════════════════ */
+[data-theme="glass-layered"] {
+  --surface-0: #0C1018;
+  --surface-1: #131924;
+  --surface-2: #1A2030;
+  --surface-3: #20283A;
+  --surface-4: #283244;
+
+  --glass: rgba(19, 25, 36, 0.55);
+  --glass-border: rgba(255,255,255, 0.08);
+  --glass-hover: rgba(255,255,255, 0.14);
+  --glass-blur: 28px;
+
   --border: rgba(255,255,255, 0.07);
-  --border-hover: rgba(255,255,255, 0.14);
-  --border-active: rgba(255,255,255, 0.20);
+  --border-hover: rgba(255,255,255, 0.13);
+  --border-active: rgba(255,255,255, 0.19);
 
-  /* ── Text ── clean gray */
-  --text-100: #FAFAFA;
-  --text-70: #A1A1AA;
-  --text-45: #63636B;
-  --text-25: #3F3F46;
+  --text-100: #F0F4FA;
+  --text-70: #8C96A8;
+  --text-45: #566274;
+  --text-25: #364050;
 
-  /* ── Accent ── vibrant coral-orange */
-  --accent: #FF6B35;
-  --accent-soft: rgba(255,107,53,0.10);
-  --accent-mid: rgba(255,107,53,0.22);
+  --accent: #3B82F6;
+  --accent-soft: rgba(59,130,246, 0.09);
+  --accent-mid: rgba(59,130,246, 0.18);
 
-  /* ── Categories ── warm orange spectrum */
-  --cat-bebidas: #FF8C5A;
-  --cat-cafe: #E8956A;
-  --cat-postres: #FFAB76;
-  --cat-comida: #FF9F67;
-  --cat-panaderia: #FFB88C;
-  --cat-ensaladas: #FFA07A;
-  --cat-desayunos: #FF7F50;
-  --cat-especiales: #FF6B35;
+  --cat-bebidas: #38BDF8;
+  --cat-cafe: #A78B5E;
+  --cat-postres: #F472B6;
+  --cat-comida: #34D399;
+  --cat-panaderia: #FBBF24;
+  --cat-ensaladas: #2DD4BF;
+  --cat-desayunos: #FB923C;
+  --cat-especiales: #A78BFA;
 
-  /* ── Status ── vibrant */
   --ok: #22C55E;
   --warn: #EAB308;
   --err: #EF4444;
   --info: #3B82F6;
-  --ok-bg: rgba(34,197,94,0.12);
-  --warn-bg: rgba(234,179,8,0.12);
-  --err-bg: rgba(239,68,68,0.12);
-  --info-bg: rgba(59,130,246,0.12);
+  --ok-bg: rgba(34,197,94, 0.10);
+  --warn-bg: rgba(234,179,8, 0.10);
+  --err-bg: rgba(239,68,68, 0.10);
+  --info-bg: rgba(59,130,246, 0.10);
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-2xl: 26px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 2px 6px rgba(0,0,0, 0.12);
+  --shadow-md: 0 4px 16px rgba(0,0,0, 0.16);
+  --shadow-lg: 0 8px 32px rgba(0,0,0, 0.20);
+  --shadow-card: 0 4px 20px rgba(0,0,0, 0.14);
+  --shadow-btn: 0 4px 14px rgba(59,130,246, 0.20);
+  --shadow-modal: 0 24px 64px rgba(0,0,0, 0.35);
+  --shadow-glow: 0 0 16px rgba(59,130,246, 0.15);
+
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+
+  --btn-gradient: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  --btn-glow: rgba(59,130,246, 0.25);
 
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
-
-  /* ── Btn gradient ── */
-  --btn-gradient: linear-gradient(135deg, #FF6B35 0%, #E8530E 100%);
-  --btn-glow: rgba(255,107,53,0.30);
 }
 
 /* ══════════════════════════════════════════════
-   THEME 3: Light Glass
-   Clean whites + glassmorphism + indigo accent
+   THEME 5 — Monochrome High-Contrast (Editorial)
+   Alta cocina, B&W, serif titles, rojo profundo.
    ══════════════════════════════════════════════ */
-[data-theme="light-glass"] {
-  /* ── Surfaces ── light grays */
-  --surface-0: #F4F4F5;
-  --surface-1: #FAFAFA;
-  --surface-2: #FFFFFF;
-  --surface-3: #F0F0F2;
-  --surface-4: #E8E8EB;
+[data-theme="mono-editorial"] {
+  --surface-0: #FAFAF8;
+  --surface-1: #F5F5F2;
+  --surface-2: #EEEEEA;
+  --surface-3: #E2E2DC;
+  --surface-4: #D6D6CF;
 
-  /* ── Glass ── white frosted */
-  --glass: rgba(255, 255, 255, 0.60);
+  --glass: rgba(250, 250, 248, 0.85);
   --glass-border: rgba(0,0,0, 0.06);
   --glass-hover: rgba(0,0,0, 0.10);
+  --glass-blur: 0px;
 
-  /* ── Borders ── */
-  --border: rgba(0,0,0, 0.08);
-  --border-hover: rgba(0,0,0, 0.14);
-  --border-active: rgba(0,0,0, 0.20);
+  --border: rgba(0,0,0, 0.10);
+  --border-hover: rgba(0,0,0, 0.18);
+  --border-active: rgba(0,0,0, 0.26);
 
-  /* ── Text ── dark spectrum */
-  --text-100: #18181B;
-  --text-70: #52525B;
-  --text-45: #A1A1AA;
-  --text-25: #D4D4D8;
+  --text-100: #1A1A18;
+  --text-70: #4A4A46;
+  --text-45: #8A8A84;
+  --text-25: #C5C5BE;
 
-  /* ── Accent ── indigo */
-  --accent: #6366F1;
-  --accent-soft: rgba(99,102,241,0.08);
-  --accent-mid: rgba(99,102,241,0.18);
+  --accent: #8B1A1A;
+  --accent-soft: rgba(139,26,26, 0.06);
+  --accent-mid: rgba(139,26,26, 0.14);
 
-  /* ── Categories ── soft muted tones */
-  --cat-bebidas: #0EA5E9;
-  --cat-cafe: #A16207;
-  --cat-postres: #EC4899;
-  --cat-comida: #10B981;
-  --cat-panaderia: #F59E0B;
-  --cat-ensaladas: #34D399;
-  --cat-desayunos: #F97316;
-  --cat-especiales: #8B5CF6;
+  --cat-bebidas: #2B5C8A;
+  --cat-cafe: #6B4E28;
+  --cat-postres: #8A2B5C;
+  --cat-comida: #2B6B3E;
+  --cat-panaderia: #8A6B2B;
+  --cat-ensaladas: #2B7A5C;
+  --cat-desayunos: #8A4B2B;
+  --cat-especiales: #5C2B8A;
 
-  /* ── Status ── softer on light bg */
-  --ok: #16A34A;
-  --warn: #CA8A04;
-  --err: #DC2626;
-  --info: #2563EB;
-  --ok-bg: rgba(22,163,74,0.08);
-  --warn-bg: rgba(202,138,4,0.08);
-  --err-bg: rgba(220,38,38,0.08);
-  --info-bg: rgba(37,99,235,0.08);
+  --ok: #1A6B2E;
+  --warn: #8A6B1A;
+  --err: #8B1A1A;
+  --info: #1A3E8B;
+  --ok-bg: rgba(26,107,46, 0.06);
+  --warn-bg: rgba(138,107,26, 0.06);
+  --err-bg: rgba(139,26,26, 0.06);
+  --info-bg: rgba(26,62,139, 0.06);
 
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Sharp corners */
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 7px;
+  --radius-xl: 9px;
+  --radius-2xl: 11px;
+  --radius-full: 9999px;
 
-  /* ── Btn gradient ── */
-  --btn-gradient: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
-  --btn-glow: rgba(99,102,241,0.25);
+  /* Crisp borders instead of shadows */
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: 0 1px 0 rgba(0,0,0, 0.05);
+  --shadow-card: none;
+  --shadow-btn: none;
+  --shadow-modal: 0 0 0 1px rgba(0,0,0, 0.12), 0 20px 50px rgba(0,0,0, 0.10);
+  --shadow-glow: none;
+
+  --font-display: 'Cormorant Garamond', 'Georgia', serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+
+  --btn-gradient: #1A1A18;
+  --btn-glow: none;
+
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 /* ══════════════════════════════════════════════
@@ -193,12 +394,12 @@
 }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-ui);
   background: var(--surface-0);
   color: var(--text-100);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.35s ease, color 0.35s ease;
 }
 
 ::selection {
@@ -207,20 +408,10 @@ body {
 }
 
 /* ── Scrollbar ── */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--text-25);
-  border-radius: 999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-45);
-}
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--text-25); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-45); }
 
 /* ── Focus ring ── */
 *:focus-visible {
@@ -229,31 +420,31 @@ body {
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+  .text-balance { text-wrap: balance; }
 }
 
-/* ── Glass card effect ── */
+/* ── Glass card ── */
 .glass-card {
   background: var(--glass);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
 }
 .glass-card:hover {
   border-color: var(--glass-hover);
 }
 
-/* ── Buttons ── */
+/* ══════════════════════════════════════════════
+   BUTTONS — base styles (all themes)
+   ══════════════════════════════════════════════ */
 
 .btn-primary {
   background: var(--btn-gradient);
   color: #ffffff;
   font-weight: 600;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   transition: all 0.3s var(--ease);
   letter-spacing: 0.01em;
 }
@@ -272,7 +463,7 @@ body {
   color: var(--text-70);
   font-weight: 500;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   transition: all 0.3s var(--ease);
 }
 .btn-secondary:hover {
@@ -287,11 +478,171 @@ body {
   color: var(--text-45);
   font-weight: 500;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   transition: all 0.3s var(--ease);
 }
 .btn-ghost:hover {
   border-color: var(--border-hover);
   color: var(--text-70);
   transform: translateY(-1px);
+}
+
+/* ══════════════════════════════════════════════
+   THEME-SPECIFIC BUTTON OVERRIDES
+   ══════════════════════════════════════════════ */
+
+/* ── Sci-Fi: glow pulse ── */
+[data-theme="sci-fi-gradient"] .btn-primary:hover {
+  box-shadow: 0 0 28px var(--btn-glow), 0 4px 16px rgba(0,0,0,0.30);
+}
+
+/* ── Neumorphism: raised/pressed effect ── */
+[data-theme="soft-neumorphism"] .btn-primary {
+  background: var(--accent);
+  box-shadow: var(--shadow-btn);
+  border: none;
+}
+[data-theme="soft-neumorphism"] .btn-primary:hover {
+  transform: translateY(0);
+  box-shadow:
+    2px 2px 6px rgba(0,0,0, 0.25),
+    -2px -2px 6px rgba(255,255,255, 0.04);
+}
+[data-theme="soft-neumorphism"] .btn-secondary {
+  border: none;
+  box-shadow: var(--shadow-btn);
+}
+[data-theme="soft-neumorphism"] .btn-secondary:hover {
+  transform: translateY(0);
+  box-shadow:
+    2px 2px 6px rgba(0,0,0, 0.22),
+    -2px -2px 6px rgba(255,255,255, 0.04);
+}
+[data-theme="soft-neumorphism"] .btn-ghost {
+  border: none;
+  box-shadow:
+    2px 2px 6px rgba(0,0,0, 0.15),
+    -2px -2px 6px rgba(255,255,255, 0.03);
+}
+[data-theme="soft-neumorphism"] .btn-ghost:hover {
+  transform: translateY(0);
+}
+
+/* ── Glass: transparent buttons ── */
+[data-theme="glass-layered"] .btn-secondary {
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── Editorial: solid, no gradient ── */
+[data-theme="mono-editorial"] .btn-primary {
+  background: var(--text-100);
+  color: var(--surface-0);
+  border: 2px solid var(--text-100);
+  font-family: var(--font-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+[data-theme="mono-editorial"] .btn-primary:hover {
+  background: transparent;
+  color: var(--text-100);
+  transform: none;
+  box-shadow: none;
+}
+[data-theme="mono-editorial"] .btn-secondary {
+  background: transparent;
+  border: 1.5px solid var(--text-100);
+  color: var(--text-100);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+[data-theme="mono-editorial"] .btn-secondary:hover {
+  background: var(--text-100);
+  color: var(--surface-0);
+  transform: none;
+}
+[data-theme="mono-editorial"] .btn-ghost {
+  border: 1px solid var(--border);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+[data-theme="mono-editorial"] .btn-ghost:hover {
+  border-color: var(--text-100);
+  color: var(--text-100);
+  transform: none;
+}
+
+/* ── Editorial: display font for headings ── */
+[data-theme="mono-editorial"] h1,
+[data-theme="mono-editorial"] h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* ══════════════════════════════════════════════
+   LAYOUT — Density presets
+   ══════════════════════════════════════════════ */
+
+/* Default: comfortable */
+:root {
+  --density-page-padding: 2rem;
+  --density-gap: 1.5rem;
+  --density-card-padding: 1.25rem;
+  --density-row-height: 3.25rem;
+  --density-text-sm: 0.8125rem;
+}
+
+[data-density="spacious"] {
+  --density-page-padding: 2.5rem;
+  --density-gap: 2rem;
+  --density-card-padding: 1.75rem;
+  --density-row-height: 3.75rem;
+  --density-text-sm: 0.875rem;
+}
+
+[data-density="compact"] {
+  --density-page-padding: 1.25rem;
+  --density-gap: 1rem;
+  --density-card-padding: 0.75rem;
+  --density-row-height: 2.5rem;
+  --density-text-sm: 0.75rem;
+}
+
+/* ══════════════════════════════════════════════
+   LAYOUT — Panel width presets
+   ══════════════════════════════════════════════ */
+
+/* Default panel widths */
+:root {
+  --panel-sm: 14rem;
+  --panel-md: 18rem;
+  --panel-lg: 24rem;
+  --panel-xl: 20rem;
+}
+
+[data-panel="narrow"] {
+  --panel-sm: 11rem;
+  --panel-md: 15rem;
+  --panel-lg: 20rem;
+  --panel-xl: 16rem;
+}
+
+[data-panel="wide"] {
+  --panel-sm: 17rem;
+  --panel-md: 22rem;
+  --panel-lg: 28rem;
+  --panel-xl: 24rem;
+}
+
+/* ══════════════════════════════════════════════
+   LAYOUT — Sidebar width vars
+   ══════════════════════════════════════════════ */
+:root {
+  --sidebar-width: 240px;
+  --sidebar-collapsed: 76px;
 }

@@ -69,9 +69,9 @@ export default function CobrosPage() {
   };
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-3.5rem-4rem)]">
+    <div className="flex h-[calc(100vh-3.5rem-4rem)]" style={{ gap: "var(--density-gap)" }}>
       {/* ── Lista de órdenes por cobrar ── */}
-      <div className="w-72 flex-shrink-0 flex flex-col">
+      <div className="flex-shrink-0 flex flex-col" style={{ width: "var(--panel-md)" }}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[11px] font-medium text-text-25 uppercase tracking-widest">
             Órdenes por cobrar

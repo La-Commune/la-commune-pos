@@ -18,7 +18,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#0B0E14",
+  themeColor: "#161418",
 };
 
 export default function RootLayout({
@@ -30,15 +30,21 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <head>
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cormorant+Garamond:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
       <body className="font-sans antialiased bg-surface-0 text-text-100">
         <ThemeProvider
           attribute="data-theme"
-          defaultTheme="dark-pastel"
-          themes={["dark-pastel", "dark-vibrant", "light-glass"]}
+          defaultTheme="neo-minimal-warm"
+          themes={[
+            "neo-minimal-warm",
+            "sci-fi-gradient",
+            "soft-neumorphism",
+            "glass-layered",
+            "mono-editorial",
+          ]}
           enableSystem={false}
         >
           <AuthProvider>{children}</AuthProvider>
