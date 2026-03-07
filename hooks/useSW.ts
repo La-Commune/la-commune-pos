@@ -70,7 +70,11 @@ export function useSW() {
       // Intentar background sync
       if ("serviceWorker" in navigator && "SyncManager" in window) {
         navigator.serviceWorker.ready.then((reg) => {
-          (reg as any).sync?.register("sync-offline-actions");
+          // SyncManager no está en los tipos estándar de TS, usar interface extendida
+          const syncReg = reg as ServiceWorkerRegistration & {
+            sync?: { register: (tag: string) => Promise<void> };
+          };
+          syncReg.sync?.register("sync-offline-actions");
         });
       }
     };

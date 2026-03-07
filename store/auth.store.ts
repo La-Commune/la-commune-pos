@@ -2,8 +2,16 @@
 
 import { create } from "zustand";
 import { supabase, USE_MOCK } from "@/lib/supabase";
+import type { RolUsuario } from "@/types/database";
 
-type Rol = "admin" | "barista" | "camarero" | "cocina";
+/** Campos que seleccionamos de la tabla usuarios */
+interface UsuarioSelect {
+  id: string;
+  negocio_id: string;
+  nombre: string;
+  email: string;
+  rol: RolUsuario;
+}
 
 interface AuthUser {
   id: string;
@@ -11,7 +19,7 @@ interface AuthUser {
   negocio_id: string;
   nombre: string;
   email: string;
-  rol: Rol;
+  rol: RolUsuario;
 }
 
 interface AuthState {
@@ -63,12 +71,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // 2. Obtener datos del usuario en tabla `usuarios`
       const { data: usuario, error: userError } = await supabase!
-        .from("usuarios" as any)
+        .from("usuarios")
         .select("id, negocio_id, nombre, email, rol")
         .eq("auth_uid", authData.user.id)
         .eq("activo", true)
         .is("eliminado_en", null)
-        .single();
+        .single<UsuarioSelect>();
 
       if (userError || !usuario) {
         set({
@@ -79,15 +87,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return false;
       }
 
-      const u = usuario as any;
       set({
         user: {
-          id: u.id,
+          id: usuario.id,
           auth_uid: authData.user.id,
-          negocio_id: u.negocio_id,
-          nombre: u.nombre,
-          email: u.email,
-          rol: u.rol as Rol,
+          negocio_id: usuario.negocio_id,
+          nombre: usuario.nombre,
+          email: usuario.email,
+          rol: usuario.rol,
         },
         isAuthenticated: true,
         isLoading: false,
@@ -125,12 +132,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       const { data: usuario } = await supabase!
-        .from("usuarios" as any)
+        .from("usuarios")
         .select("id, negocio_id, nombre, email, rol")
         .eq("auth_uid", session.user.id)
         .eq("activo", true)
         .is("eliminado_en", null)
-        .single();
+        .single<UsuarioSelect>();
 
       if (!usuario) {
         await supabase!.auth.signOut();
@@ -138,15 +145,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
 
-      const u = usuario as any;
       set({
         user: {
-          id: u.id,
+          id: usuario.id,
           auth_uid: session.user.id,
-          negocio_id: u.negocio_id,
-          nombre: u.nombre,
-          email: u.email,
-          rol: u.rol as Rol,
+          negocio_id: usuario.negocio_id,
+          nombre: usuario.nombre,
+          email: usuario.email,
+          rol: usuario.rol,
         },
         isAuthenticated: true,
         isLoading: false,
