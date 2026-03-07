@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Banknote,
   CreditCard,
@@ -9,6 +10,9 @@ import {
   CheckCircle2,
   X,
   DollarSign,
+  Loader2,
+  ShieldCheck,
+  ArrowLeft,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import { MOCK_ORDENES, type OrdenMock } from "@/lib/mock-data";
@@ -24,6 +28,7 @@ const metodoPagoConfig: Record<MetodoPago, { label: string; icon: typeof Banknot
 const quickAmounts = [50, 100, 200, 500, 1000];
 
 export default function CobrosPage() {
+  const searchParams = useSearchParams();
   const [ordenSeleccionada, setOrdenSeleccionada] = useState<OrdenMock | null>(null);
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("efectivo");
   const [montoRecibido, setMontoRecibido] = useState("");
@@ -31,12 +36,25 @@ export default function CobrosPage() {
   const [propinaCustom, setPropinaCustom] = useState("");
   const [descuento, setDescuento] = useState(0);
   const [cobrado, setCobrado] = useState(false);
+  /* R7: Paso de verificación */
+  const [verificando, setVerificando] = useState(false);
+  /* R3: Loading state */
+  const [procesando, setProcesando] = useState(false);
 
   // Órdenes listas para cobrar
   const ordenesCobrables = useMemo(
     () => MOCK_ORDENES.filter((o) => ["lista", "confirmada", "preparando"].includes(o.estado)),
     []
   );
+
+  /* R11: Deep-link — recibir orden desde query param */
+  useEffect(() => {
+    const ordenParam = searchParams.get("orden");
+    if (ordenParam) {
+      const orden = ordenesCobrables.find((o) => o.id === ordenParam);
+      if (orden) setOrdenSeleccionada(orden);
+    }
+  }, [searchParams, ordenesCobrables]);
 
   // Cálculos
   const subtotalConDescuento = ordenSeleccionada
@@ -56,6 +74,8 @@ export default function CobrosPage() {
     setPropinaCustom("");
     setDescuento(0);
     setCobrado(false);
+    setVerificando(false);
+    setProcesando(false);
   };
 
   const handleSeleccionarOrden = (orden: OrdenMock) => {
@@ -63,8 +83,19 @@ export default function CobrosPage() {
     resetCobro();
   };
 
-  const handleCobrar = () => {
+  /* R7: Paso 1 — mostrar verificación */
+  const handleIniciarCobro = () => {
     if (!puedeCobar) return;
+    setVerificando(true);
+  };
+
+  /* R7: Paso 2 — confirmar cobro con loading */
+  const handleConfirmarCobro = async () => {
+    setProcesando(true);
+    // TODO: Procesar en Supabase
+    await new Promise((r) => setTimeout(r, 1200));
+    setProcesando(false);
+    setVerificando(false);
     setCobrado(true);
   };
 
@@ -85,7 +116,7 @@ export default function CobrosPage() {
               key={orden.id}
               onClick={() => handleSeleccionarOrden(orden)}
               className={cn(
-                "w-full p-4 rounded-xl bg-surface-2 border text-left transition-all duration-[400ms] ease-smooth hover:shadow-lg hover:shadow-black/20",
+                "w-full p-4 rounded-xl bg-surface-2 border text-left transition-all duration-[400ms] ease-smooth hover:shadow-lg hover:shadow-black/20 min-h-[44px]",
                 ordenSeleccionada?.id === orden.id ? "border-accent" : "border-border"
               )}
             >
@@ -104,11 +135,14 @@ export default function CobrosPage() {
             </button>
           ))}
 
+          {/* R13: Empty state mejorado */}
           {ordenesCobrables.length === 0 && (
-            <div className="flex items-center justify-center h-32">
-              <p className="text-text-25 text-xs uppercase tracking-widest">
-                Sin órdenes pendientes
-              </p>
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="w-14 h-14 rounded-2xl bg-surface-2 flex items-center justify-center mb-3">
+                <Receipt size={24} className="text-text-25" />
+              </div>
+              <p className="text-sm text-text-45 mb-1">Sin órdenes pendientes</p>
+              <p className="text-xs text-text-25 text-center">Las órdenes listas aparecerán aquí</p>
             </div>
           )}
         </div>
@@ -121,16 +155,18 @@ export default function CobrosPage() {
         </div>
 
         {!ordenSeleccionada ? (
+          /* R13: Empty state mejorado */
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <Receipt size={32} className="text-text-25 mx-auto mb-3 opacity-30" />
-              <p className="text-text-25 text-xs uppercase tracking-widest">
-                Selecciona una orden para cobrar
-              </p>
+              <div className="w-16 h-16 rounded-2xl bg-surface-2 flex items-center justify-center mx-auto mb-4">
+                <Receipt size={28} className="text-text-25" />
+              </div>
+              <p className="text-sm text-text-45 mb-1">Selecciona una orden para cobrar</p>
+              <p className="text-xs text-text-25">Elige de la lista de órdenes a la izquierda</p>
             </div>
           </div>
         ) : cobrado ? (
-          /* ── Confirmación de cobro ── */
+          /* ── Confirmación de cobro exitoso ── */
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center max-w-sm">
               <div className="w-16 h-16 rounded-full bg-status-ok-bg flex items-center justify-center mx-auto mb-4">
@@ -150,7 +186,7 @@ export default function CobrosPage() {
               </p>
 
               <div className="flex gap-3 justify-center">
-                <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg btn-secondary text-[13px]">
+                <button className="flex items-center gap-2 px-5 py-3 rounded-xl btn-secondary text-[13px] min-h-[44px]">
                   <Receipt size={14} />
                   Imprimir ticket
                 </button>
@@ -159,10 +195,88 @@ export default function CobrosPage() {
                     setOrdenSeleccionada(null);
                     resetCobro();
                   }}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg btn-primary text-[13px]"
+                  className="flex items-center gap-2 px-5 py-3 rounded-xl btn-primary text-[13px] min-h-[44px]"
                 >
                   Siguiente cobro
                 </button>
+              </div>
+            </div>
+          </div>
+        ) : verificando ? (
+          /* ── R7: Pantalla de verificación con el cliente ── */
+          <div className="flex-1 flex items-center justify-center">
+            <div className="w-full max-w-md">
+              <div className="p-8 rounded-2xl bg-surface-2 border border-border text-center">
+                <div className="w-14 h-14 rounded-2xl bg-accent-soft flex items-center justify-center mx-auto mb-5">
+                  <ShieldCheck size={28} className="text-accent" />
+                </div>
+
+                <p className="text-xs text-text-45 uppercase tracking-widest mb-4">Confirme con el cliente</p>
+
+                {/* Total GRANDE */}
+                <p className="text-4xl font-bold text-text-100 tabular-nums mb-2">
+                  {formatMXN(totalFinal)}
+                </p>
+
+                {/* Detalles */}
+                <div className="space-y-1.5 mb-6 text-sm text-text-45">
+                  <p>
+                    {ordenSeleccionada.mesa_numero
+                      ? `Mesa ${ordenSeleccionada.mesa_numero}`
+                      : ordenSeleccionada.origen.replace("_", " ")}
+                    {" · "}{ordenSeleccionada.items.reduce((a, i) => a + i.cantidad, 0)} items
+                  </p>
+                  <p className="flex items-center justify-center gap-2">
+                    {(() => {
+                      const Icon = metodoPagoConfig[metodoPago].icon;
+                      return <Icon size={16} />;
+                    })()}
+                    {metodoPagoConfig[metodoPago].label}
+                  </p>
+                  {cambio > 0 && (
+                    <p className="text-status-ok font-medium">
+                      Cambio: {formatMXN(cambio)}
+                    </p>
+                  )}
+                  {propina > 0 && (
+                    <p>Propina: {formatMXN(propina)}</p>
+                  )}
+                  {descuento > 0 && (
+                    <p>Descuento: {descuento}%</p>
+                  )}
+                </div>
+
+                {/* Botones */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setVerificando(false)}
+                    disabled={procesando}
+                    className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl btn-ghost text-[13px] font-medium min-h-[48px]"
+                  >
+                    <ArrowLeft size={16} />
+                    Volver
+                  </button>
+                  <button
+                    onClick={handleConfirmarCobro}
+                    disabled={procesando}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl btn-primary text-[13px] font-semibold min-h-[48px]",
+                      procesando && "opacity-70 cursor-wait"
+                    )}
+                  >
+                    {procesando ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Procesando...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 size={16} />
+                        Confirmar cobro
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -178,14 +292,15 @@ export default function CobrosPage() {
                       ? `Mesa ${ordenSeleccionada.mesa_numero}`
                       : ordenSeleccionada.origen.replace("_", " ")}
                   </h3>
+                  {/* R1: Target táctil de 44px */}
                   <button
                     onClick={() => {
                       setOrdenSeleccionada(null);
                       resetCobro();
                     }}
-                    className="p-1 rounded-lg text-text-25 hover:text-text-45"
+                    className="p-2.5 rounded-xl text-text-25 hover:text-text-45 hover:bg-surface-3 transition-colors duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center"
                   >
-                    <X size={14} />
+                    <X size={16} />
                   </button>
                 </div>
 
@@ -239,7 +354,7 @@ export default function CobrosPage() {
 
             {/* Columna derecha: Método de pago y controles */}
             <div className="flex flex-col gap-4">
-              {/* Método de pago */}
+              {/* Método de pago — R1: min-h-[44px] */}
               <div>
                 <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2.5">
                   Método de pago
@@ -253,7 +368,7 @@ export default function CobrosPage() {
                           key={key}
                           onClick={() => setMetodoPago(key)}
                           className={cn(
-                            "flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-300",
+                            "flex flex-col items-center gap-1.5 p-3.5 rounded-xl border transition-all duration-300 min-h-[44px]",
                             metodoPago === key
                               ? "border-accent bg-accent-soft text-accent"
                               : "border-border text-text-45 hover:border-border-hover"
@@ -279,28 +394,29 @@ export default function CobrosPage() {
                     value={montoRecibido}
                     onChange={(e) => setMontoRecibido(e.target.value)}
                     placeholder="0.00"
-                    className="w-full px-4 py-3 rounded-lg bg-surface-2 border border-border text-text-100 text-lg font-semibold tabular-nums placeholder:text-text-25 focus:outline-none focus:border-border-hover transition-all duration-300"
+                    className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-border text-text-100 text-lg font-semibold tabular-nums placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 min-h-[44px]"
                   />
+                  {/* R1: Quick amounts con py-3 y min-h-[44px] */}
                   <div className="flex gap-1.5 mt-2">
                     {quickAmounts.map((amt) => (
                       <button
                         key={amt}
                         onClick={() => setMontoRecibido(String(amt))}
-                        className="flex-1 py-1.5 rounded-lg bg-surface-3 border border-border text-xs text-text-45 hover:text-text-70 hover:border-border-hover transition-all duration-300 tabular-nums"
+                        className="flex-1 py-3 rounded-xl bg-surface-3 border border-border text-xs text-text-45 hover:text-text-70 hover:border-border-hover transition-all duration-300 tabular-nums min-h-[44px]"
                       >
                         ${amt}
                       </button>
                     ))}
                     <button
                       onClick={() => setMontoRecibido(String(Math.ceil(totalFinal)))}
-                      className="flex-1 py-1.5 rounded-lg bg-accent-soft border border-accent text-xs text-accent font-medium transition-all duration-300"
+                      className="flex-1 py-3 rounded-xl bg-accent-soft border border-accent text-xs text-accent font-medium transition-all duration-300 min-h-[44px]"
                     >
                       Exacto
                     </button>
                   </div>
 
                   {monto >= totalFinal && monto > 0 && (
-                    <div className="mt-3 p-3 rounded-lg bg-status-ok-bg border border-[rgba(107,155,116,0.2)]">
+                    <div className="mt-3 p-3 rounded-xl bg-status-ok-bg border border-status-ok/20">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-status-ok font-medium">Cambio</span>
                         <span className="text-lg font-semibold text-status-ok tabular-nums">
@@ -312,7 +428,7 @@ export default function CobrosPage() {
                 </div>
               )}
 
-              {/* Propina */}
+              {/* Propina — R1: min-h-[44px] */}
               <div>
                 <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2.5">
                   Propina
@@ -328,7 +444,7 @@ export default function CobrosPage() {
                           setPropinaCustom("");
                         }}
                         className={cn(
-                          "flex-1 py-2 rounded-lg border text-xs font-medium transition-all duration-300",
+                          "flex-1 py-2.5 rounded-xl border text-xs font-medium transition-all duration-300 min-h-[44px]",
                           propina === amount && propinaCustom === ""
                             ? "border-accent bg-accent-soft text-accent"
                             : "border-border text-text-45 hover:border-border-hover"
@@ -346,12 +462,12 @@ export default function CobrosPage() {
                       setPropina(parseFloat(e.target.value) || 0);
                     }}
                     placeholder="Otra"
-                    className="flex-1 px-2 py-2 rounded-lg bg-surface-2 border border-border text-xs text-text-100 tabular-nums placeholder:text-text-25 focus:outline-none focus:border-border-hover transition-all duration-300 text-center"
+                    className="flex-1 px-2 py-2.5 rounded-xl bg-surface-2 border border-border text-xs text-text-100 tabular-nums placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 text-center min-h-[44px]"
                   />
                 </div>
               </div>
 
-              {/* Descuento */}
+              {/* Descuento — R1: min-h-[44px] */}
               <div>
                 <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2.5">
                   Descuento
@@ -362,7 +478,7 @@ export default function CobrosPage() {
                       key={pct}
                       onClick={() => setDescuento(pct)}
                       className={cn(
-                        "flex-1 py-2 rounded-lg border text-xs font-medium transition-all duration-300",
+                        "flex-1 py-2.5 rounded-xl border text-xs font-medium transition-all duration-300 min-h-[44px]",
                         descuento === pct
                           ? "border-accent bg-accent-soft text-accent"
                           : "border-border text-text-45 hover:border-border-hover"
@@ -374,13 +490,13 @@ export default function CobrosPage() {
                 </div>
               </div>
 
-              {/* Botón de cobrar */}
+              {/* R7: Botón inicia flujo de verificación en vez de cobrar directo — R1: min-h-[48px] */}
               <div className="mt-auto">
                 <button
-                  onClick={handleCobrar}
+                  onClick={handleIniciarCobro}
                   disabled={!puedeCobar}
                   className={cn(
-                    "w-full flex items-center justify-center gap-2 py-4 rounded-xl text-sm font-semibold transition-all duration-300",
+                    "w-full flex items-center justify-center gap-2 py-4 rounded-xl text-sm font-semibold transition-all duration-300 min-h-[48px]",
                     puedeCobar
                       ? "btn-primary"
                       : "bg-surface-3 text-text-25 cursor-not-allowed"

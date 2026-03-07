@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Plus,
   Search,
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Modal from "@/components/ui/Modal";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 type Rol = "admin" | "barista" | "camarero" | "cocina";
 
@@ -61,6 +62,29 @@ export default function UsuariosPage() {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [usuarioEditando, setUsuarioEditando] = useState<UsuarioMock | null>(null);
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
+  /* R2: Estado para confirmación de desactivar */
+  const [confirmDesactivar, setConfirmDesactivar] = useState(false);
+  const [usuarioADesactivar, setUsuarioADesactivar] = useState<UsuarioMock | null>(null);
+
+  /* R12: Ref para detectar click fuera del context menu */
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  /* R12: Cerrar context menu al hacer click fuera */
+  useEffect(() => {
+    if (!menuAbierto) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuAbierto(null);
+      }
+    };
+    const timer = setTimeout(() => {
+      document.addEventListener("click", handleClickOutside);
+    }, 0);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [menuAbierto]);
 
   const usuariosFiltrados = MOCK_USUARIOS.filter((u) => {
     if (filtroRol !== "todos" && u.rol !== filtroRol) return false;
@@ -82,7 +106,7 @@ export default function UsuariosPage() {
         </div>
         <button
           onClick={() => { setUsuarioEditando(null); setModalAbierto(true); }}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg btn-primary text-[13px]"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl btn-primary text-[13px] min-h-[44px]"
         >
           <Plus size={16} />
           Nuevo usuario
@@ -97,7 +121,7 @@ export default function UsuariosPage() {
             placeholder="Buscar por nombre o email..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-2 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-border-hover transition-all duration-300"
+            className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-surface-2 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 min-h-[44px]"
           />
         </div>
         <div className="flex items-center gap-1 bg-surface-2 p-1 rounded-xl">
@@ -106,7 +130,7 @@ export default function UsuariosPage() {
               key={r}
               onClick={() => setFiltroRol(r)}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all duration-300",
+                "px-3.5 py-2 rounded-lg text-xs font-medium capitalize transition-all duration-300 min-h-[44px]",
                 filtroRol === r ? "bg-surface-4 text-text-100" : "text-text-25 hover:text-text-45"
               )}
             >
@@ -116,9 +140,11 @@ export default function UsuariosPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="rounded-xl border border-border overflow-hidden">
-          <div className="grid grid-cols-[1fr_200px_120px_120px_100px_48px] gap-4 px-5 py-3 bg-surface-2 border-b border-border">
+      {/* R10: Tabla responsive — usa tabla semántica con min-widths en vez de grid fijo */}
+      <div className="flex-1 overflow-y-auto overflow-x-auto">
+        <div className="rounded-xl border border-border overflow-hidden min-w-[700px]">
+          {/* Header */}
+          <div className="grid grid-cols-[1fr_minmax(120px,200px)_100px_100px_90px_48px] gap-3 px-5 py-3 bg-surface-2 border-b border-border">
             <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Nombre</span>
             <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Email</span>
             <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Rol</span>
@@ -126,18 +152,19 @@ export default function UsuariosPage() {
             <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Estado</span>
             <span />
           </div>
+          {/* Rows */}
           {usuariosFiltrados.map((usuario) => {
             const rol = rolConfig[usuario.rol];
             const RolIcon = rol.icon;
             return (
-              <div key={usuario.id} className="grid grid-cols-[1fr_200px_120px_120px_100px_48px] gap-4 px-5 py-3.5 border-b border-border last:border-b-0 hover:bg-surface-2 transition-colors duration-300">
+              <div key={usuario.id} className="grid grid-cols-[1fr_minmax(120px,200px)_100px_100px_90px_48px] gap-3 px-5 py-3.5 border-b border-border last:border-b-0 hover:bg-surface-2 transition-colors duration-300">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-8 h-8 rounded-lg bg-surface-3 flex items-center justify-center flex-shrink-0">
                     <span className="text-[11px] font-medium text-text-45">{usuario.nombre.split(" ").map((n) => n[0]).join("")}</span>
                   </div>
                   <span className="text-xs font-medium text-text-100 truncate">{usuario.nombre}</span>
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center min-w-0">
                   <span className="text-xs text-text-45 truncate">{usuario.email}</span>
                 </div>
                 <div className="flex items-center">
@@ -154,20 +181,35 @@ export default function UsuariosPage() {
                     {usuario.activo ? "Activo" : "Inactivo"}
                   </span>
                 </div>
-                <div className="flex items-center justify-end relative">
-                  <button onClick={() => setMenuAbierto(menuAbierto === usuario.id ? null : usuario.id)} className="p-1 rounded-lg text-text-25 hover:text-text-45 hover:bg-surface-2 transition-all duration-300">
+                {/* R12: Context menu con ref para cerrar al click fuera */}
+                <div className="flex items-center justify-end relative" ref={menuAbierto === usuario.id ? menuRef : undefined}>
+                  <button
+                    onClick={() => setMenuAbierto(menuAbierto === usuario.id ? null : usuario.id)}
+                    className="p-2 rounded-xl text-text-25 hover:text-text-45 hover:bg-surface-2 transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  >
                     <MoreHorizontal size={16} />
                   </button>
                   {menuAbierto === usuario.id && (
-                    <div className="absolute right-0 top-8 w-40 py-1 bg-surface-3 border border-border rounded-lg shadow-md z-10">
-                      <button onClick={() => { setUsuarioEditando(usuario); setModalAbierto(true); setMenuAbierto(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-text-70 hover:text-text-100 hover:bg-surface-2 transition-all duration-300">
-                        <Pencil size={12} />Editar
+                    <div className="absolute right-0 top-12 w-44 py-1 bg-surface-3 border border-border rounded-xl shadow-lg z-10">
+                      <button
+                        onClick={() => { setUsuarioEditando(usuario); setModalAbierto(true); setMenuAbierto(null); }}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-text-70 hover:text-text-100 hover:bg-surface-2 transition-all duration-300 min-h-[44px]"
+                      >
+                        <Pencil size={13} />Editar
                       </button>
-                      <button className="w-full flex items-center gap-2 px-3 py-2 text-xs text-text-70 hover:text-text-100 hover:bg-surface-2 transition-all duration-300">
-                        <Mail size={12} />Restablecer clave
+                      <button className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-text-70 hover:text-text-100 hover:bg-surface-2 transition-all duration-300 min-h-[44px]">
+                        <Mail size={13} />Restablecer clave
                       </button>
-                      <button className="w-full flex items-center gap-2 px-3 py-2 text-xs text-status-err hover:bg-status-err-bg transition-all duration-300">
-                        <Trash2 size={12} />Desactivar
+                      {/* R2: Desactivar con confirmación */}
+                      <button
+                        onClick={() => {
+                          setUsuarioADesactivar(usuario);
+                          setConfirmDesactivar(true);
+                          setMenuAbierto(null);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-status-err hover:bg-status-err-bg transition-all duration-300 min-h-[44px]"
+                      >
+                        <Trash2 size={13} />Desactivar
                       </button>
                     </div>
                   )}
@@ -178,9 +220,25 @@ export default function UsuariosPage() {
         </div>
       </div>
 
+      {/* Modal crear/editar usuario */}
       <Modal open={modalAbierto} onClose={() => setModalAbierto(false)} title={usuarioEditando ? "Editar usuario" : "Nuevo usuario"}>
         <UsuarioForm usuario={usuarioEditando} onSave={() => setModalAbierto(false)} onCancel={() => setModalAbierto(false)} />
       </Modal>
+
+      {/* R2: Confirmación de desactivar usuario */}
+      <ConfirmDialog
+        open={confirmDesactivar}
+        onClose={() => { setConfirmDesactivar(false); setUsuarioADesactivar(null); }}
+        onConfirm={() => {
+          // TODO: Desactivar en Supabase
+          console.log("Desactivar usuario:", usuarioADesactivar?.id);
+          setUsuarioADesactivar(null);
+        }}
+        title="Desactivar usuario"
+        description={`¿Estás seguro de desactivar a "${usuarioADesactivar?.nombre ?? ""}"? El usuario no podrá acceder al sistema.`}
+        confirmLabel="Desactivar"
+        variant="danger"
+      />
     </div>
   );
 }
@@ -194,11 +252,11 @@ function UsuarioForm({ usuario, onSave, onCancel }: { usuario: UsuarioMock | nul
     <form onSubmit={(e) => { e.preventDefault(); onSave(); }} className="space-y-5">
       <div>
         <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">Nombre completo *</label>
-        <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} required placeholder="Ej: Ana García" className="w-full px-3 py-2.5 rounded-lg bg-surface-3 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-border-hover transition-all duration-300" />
+        <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} required placeholder="Ej: Ana García" className="w-full px-3 py-2.5 rounded-xl bg-surface-3 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 min-h-[44px]" />
       </div>
       <div>
         <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">Email *</label>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="ana@lacommune.mx" className="w-full px-3 py-2.5 rounded-lg bg-surface-3 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-border-hover transition-all duration-300" />
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="ana@lacommune.mx" className="w-full px-3 py-2.5 rounded-xl bg-surface-3 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 min-h-[44px]" />
       </div>
       <div>
         <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Rol *</label>
@@ -206,7 +264,7 @@ function UsuarioForm({ usuario, onSave, onCancel }: { usuario: UsuarioMock | nul
           {(Object.entries(rolConfig) as [Rol, typeof rolConfig.admin][]).map(([key, config]) => {
             const Icon = config.icon;
             return (
-              <button key={key} type="button" onClick={() => setRol(key)} className={cn("flex items-center gap-2 p-3 rounded-lg border transition-all duration-300 text-left", rol === key ? "border-accent bg-accent-soft" : "border-border hover:border-border-hover")}>
+              <button key={key} type="button" onClick={() => setRol(key)} className={cn("flex items-center gap-2 p-3.5 rounded-xl border transition-all duration-300 text-left min-h-[44px]", rol === key ? "border-accent bg-accent-soft" : "border-border hover:border-border-hover")}>
                 <Icon size={16} className={rol === key ? "text-accent" : "text-text-25"} />
                 <div>
                   <span className={cn("text-xs font-medium block", rol === key ? "text-accent" : "text-text-70")}>{config.label}</span>
@@ -221,8 +279,8 @@ function UsuarioForm({ usuario, onSave, onCancel }: { usuario: UsuarioMock | nul
       </div>
       {!usuario && <p className="text-[11px] text-text-25 italic">Se enviará un email con la contraseña temporal al usuario.</p>}
       <div className="flex items-center gap-3 pt-3 border-t border-border">
-        <button type="submit" className="flex-1 py-2.5 rounded-lg btn-primary text-[13px]">{usuario ? "Guardar cambios" : "Crear usuario"}</button>
-        <button type="button" onClick={onCancel} className="flex-1 py-2.5 rounded-lg btn-ghost text-[13px]">Cancelar</button>
+        <button type="submit" className="flex-1 py-3 rounded-xl btn-primary text-[13px] min-h-[44px]">{usuario ? "Guardar cambios" : "Crear usuario"}</button>
+        <button type="button" onClick={onCancel} className="flex-1 py-3 rounded-xl btn-ghost text-[13px] min-h-[44px]">Cancelar</button>
       </div>
     </form>
   );

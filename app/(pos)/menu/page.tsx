@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   Plus,
   Search,
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import Modal from "@/components/ui/Modal";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ProductoForm from "@/components/menu/ProductoForm";
 import {
   MOCK_CATEGORIAS,
@@ -37,6 +38,30 @@ export default function MenuPage() {
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [productoEditando, setProductoEditando] = useState<Producto | null>(null);
+  /* R2: Estado para confirmación de eliminar */
+  const [confirmEliminar, setConfirmEliminar] = useState(false);
+  const [productoAEliminar, setProductoAEliminar] = useState<Producto | null>(null);
+
+  /* R12: Ref para detectar click fuera del context menu */
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  /* R12: Cerrar context menu al hacer click fuera */
+  useEffect(() => {
+    if (!menuAbierto) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuAbierto(null);
+      }
+    };
+    // Delay to avoid closing immediately on the same click
+    const timer = setTimeout(() => {
+      document.addEventListener("click", handleClickOutside);
+    }, 0);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [menuAbierto]);
 
   const productosFiltrados = useMemo(() => {
     let lista = MOCK_PRODUCTOS;
@@ -73,8 +98,9 @@ export default function MenuPage() {
           <h2 className="text-[11px] font-medium text-text-25 uppercase tracking-widest">
             Categorías
           </h2>
-          <button className="p-1 rounded-lg text-text-25 hover:text-text-45 hover:bg-surface-2 transition-all duration-300">
-            <Plus size={14} />
+          {/* R1: Target táctil */}
+          <button className="p-2.5 rounded-xl text-text-25 hover:text-text-45 hover:bg-surface-2 transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center">
+            <Plus size={16} />
           </button>
         </div>
 
@@ -82,7 +108,7 @@ export default function MenuPage() {
           <button
             onClick={() => setCategoriaActiva("todas")}
             className={cn(
-              "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-[13px] transition-all duration-300",
+              "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-[13px] transition-all duration-300 min-h-[44px]",
               categoriaActiva === "todas"
                 ? "bg-accent-soft text-accent font-medium"
                 : "text-text-45 hover:text-text-70 hover:bg-surface-2"
@@ -101,7 +127,7 @@ export default function MenuPage() {
                 key={cat.id}
                 onClick={() => setCategoriaActiva(cat.id)}
                 className={cn(
-                  "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-[13px] transition-all duration-300",
+                  "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-[13px] transition-all duration-300 min-h-[44px]",
                   categoriaActiva === cat.id
                     ? "bg-accent-soft text-accent font-medium"
                     : "text-text-45 hover:text-text-70 hover:bg-surface-2"
@@ -141,7 +167,7 @@ export default function MenuPage() {
               setProductoEditando(null);
               setModalAbierto(true);
             }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg btn-primary text-[13px]"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl btn-primary text-[13px] min-h-[44px]"
           >
             <Plus size={16} />
             Nuevo producto
@@ -157,7 +183,7 @@ export default function MenuPage() {
               placeholder="Buscar producto..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-2 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-border-hover transition-all duration-300"
+              className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-surface-2 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 min-h-[44px]"
             />
             {busqueda && (
               <button
@@ -172,7 +198,7 @@ export default function MenuPage() {
           <button
             onClick={() => setSoloDisponibles(!soloDisponibles)}
             className={cn(
-              "flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium border transition-all duration-300",
+              "flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-medium border transition-all duration-300 min-h-[44px]",
               soloDisponibles
                 ? "border-accent text-accent bg-accent-soft"
                 : "border-border text-text-25 hover:text-text-45 hover:border-border-hover"
@@ -239,29 +265,53 @@ export default function MenuPage() {
                   )}
                 </div>
 
-                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                {/* R1: Target táctil más grande para MoreHorizontal, R12: ref para cerrar al click fuera */}
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" ref={menuAbierto === producto.id ? menuRef : undefined}>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setMenuAbierto(menuAbierto === producto.id ? null : producto.id);
                     }}
-                    className="p-1 rounded-lg text-text-25 hover:text-text-45 hover:bg-surface-3 transition-all duration-300"
+                    className="p-2.5 rounded-xl text-text-25 hover:text-text-45 hover:bg-surface-3 transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center"
                   >
                     <MoreHorizontal size={16} />
                   </button>
 
                   {menuAbierto === producto.id && (
-                    <div className="absolute right-0 top-8 w-36 py-1 bg-surface-3 border border-border rounded-lg shadow-md z-10">
-                      <button className="w-full flex items-center gap-2 px-3 py-2 text-xs text-text-70 hover:text-text-100 hover:bg-surface-4 transition-all duration-300">
-                        <Pencil size={12} />
+                    <div className="absolute right-0 top-12 w-40 py-1 bg-surface-3 border border-border rounded-xl shadow-lg z-10">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setProductoEditando(producto);
+                          setModalAbierto(true);
+                          setMenuAbierto(null);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-text-70 hover:text-text-100 hover:bg-surface-4 transition-all duration-300 min-h-[44px]"
+                      >
+                        <Pencil size={13} />
                         Editar
                       </button>
-                      <button className="w-full flex items-center gap-2 px-3 py-2 text-xs text-text-70 hover:text-text-100 hover:bg-surface-4 transition-all duration-300">
-                        {producto.disponible ? <EyeOff size={12} /> : <Eye size={12} />}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMenuAbierto(null);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-text-70 hover:text-text-100 hover:bg-surface-4 transition-all duration-300 min-h-[44px]"
+                      >
+                        {producto.disponible ? <EyeOff size={13} /> : <Eye size={13} />}
                         {producto.disponible ? "Desactivar" : "Activar"}
                       </button>
-                      <button className="w-full flex items-center gap-2 px-3 py-2 text-xs text-status-err hover:bg-status-err-bg transition-all duration-300">
-                        <Trash2 size={12} />
+                      {/* R2: Eliminar con confirmación */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setProductoAEliminar(producto);
+                          setConfirmEliminar(true);
+                          setMenuAbierto(null);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-status-err hover:bg-status-err-bg transition-all duration-300 min-h-[44px]"
+                      >
+                        <Trash2 size={13} />
                         Eliminar
                       </button>
                     </div>
@@ -271,11 +321,14 @@ export default function MenuPage() {
             ))}
           </div>
 
+          {/* R13: Empty state mejorado */}
           {productosFiltrados.length === 0 && (
-            <div className="flex items-center justify-center h-48">
-              <p className="text-text-25 text-xs uppercase tracking-widest">
-                No se encontraron productos
-              </p>
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="w-14 h-14 rounded-2xl bg-surface-2 flex items-center justify-center mb-3">
+                <Coffee size={24} className="text-text-25" />
+              </div>
+              <p className="text-sm text-text-45 mb-1">No se encontraron productos</p>
+              <p className="text-xs text-text-25">Prueba con otros filtros o búsqueda</p>
             </div>
           )}
         </div>
@@ -290,7 +343,7 @@ export default function MenuPage() {
             </h2>
             <button
               onClick={() => setProductoDetalle(null)}
-              className="p-1 rounded-lg text-text-25 hover:text-text-45 hover:bg-surface-3 transition-all duration-300"
+              className="p-2.5 rounded-xl text-text-25 hover:text-text-45 hover:bg-surface-3 transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               <X size={14} />
             </button>
@@ -399,12 +452,12 @@ export default function MenuPage() {
                 setProductoEditando(productoDetalle);
                 setModalAbierto(true);
               }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg btn-secondary text-[13px]"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl btn-secondary text-[13px] min-h-[44px]"
             >
               <Pencil size={14} />
               Editar producto
             </button>
-            <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg btn-ghost text-[13px]">
+            <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl btn-ghost text-[13px] min-h-[44px]">
               {productoDetalle.disponible ? <EyeOff size={14} /> : <Eye size={14} />}
               {productoDetalle.disponible ? "Marcar no disponible" : "Marcar disponible"}
             </button>
@@ -429,6 +482,21 @@ export default function MenuPage() {
           onCancel={() => setModalAbierto(false)}
         />
       </Modal>
+
+      {/* R2: Confirmación de eliminar producto */}
+      <ConfirmDialog
+        open={confirmEliminar}
+        onClose={() => { setConfirmEliminar(false); setProductoAEliminar(null); }}
+        onConfirm={() => {
+          // TODO: Eliminar en Supabase
+          console.log("Eliminar producto:", productoAEliminar?.id);
+          setProductoAEliminar(null);
+        }}
+        title="Eliminar producto"
+        description={`¿Estás seguro de eliminar "${productoAEliminar?.nombre ?? ""}"? Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar"
+        variant="danger"
+      />
     </div>
   );
 }

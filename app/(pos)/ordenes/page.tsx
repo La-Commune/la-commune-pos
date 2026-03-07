@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
   Minus,
@@ -11,6 +12,14 @@ import {
   MessageSquare,
   Trash2,
   Send,
+  MapPin,
+  Truck,
+  ShoppingBag,
+  Globe,
+  ChevronRight,
+  ChevronLeft,
+  Loader2,
+  ClipboardList,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import {
@@ -21,14 +30,16 @@ import {
   type ItemOrdenMock,
   type OrdenMock,
 } from "@/lib/mock-data";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
+/* P11: Colores migrados al design system */
 const estadoOrdenConfig = {
-  nueva: { label: "Nueva", bg: "bg-blue-500/10", text: "text-blue-400" },
-  confirmada: { label: "Confirmada", bg: "bg-emerald-500/10", text: "text-emerald-400" },
-  preparando: { label: "Preparando", bg: "bg-amber-500/10", text: "text-amber-400" },
-  lista: { label: "Lista", bg: "bg-violet-500/10", text: "text-violet-400" },
+  nueva: { label: "Nueva", bg: "bg-status-info-bg", text: "text-status-info" },
+  confirmada: { label: "Confirmada", bg: "bg-status-ok-bg", text: "text-status-ok" },
+  preparando: { label: "Preparando", bg: "bg-status-warn-bg", text: "text-status-warn" },
+  lista: { label: "Lista", bg: "bg-accent-soft", text: "text-accent" },
   completada: { label: "Completada", bg: "bg-surface-3", text: "text-text-45" },
-  cancelada: { label: "Cancelada", bg: "bg-red-500/10", text: "text-red-400" },
+  cancelada: { label: "Cancelada", bg: "bg-status-err-bg", text: "text-status-err" },
 };
 
 const origenLabel = {
@@ -38,7 +49,26 @@ const origenLabel = {
   online: "Online",
 };
 
+/* P6: Config del selector de origen */
+const origenOptions = [
+  { id: "mesa" as const, label: "Mesa", icon: MapPin, desc: "Servir en mesa" },
+  { id: "para_llevar" as const, label: "Para llevar", icon: ShoppingBag, desc: "Empaque para llevar" },
+  { id: "delivery" as const, label: "Delivery", icon: Truck, desc: "Envío a domicilio" },
+  { id: "online" as const, label: "Online", icon: Globe, desc: "Pedido web/app" },
+];
+
+const MOCK_MESAS_DISPONIBLES = [
+  { numero: 1, capacidad: 2, ubicacion: "Interior" },
+  { numero: 4, capacidad: 6, ubicacion: "Terraza" },
+  { numero: 7, capacidad: 8, ubicacion: "Interior" },
+  { numero: 8, capacidad: 2, ubicacion: "Barra" },
+];
+
+type OrigenOrden = "mesa" | "delivery" | "para_llevar" | "online";
+
 export default function OrdenesPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [vista, setVista] = useState<"nueva" | "activas">("activas");
   const [categoriaActiva, setCategoriaActiva] = useState<string | "todas">("todas");
   const [busqueda, setBusqueda] = useState("");
@@ -46,7 +76,48 @@ export default function OrdenesPage() {
   const [ordenSeleccionada, setOrdenSeleccionada] = useState<OrdenMock | null>(null);
   const [notasOrden, setNotasOrden] = useState("");
 
-  // Productos filtrados para la vista "nueva orden"
+  /* P6: Estado del selector de origen */
+  const [origenSeleccionado, setOrigenSeleccionado] = useState<OrigenOrden | null>(null);
+  const [mesaSeleccionada, setMesaSeleccionada] = useState<number | null>(null);
+  const [pasoOrden, setPasoOrden] = useState<"origen" | "productos">("origen");
+
+  /* P3: Estado del confirm dialog */
+  const [confirmVaciar, setConfirmVaciar] = useState(false);
+  const [confirmCancelar, setConfirmCancelar] = useState(false);
+
+  /* P5: Loading states */
+  const [enviandoOrden, setEnviandoOrden] = useState(false);
+  const [confirmandoOrden, setConfirmandoOrden] = useState(false);
+
+  /* P17: Ref para scroll de categorías */
+  const categoriasRef = useRef<HTMLDivElement>(null);
+  const [showScrollLeft, setShowScrollLeft] = useState(false);
+  const [showScrollRight, setShowScrollRight] = useState(false);
+
+  /* P7: Deep-linking — seleccionar mesa desde query param */
+  useEffect(() => {
+    const mesaParam = searchParams.get("mesa");
+    if (mesaParam) {
+      setVista("nueva");
+      setPasoOrden("productos");
+      setOrigenSeleccionado("mesa");
+      setMesaSeleccionada(parseInt(mesaParam));
+    }
+  }, [searchParams]);
+
+  /* P17: Detectar scroll overflow */
+  useEffect(() => {
+    const el = categoriasRef.current;
+    if (!el) return;
+    const checkScroll = () => {
+      setShowScrollLeft(el.scrollLeft > 5);
+      setShowScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 5);
+    };
+    checkScroll();
+    el.addEventListener("scroll", checkScroll);
+    return () => el.removeEventListener("scroll", checkScroll);
+  }, [vista, pasoOrden]);
+
   const productosFiltrados = useMemo(() => {
     let lista = MOCK_PRODUCTOS.filter((p) => p.disponible);
     if (categoriaActiva !== "todas") {
@@ -59,7 +130,6 @@ export default function OrdenesPage() {
     return lista;
   }, [categoriaActiva, busqueda]);
 
-  // Totales del carrito
   const subtotal = carrito.reduce((acc, item) => acc + item.precio_unitario * item.cantidad, 0);
   const impuesto = Math.round(subtotal * 0.16 * 100) / 100;
   const total = subtotal + impuesto;
@@ -103,30 +173,75 @@ export default function OrdenesPage() {
     return `${Math.floor(mins / 60)}h ${mins % 60}m`;
   };
 
+  /* P5: Simular envío de orden con loading */
+  const handleEnviarOrden = async () => {
+    setEnviandoOrden(true);
+    // TODO: Enviar a Supabase
+    await new Promise((r) => setTimeout(r, 1200));
+    setEnviandoOrden(false);
+    setCarrito([]);
+    setNotasOrden("");
+    setPasoOrden("origen");
+    setOrigenSeleccionado(null);
+    setMesaSeleccionada(null);
+    setVista("activas");
+  };
+
+  const handleConfirmarOrden = async () => {
+    setConfirmandoOrden(true);
+    // TODO: Confirmar en Supabase
+    await new Promise((r) => setTimeout(r, 800));
+    setConfirmandoOrden(false);
+  };
+
+  /* P6: Handler para seleccionar origen y avanzar */
+  const handleSeleccionarOrigen = (origen: OrigenOrden) => {
+    setOrigenSeleccionado(origen);
+    if (origen !== "mesa") {
+      setMesaSeleccionada(null);
+      setPasoOrden("productos");
+    }
+  };
+
+  const handleSeleccionarMesa = (numero: number) => {
+    setMesaSeleccionada(numero);
+    setPasoOrden("productos");
+  };
+
+  /* P17: Scroll helpers */
+  const scrollCategorias = (direction: "left" | "right") => {
+    const el = categoriasRef.current;
+    if (!el) return;
+    el.scrollBy({ left: direction === "left" ? -150 : 150, behavior: "smooth" });
+  };
+
   return (
     <div className="flex h-[calc(100vh-3.5rem-4rem)]" style={{ gap: "var(--density-gap)" }}>
-      {/* ── Panel izquierdo: Órdenes activas o selector de productos ── */}
+      {/* ── Panel izquierdo ── */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Tabs - Segmented Control Style */}
-        <div className="flex items-center gap-0 mb-8 bg-surface-2 p-1 rounded-lg w-fit">
+        {/* Tabs */}
+        <div className="flex items-center gap-0 mb-8 bg-surface-2 p-1 rounded-xl w-fit">
           <button
             onClick={() => setVista("activas")}
             className={cn(
-              "px-4 py-2 rounded-lg text-[13px] font-medium transition-colors duration-200",
+              "px-4 py-2.5 rounded-lg text-[13px] font-medium transition-colors duration-200 min-h-[44px]",
               vista === "activas"
                 ? "bg-surface-4 text-accent"
                 : "text-text-45 hover:text-text-70"
             )}
           >
             Órdenes activas
-            <span className="ml-2 text-[11px] px-2 py-0.5 rounded-md bg-violet-500/20 text-violet-400 tabular-nums font-medium">
+            <span className="ml-2 text-[11px] px-2 py-0.5 rounded-md bg-accent-soft text-accent tabular-nums font-medium">
               {MOCK_ORDENES.filter((o) => !["completada", "cancelada"].includes(o.estado)).length}
             </span>
           </button>
           <button
-            onClick={() => setVista("nueva")}
+            onClick={() => {
+              setVista("nueva");
+              if (!origenSeleccionado) setPasoOrden("origen");
+            }}
             className={cn(
-              "flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium transition-colors duration-200",
+              "flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-[13px] font-medium transition-colors duration-200 min-h-[44px]",
               vista === "nueva"
                 ? "bg-surface-4 text-accent"
                 : "text-text-45 hover:text-text-70"
@@ -148,10 +263,10 @@ export default function OrdenesPage() {
                     key={orden.id}
                     onClick={() => setOrdenSeleccionada(orden)}
                     className={cn(
-                      "w-full p-4 rounded-lg bg-surface-2 border text-left transition-all duration-300 hover:shadow-lg",
+                      "w-full p-4 rounded-xl bg-surface-2 border text-left transition-all duration-300 hover:shadow-lg min-h-[44px]",
                       ordenSeleccionada?.id === orden.id
-                        ? "border-accent shadow-lg shadow-violet-500/20"
-                        : "border-border hover:border-border"
+                        ? "border-accent shadow-lg shadow-accent/10"
+                        : "border-border hover:border-border-hover"
                     )}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -159,7 +274,7 @@ export default function OrdenesPage() {
                         <span className="text-sm font-medium text-text-100">
                           {orden.mesa_numero ? `Mesa ${orden.mesa_numero}` : origenLabel[orden.origen]}
                         </span>
-                        <span className={cn("text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-md", config.bg, config.text)}>
+                        <span className={cn("text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg", config.bg, config.text)}>
                           {config.label}
                         </span>
                       </div>
@@ -187,37 +302,160 @@ export default function OrdenesPage() {
                 );
               }
             )}
+
+            {/* P15: Empty state mejorado */}
+            {MOCK_ORDENES.filter((o) => !["completada", "cancelada"].includes(o.estado)).length === 0 && (
+              <div className="flex-1 flex flex-col items-center justify-center py-16">
+                <div className="w-16 h-16 rounded-2xl bg-surface-2 flex items-center justify-center mb-4">
+                  <ClipboardList size={28} className="text-text-25" />
+                </div>
+                <p className="text-sm text-text-45 mb-1">Sin órdenes activas</p>
+                <p className="text-xs text-text-25">Crea una nueva orden para comenzar</p>
+                <button
+                  onClick={() => { setVista("nueva"); setPasoOrden("origen"); }}
+                  className="mt-4 flex items-center gap-2 px-5 py-2.5 rounded-xl btn-primary text-[13px] min-h-[44px]"
+                >
+                  <Plus size={16} />
+                  Nueva orden
+                </button>
+              </div>
+            )}
+          </div>
+        ) : pasoOrden === "origen" ? (
+          /* ── P6: Paso 1 — Selector de origen ── */
+          <div className="flex-1 flex flex-col">
+            <h2 className="text-sm font-medium text-text-100 mb-1">Tipo de orden</h2>
+            <p className="text-xs text-text-25 mb-6">Selecciona el origen de la orden</p>
+
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              {origenOptions.map((opt) => {
+                const Icon = opt.icon;
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => handleSeleccionarOrigen(opt.id)}
+                    className={cn(
+                      "flex items-center gap-4 p-5 rounded-xl border transition-all duration-300 text-left min-h-[44px]",
+                      origenSeleccionado === opt.id
+                        ? "border-accent bg-accent-soft"
+                        : "border-border bg-surface-2 hover:border-border-hover hover:shadow-md"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0",
+                      origenSeleccionado === opt.id ? "bg-accent/10" : "bg-surface-3"
+                    )}>
+                      <Icon size={22} className={origenSeleccionado === opt.id ? "text-accent" : "text-text-45"} />
+                    </div>
+                    <div>
+                      <span className={cn(
+                        "text-sm font-medium block",
+                        origenSeleccionado === opt.id ? "text-accent" : "text-text-100"
+                      )}>{opt.label}</span>
+                      <span className="text-[11px] text-text-25">{opt.desc}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Selector de mesa si eligió "mesa" */}
+            {origenSeleccionado === "mesa" && (
+              <div>
+                <h3 className="text-sm font-medium text-text-100 mb-1">Selecciona mesa</h3>
+                <p className="text-xs text-text-25 mb-4">Mesas disponibles</p>
+                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+                  {MOCK_MESAS_DISPONIBLES.map((mesa) => (
+                    <button
+                      key={mesa.numero}
+                      onClick={() => handleSeleccionarMesa(mesa.numero)}
+                      className={cn(
+                        "p-4 rounded-xl border text-center transition-all duration-300 min-h-[44px]",
+                        mesaSeleccionada === mesa.numero
+                          ? "border-accent bg-accent-soft"
+                          : "border-border bg-surface-2 hover:border-border-hover"
+                      )}
+                    >
+                      <div className={cn(
+                        "text-2xl font-bold tabular-nums mb-1",
+                        mesaSeleccionada === mesa.numero ? "text-accent" : "text-text-100"
+                      )}>
+                        {mesa.numero}
+                      </div>
+                      <div className="text-[10px] text-text-25">{mesa.ubicacion} · {mesa.capacidad}p</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           /* ── Selector de productos para nueva orden ── */
           <>
-            {/* Categorías - Segmented Control Style */}
-            <div className="flex items-center gap-0 mb-6 bg-surface-2 p-1 rounded-lg w-fit overflow-x-auto pb-1">
+            {/* P6: Badge del origen seleccionado */}
+            <div className="flex items-center gap-2 mb-4">
               <button
-                onClick={() => setCategoriaActiva("todas")}
-                className={cn(
-                  "px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors duration-200",
-                  categoriaActiva === "todas"
-                    ? "bg-surface-4 text-accent"
-                    : "text-text-45 hover:text-text-70"
-                )}
+                onClick={() => setPasoOrden("origen")}
+                className="flex items-center gap-1.5 text-xs text-text-45 hover:text-text-70 transition-colors min-h-[44px] px-2"
               >
-                Todas
+                <ChevronLeft size={14} />
+                Cambiar origen
               </button>
-              {MOCK_CATEGORIAS.map((cat) => (
+              <span className="text-xs font-medium text-accent bg-accent-soft px-3 py-1.5 rounded-lg">
+                {origenSeleccionado === "mesa" && mesaSeleccionada
+                  ? `Mesa ${mesaSeleccionada}`
+                  : origenOptions.find((o) => o.id === origenSeleccionado)?.label}
+              </span>
+            </div>
+
+            {/* P17: Categorías con indicadores de scroll */}
+            <div className="relative mb-6">
+              {showScrollLeft && (
                 <button
-                  key={cat.id}
-                  onClick={() => setCategoriaActiva(cat.id)}
+                  onClick={() => scrollCategorias("left")}
+                  className="absolute left-0 top-0 bottom-0 z-10 w-8 flex items-center justify-center bg-gradient-to-r from-surface-0 to-transparent"
+                >
+                  <ChevronLeft size={16} className="text-text-45" />
+                </button>
+              )}
+              <div
+                ref={categoriasRef}
+                className="flex items-center gap-0 bg-surface-2 p-1 rounded-xl w-full overflow-x-auto scrollbar-thin"
+              >
+                <button
+                  onClick={() => setCategoriaActiva("todas")}
                   className={cn(
-                    "px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors duration-200",
-                    categoriaActiva === cat.id
+                    "px-3.5 py-2.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors duration-200 min-h-[44px]",
+                    categoriaActiva === "todas"
                       ? "bg-surface-4 text-accent"
                       : "text-text-45 hover:text-text-70"
                   )}
                 >
-                  {cat.nombre}
+                  Todas
                 </button>
-              ))}
+                {MOCK_CATEGORIAS.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setCategoriaActiva(cat.id)}
+                    className={cn(
+                      "px-3.5 py-2.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors duration-200 min-h-[44px]",
+                      categoriaActiva === cat.id
+                        ? "bg-surface-4 text-accent"
+                        : "text-text-45 hover:text-text-70"
+                    )}
+                  >
+                    {cat.nombre}
+                  </button>
+                ))}
+              </div>
+              {showScrollRight && (
+                <button
+                  onClick={() => scrollCategorias("right")}
+                  className="absolute right-0 top-0 bottom-0 z-10 w-8 flex items-center justify-center bg-gradient-to-l from-surface-0 to-transparent"
+                >
+                  <ChevronRight size={16} className="text-text-45" />
+                </button>
+              )}
             </div>
 
             {/* Búsqueda */}
@@ -228,11 +466,11 @@ export default function OrdenesPage() {
                 placeholder="Buscar producto..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-lg bg-surface-2 border border-border text-text-100 text-sm placeholder:text-text-45 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all duration-200"
+                className="w-full pl-10 pr-4 py-3 rounded-xl bg-surface-2 border border-border text-text-100 text-sm placeholder:text-text-45 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200 min-h-[44px]"
               />
             </div>
 
-            {/* Grid de productos moderno */}
+            {/* Grid de productos */}
             <div className="flex-1 overflow-y-auto">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {productosFiltrados.map((producto) => {
@@ -242,10 +480,10 @@ export default function OrdenesPage() {
                       key={producto.id}
                       onClick={() => agregarAlCarrito(producto)}
                       className={cn(
-                        "relative p-4 rounded-lg bg-surface-2 border text-left transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10",
+                        "relative p-4 rounded-xl bg-surface-2 border text-left transition-all duration-300 hover:shadow-lg hover:shadow-accent/5 min-h-[44px]",
                         enCarrito
-                          ? "border-accent shadow-md shadow-violet-500/20"
-                          : "border-border hover:border-border"
+                          ? "border-accent shadow-md shadow-accent/10"
+                          : "border-border hover:border-border-hover"
                       )}
                     >
                       <h3 className="text-sm font-semibold text-text-100 mb-1 line-clamp-2">
@@ -255,7 +493,7 @@ export default function OrdenesPage() {
                         {formatMXN(producto.precio_base)}
                       </p>
                       {enCarrito && (
-                        <span className="absolute top-3 right-3 w-6 h-6 rounded-full bg-violet-500 text-surface-0 text-[11px] font-bold flex items-center justify-center shadow-lg">
+                        <span className="absolute top-3 right-3 w-7 h-7 rounded-full bg-accent text-surface-0 text-[11px] font-bold flex items-center justify-center shadow-lg">
                           {enCarrito.cantidad}
                         </span>
                       )}
@@ -277,7 +515,13 @@ export default function OrdenesPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <ShoppingCart size={18} className="text-accent" />
-                  <h2 className="text-sm font-semibold text-text-100">Orden nueva</h2>
+                  <h2 className="text-sm font-semibold text-text-100">
+                    {origenSeleccionado === "mesa" && mesaSeleccionada
+                      ? `Mesa ${mesaSeleccionada}`
+                      : origenSeleccionado
+                        ? origenOptions.find((o) => o.id === origenSeleccionado)?.label ?? "Orden nueva"
+                        : "Orden nueva"}
+                  </h2>
                 </div>
                 <span className="text-[12px] text-text-45 tabular-nums font-medium">
                   {carrito.length} item{carrito.length !== 1 ? "s" : ""}
@@ -286,16 +530,21 @@ export default function OrdenesPage() {
             </div>
 
             {carrito.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center p-6">
-                <p className="text-text-45 text-xs text-center uppercase tracking-widest font-medium">
-                  Agrega productos<br />para iniciar
+              /* P15: Empty state mejorado */
+              <div className="flex-1 flex flex-col items-center justify-center p-6">
+                <div className="w-14 h-14 rounded-2xl bg-surface-3 flex items-center justify-center mb-3">
+                  <ShoppingCart size={24} className="text-text-25" />
+                </div>
+                <p className="text-sm text-text-45 mb-1">Carrito vacío</p>
+                <p className="text-xs text-text-25 text-center">
+                  Selecciona productos del menú<br />para agregarlos a la orden
                 </p>
               </div>
             ) : (
               <>
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
                   {carrito.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between gap-3 p-3 bg-surface-3/50 rounded-lg">
+                    <div key={item.id} className="flex items-center justify-between gap-3 p-3 bg-surface-3/50 rounded-xl">
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-medium text-text-100 truncate">
                           {item.nombre}
@@ -305,21 +554,22 @@ export default function OrdenesPage() {
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-2 bg-surface-2 rounded-lg p-1">
+                      {/* P1: Targets táctiles aumentados a 44px */}
+                      <div className="flex items-center gap-1.5 bg-surface-2 rounded-xl p-1">
                         <button
                           onClick={() => cambiarCantidad(item.producto_id, -1)}
-                          className="w-7 h-7 rounded-md bg-surface-3 flex items-center justify-center text-text-45 hover:text-accent transition-colors duration-200"
+                          className="w-10 h-10 rounded-lg bg-surface-3 flex items-center justify-center text-text-45 hover:text-accent hover:bg-surface-4 transition-colors duration-200"
                         >
-                          <Minus size={14} />
+                          <Minus size={16} />
                         </button>
-                        <span className="text-xs font-semibold text-text-100 w-6 text-center tabular-nums">
+                        <span className="text-sm font-semibold text-text-100 w-8 text-center tabular-nums">
                           {item.cantidad}
                         </span>
                         <button
                           onClick={() => cambiarCantidad(item.producto_id, 1)}
-                          className="w-7 h-7 rounded-md bg-surface-3 flex items-center justify-center text-text-45 hover:text-accent transition-colors duration-200"
+                          className="w-10 h-10 rounded-lg bg-surface-3 flex items-center justify-center text-text-45 hover:text-accent hover:bg-surface-4 transition-colors duration-200"
                         >
-                          <Plus size={14} />
+                          <Plus size={16} />
                         </button>
                       </div>
 
@@ -336,7 +586,7 @@ export default function OrdenesPage() {
                       value={notasOrden}
                       onChange={(e) => setNotasOrden(e.target.value)}
                       rows={2}
-                      className="w-full px-4 py-3 rounded-lg bg-surface-3 border border-border text-text-70 text-xs placeholder:text-text-45 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all duration-200 resize-none"
+                      className="w-full px-4 py-3 rounded-xl bg-surface-3 border border-border text-text-70 text-xs placeholder:text-text-45 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200 resize-none"
                     />
                   </div>
                 </div>
@@ -356,14 +606,32 @@ export default function OrdenesPage() {
                     <span className="tabular-nums text-accent">{formatMXN(total)}</span>
                   </div>
 
-                  <button className="w-full flex items-center justify-center gap-2 py-3 rounded-lg btn-primary text-[13px] font-semibold mt-2">
-                    <Send size={16} />
-                    Enviar orden
+                  {/* P5: Botón con loading state */}
+                  <button
+                    onClick={handleEnviarOrden}
+                    disabled={enviandoOrden}
+                    className={cn(
+                      "w-full flex items-center justify-center gap-2 py-3.5 rounded-xl btn-primary text-[13px] font-semibold mt-2 min-h-[48px]",
+                      enviandoOrden && "opacity-70 cursor-wait"
+                    )}
+                  >
+                    {enviandoOrden ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Send size={16} />
+                        Enviar orden
+                      </>
+                    )}
                   </button>
 
+                  {/* P3: Vaciar con confirmación */}
                   <button
-                    onClick={() => setCarrito([])}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg btn-ghost text-[13px] font-medium"
+                    onClick={() => setConfirmVaciar(true)}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl btn-ghost text-[13px] font-medium min-h-[44px]"
                   >
                     <Trash2 size={16} />
                     Vaciar
@@ -384,7 +652,7 @@ export default function OrdenesPage() {
                 </h2>
                 <button
                   onClick={() => setOrdenSeleccionada(null)}
-                  className="p-1.5 rounded-lg text-text-45 hover:text-text-100 hover:bg-surface-3 transition-colors duration-200"
+                  className="p-2.5 rounded-xl text-text-45 hover:text-text-100 hover:bg-surface-3 transition-colors duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center"
                 >
                   <X size={16} />
                 </button>
@@ -394,7 +662,7 @@ export default function OrdenesPage() {
                 {(() => {
                   const config = estadoOrdenConfig[ordenSeleccionada.estado];
                   return (
-                    <span className={cn("text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md", config.bg, config.text)}>
+                    <span className={cn("text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-lg", config.bg, config.text)}>
                       {config.label}
                     </span>
                   );
@@ -408,7 +676,7 @@ export default function OrdenesPage() {
 
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {ordenSeleccionada.items.map((item) => (
-                <div key={item.id} className="flex items-start justify-between gap-3 p-3 bg-surface-3/50 rounded-lg">
+                <div key={item.id} className="flex items-start justify-between gap-3 p-3 bg-surface-3/50 rounded-xl">
                   <div className="flex items-start gap-3 min-w-0 flex-1">
                     <span className="text-sm font-bold text-accent tabular-nums w-5 text-center flex-shrink-0">
                       {item.cantidad}x
@@ -430,7 +698,7 @@ export default function OrdenesPage() {
 
               {ordenSeleccionada.notas && (
                 <div className="pt-4 border-t border-border/50">
-                  <div className="flex items-start gap-3 p-3 bg-violet-500/5 rounded-lg border border-violet-500/20">
+                  <div className="flex items-start gap-3 p-3 bg-accent-soft/30 rounded-xl border border-accent/10">
                     <MessageSquare size={14} className="text-accent mt-0.5 flex-shrink-0" />
                     <p className="text-xs text-text-70 font-medium">
                       {ordenSeleccionada.notas}
@@ -455,38 +723,90 @@ export default function OrdenesPage() {
                 <span className="tabular-nums text-accent">{formatMXN(ordenSeleccionada.total)}</span>
               </div>
 
-              {/* Acciones según estado */}
+              {/* Acciones con P5 loading y P7 deep-link */}
               <div className="space-y-3 pt-2">
                 {ordenSeleccionada.estado === "nueva" && (
-                  <button className="w-full py-3 rounded-lg btn-primary text-[13px] font-semibold">
-                    Confirmar orden
+                  <button
+                    onClick={handleConfirmarOrden}
+                    disabled={confirmandoOrden}
+                    className={cn(
+                      "w-full py-3.5 rounded-xl btn-primary text-[13px] font-semibold flex items-center justify-center gap-2 min-h-[48px]",
+                      confirmandoOrden && "opacity-70 cursor-wait"
+                    )}
+                  >
+                    {confirmandoOrden ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Confirmando...
+                      </>
+                    ) : (
+                      "Confirmar orden"
+                    )}
                   </button>
                 )}
                 {ordenSeleccionada.estado === "confirmada" && (
-                  <button className="w-full py-3 rounded-lg btn-primary text-[13px] font-semibold">
+                  <button className="w-full py-3.5 rounded-xl btn-primary text-[13px] font-semibold min-h-[48px]">
                     Enviar a cocina
                   </button>
                 )}
+                {/* P7: Deep-link a cobros */}
                 {ordenSeleccionada.estado === "lista" && (
-                  <button className="w-full py-3 rounded-lg btn-primary text-[13px] font-semibold">
+                  <button
+                    onClick={() => router.push(`/cobros?orden=${ordenSeleccionada.id}`)}
+                    className="w-full py-3.5 rounded-xl btn-primary text-[13px] font-semibold min-h-[48px]"
+                  >
                     Cobrar
                   </button>
                 )}
-                <button className="w-full py-3 rounded-lg btn-ghost text-[13px] font-medium">
+                {/* P3: Cancelar con confirmación */}
+                <button
+                  onClick={() => setConfirmCancelar(true)}
+                  className="w-full py-3 rounded-xl btn-ghost text-[13px] font-medium min-h-[44px]"
+                >
                   Cancelar orden
                 </button>
               </div>
             </div>
           </>
         ) : (
-          /* ── Estado vacío ── */
-          <div className="flex-1 flex items-center justify-center p-6">
-            <p className="text-text-45 text-xs text-center uppercase tracking-widest font-medium">
-              Selecciona una orden<br />para ver el detalle
+          /* P15: Empty state mejorado */
+          <div className="flex-1 flex flex-col items-center justify-center p-6">
+            <div className="w-14 h-14 rounded-2xl bg-surface-3 flex items-center justify-center mb-3">
+              <ClipboardList size={24} className="text-text-25" />
+            </div>
+            <p className="text-sm text-text-45 mb-1">Sin orden seleccionada</p>
+            <p className="text-xs text-text-25 text-center">
+              Selecciona una orden de la lista<br />para ver su detalle
             </p>
           </div>
         )}
       </div>
+
+      {/* P3: Confirm Dialogs */}
+      <ConfirmDialog
+        open={confirmVaciar}
+        onClose={() => setConfirmVaciar(false)}
+        onConfirm={() => {
+          setCarrito([]);
+          setNotasOrden("");
+        }}
+        title="Vaciar carrito"
+        description="Se eliminarán todos los productos del carrito. Esta acción no se puede deshacer."
+        confirmLabel="Vaciar"
+        variant="danger"
+      />
+      <ConfirmDialog
+        open={confirmCancelar}
+        onClose={() => setConfirmCancelar(false)}
+        onConfirm={() => {
+          // TODO: Cancelar en Supabase
+          setOrdenSeleccionada(null);
+        }}
+        title="Cancelar orden"
+        description={`¿Estás seguro de cancelar la orden de ${ordenSeleccionada?.mesa_numero ? `Mesa ${ordenSeleccionada.mesa_numero}` : ""}? Esta acción no se puede deshacer.`}
+        confirmLabel="Cancelar orden"
+        variant="danger"
+      />
     </div>
   );
 }

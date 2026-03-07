@@ -318,6 +318,7 @@ function TopNav() {
    NAVBAR — main component
    ════════════════════════════════════ */
 export default function Navbar() {
+  const pathname = usePathname();
   const { isOnline, pendingActions, isSyncing } = useSyncStore();
   const { user, logout } = useAuthStore();
   const { sidebarPosition } = useUIStore();
@@ -352,12 +353,23 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* Title for left sidebar modes */}
-        {!showTopNav && !showHamburger && (
-          <h1 className="text-[15px] font-semibold text-text-100 tracking-tight">
-            La Commune POS
-          </h1>
-        )}
+        {/* R14: Title muestra módulo activo + breadcrumb */}
+        {!showTopNav && !showHamburger && (() => {
+          const activeItem = navItems.find((item) => pathname.startsWith(item.href));
+          return (
+            <div className="flex items-center gap-2.5">
+              <span className="text-[13px] text-text-45 font-medium">La Commune</span>
+              {activeItem && (
+                <>
+                  <span className="text-text-25">/</span>
+                  <span className="text-[15px] font-semibold text-text-100 tracking-tight">
+                    {activeItem.label}
+                  </span>
+                </>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       <div className="flex items-center gap-3">

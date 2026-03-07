@@ -13,6 +13,15 @@ import {
   Calendar,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 // ── Mock data para reportes ──
 const MOCK_STATS = {
@@ -24,7 +33,7 @@ const MOCK_STATS = {
   ticketPromedioAyer: 190.27,
   clientesHoy: 35,
   clientesAyer: 31,
-  tiempoPromedioPrep: 8.5, // minutos
+  tiempoPromedioPrep: 8.5,
 };
 
 const MOCK_VENTAS_SEMANA = [
@@ -55,18 +64,18 @@ const MOCK_METODOS_PAGO = [
 ];
 
 const MOCK_VENTAS_HORA = [
-  { hora: "8", ventas: 420 },
-  { hora: "9", ventas: 890 },
-  { hora: "10", ventas: 1_200 },
-  { hora: "11", ventas: 980 },
-  { hora: "12", ventas: 1_450 },
-  { hora: "13", ventas: 1_680 },
-  { hora: "14", ventas: 1_320 },
-  { hora: "15", ventas: 780 },
-  { hora: "16", ventas: 650 },
-  { hora: "17", ventas: 520 },
-  { hora: "18", ventas: 380 },
-  { hora: "19", ventas: 180 },
+  { hora: "8am", ventas: 420 },
+  { hora: "9am", ventas: 890 },
+  { hora: "10am", ventas: 1_200 },
+  { hora: "11am", ventas: 980 },
+  { hora: "12pm", ventas: 1_450 },
+  { hora: "1pm", ventas: 1_680 },
+  { hora: "2pm", ventas: 1_320 },
+  { hora: "3pm", ventas: 780 },
+  { hora: "4pm", ventas: 650 },
+  { hora: "5pm", ventas: 520 },
+  { hora: "6pm", ventas: 380 },
+  { hora: "7pm", ventas: 180 },
 ];
 
 function StatCard({
@@ -116,48 +125,21 @@ function StatCard({
   );
 }
 
-function BarChartSimple({
-  data,
-  valueKey,
-  labelKey,
-  maxValue,
-  formatValue,
-}: {
-  data: Record<string, string | number>[];
-  valueKey: string;
-  labelKey: string;
-  maxValue: number;
-  formatValue?: (v: number) => string;
-}) {
+/* R8: Custom tooltip para Recharts */
+function CustomTooltip({ active, payload, label, formatter }: { active?: boolean; payload?: { value: number }[]; label?: string; formatter?: (v: number) => string }) {
+  if (!active || !payload?.length) return null;
   return (
-    <div className="flex items-end gap-2 h-40">
-      {data.map((item, idx) => {
-        const val = item[valueKey] as number;
-        const height = maxValue > 0 ? (val / maxValue) * 100 : 0;
-        return (
-          <div key={idx} className="flex-1 flex flex-col items-center gap-1.5">
-            <span className="text-[10px] text-text-25 tabular-nums">
-              {formatValue ? formatValue(val) : val}
-            </span>
-            <div className="w-full bg-surface-3 rounded-lg overflow-hidden" style={{ height: "100px" }}>
-              <div
-                className="w-full bg-accent rounded-lg transition-all duration-500"
-                style={{ height: `${height}%`, marginTop: `${100 - height}%` }}
-              />
-            </div>
-            <span className="text-[10px] text-text-45 font-medium">{item[labelKey]}</span>
-          </div>
-        );
-      })}
+    <div className="px-3 py-2 rounded-xl bg-surface-3 border border-border shadow-lg text-xs">
+      <p className="text-text-45 mb-0.5">{label}</p>
+      <p className="text-text-100 font-semibold tabular-nums">
+        {formatter ? formatter(payload[0].value) : payload[0].value}
+      </p>
     </div>
   );
 }
 
 export default function ReportesPage() {
   const [periodo, setPeriodo] = useState<"hoy" | "semana" | "mes">("hoy");
-
-  const maxVentaSemana = Math.max(...MOCK_VENTAS_SEMANA.map((d) => d.ventas));
-  const maxVentaHora = Math.max(...MOCK_VENTAS_HORA.map((d) => d.ventas));
 
   return (
     <div className="h-[calc(100vh-3.5rem-4rem)] flex flex-col overflow-y-auto">
@@ -172,7 +154,7 @@ export default function ReportesPage() {
               key={p}
               onClick={() => setPeriodo(p)}
               className={cn(
-                "px-3.5 py-2 rounded-lg text-xs font-medium capitalize transition-all duration-300",
+                "px-3.5 py-2 rounded-lg text-xs font-medium capitalize transition-all duration-300 min-h-[44px]",
                 periodo === p
                   ? "bg-surface-4 text-text-100"
                   : "text-text-25 hover:text-text-45"
@@ -214,9 +196,9 @@ export default function ReportesPage() {
         />
       </div>
 
-      {/* Charts row */}
+      {/* R8: Charts row con Recharts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        {/* Ventas por día */}
+        {/* Ventas por día — R8: Recharts con tooltips interactivos */}
         <div className="p-5 rounded-xl bg-surface-2 border border-border">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-[11px] font-medium text-text-25 uppercase tracking-widest">
@@ -224,16 +206,29 @@ export default function ReportesPage() {
             </h3>
             <Calendar size={14} className="text-text-25 opacity-40" />
           </div>
-          <BarChartSimple
-            data={MOCK_VENTAS_SEMANA}
-            valueKey="ventas"
-            labelKey="dia"
-            maxValue={maxVentaSemana}
-            formatValue={(v) => `$${(v / 1000).toFixed(1)}k`}
-          />
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={MOCK_VENTAS_SEMANA} barSize={24}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis
+                dataKey="dia"
+                tick={{ fontSize: 11, fill: "var(--text-45)" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: "var(--text-25)" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                width={40}
+              />
+              <Tooltip content={<CustomTooltip formatter={(v) => formatMXN(v)} />} cursor={{ fill: "var(--surface-3)", radius: 8 }} />
+              <Bar dataKey="ventas" fill="var(--accent)" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
-        {/* Ventas por hora */}
+        {/* Ventas por hora — R8: Recharts */}
         <div className="p-5 rounded-xl bg-surface-2 border border-border">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-[11px] font-medium text-text-25 uppercase tracking-widest">
@@ -241,13 +236,26 @@ export default function ReportesPage() {
             </h3>
             <Clock size={14} className="text-text-25 opacity-40" />
           </div>
-          <BarChartSimple
-            data={MOCK_VENTAS_HORA}
-            valueKey="ventas"
-            labelKey="hora"
-            maxValue={maxVentaHora}
-            formatValue={(v) => `$${v}`}
-          />
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={MOCK_VENTAS_HORA} barSize={16}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis
+                dataKey="hora"
+                tick={{ fontSize: 10, fill: "var(--text-45)" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: "var(--text-25)" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `$${v}`}
+                width={45}
+              />
+              <Tooltip content={<CustomTooltip formatter={(v) => formatMXN(v)} />} cursor={{ fill: "var(--surface-3)", radius: 6 }} />
+              <Bar dataKey="ventas" fill="var(--accent)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
