@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,22 +16,29 @@ const MOCK_MESAS = [
   { id: "8", numero: 8, capacidad: 2, estado: "disponible" as const, ubicacion: "Barra", orden_actual_id: null },
 ];
 
+/* R6: Colores migrados al design system */
 const estadoConfig = {
-  disponible: { label: "Disponible", color: "#4ADE80", bg: "rgba(74,222,128,0.08)" },
-  ocupada: { label: "Ocupada", color: "#F87171", bg: "rgba(248,113,113,0.08)" },
-  reservada: { label: "Reservada", color: "#FACC15", bg: "rgba(250,204,21,0.08)" },
-  preparando: { label: "Preparando", color: "#60A5FA", bg: "rgba(96,165,250,0.08)" },
+  disponible: { label: "Disponible", cssVar: "--ok", tailwind: "text-status-ok", bg: "bg-status-ok-bg" },
+  ocupada: { label: "Ocupada", cssVar: "--err", tailwind: "text-status-err", bg: "bg-status-err-bg" },
+  reservada: { label: "Reservada", cssVar: "--warn", tailwind: "text-status-warn", bg: "bg-status-warn-bg" },
+  preparando: { label: "Preparando", cssVar: "--info", tailwind: "text-status-info", bg: "bg-status-info-bg" },
 };
 
 type Ubicacion = "Todas" | "Interior" | "Terraza" | "Barra";
 
 export default function MesasPage() {
+  const router = useRouter();
   const [filtroUbicacion, setFiltroUbicacion] = useState<Ubicacion>("Todas");
   const ubicaciones: Ubicacion[] = ["Todas", "Interior", "Terraza", "Barra"];
 
   const mesasFiltradas = filtroUbicacion === "Todas"
     ? MOCK_MESAS
     : MOCK_MESAS.filter((m) => m.ubicacion === filtroUbicacion);
+
+  /* R11: Deep-link — click en mesa navega a órdenes con mesa pre-seleccionada */
+  const handleClickMesa = (mesa: typeof MOCK_MESAS[0]) => {
+    router.push(`/ordenes?mesa=${mesa.numero}`);
+  };
 
   return (
     <div>
@@ -40,20 +48,20 @@ export default function MesasPage() {
           <h1 className="text-xl font-semibold text-text-100 tracking-tight">Mesas</h1>
           <p className="text-sm text-text-45 mt-0.5">{MOCK_MESAS.length} mesas configuradas</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg btn-primary text-[13px]">
+        <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl btn-primary text-[13px] min-h-[44px]">
           <Plus size={16} />
           Nueva mesa
         </button>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex items-center gap-1.5 mb-6 p-1 bg-surface-2 rounded-lg w-fit">
+      {/* Filter tabs — R1: min-h-[44px] */}
+      <div className="flex items-center gap-1.5 mb-6 p-1 bg-surface-2 rounded-xl w-fit">
         {ubicaciones.map((ubi) => (
           <button
             key={ubi}
             onClick={() => setFiltroUbicacion(ubi)}
             className={cn(
-              "px-3.5 py-1.5 rounded-md text-xs font-medium transition-all duration-200",
+              "px-3.5 py-2 rounded-lg text-xs font-medium transition-all duration-200 min-h-[44px]",
               filtroUbicacion === ubi
                 ? "bg-surface-4 text-text-100 shadow-sm"
                 : "text-text-45 hover:text-text-70"
@@ -64,26 +72,24 @@ export default function MesasPage() {
         ))}
       </div>
 
-      {/* Grid de mesas */}
+      {/* Grid de mesas — R6: clases Tailwind del design system */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {mesasFiltradas.map((mesa) => {
           const config = estadoConfig[mesa.estado];
           return (
             <button
               key={mesa.id}
-              className="relative p-5 rounded-xl bg-surface-2 border border-border text-center transition-all duration-300 hover:-translate-y-1 hover:border-border-hover hover:shadow-md cursor-pointer"
+              onClick={() => handleClickMesa(mesa)}
+              className="relative p-5 rounded-xl bg-surface-2 border border-border text-center transition-all duration-300 hover:-translate-y-1 hover:border-border-hover hover:shadow-md cursor-pointer min-h-[44px]"
             >
-              {/* Top color indicator */}
+              {/* R6: Top color indicator con CSS var */}
               <div
                 className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-b-full"
-                style={{ backgroundColor: config.color }}
+                style={{ backgroundColor: `var(${config.cssVar})` }}
               />
 
-              {/* Number */}
-              <div
-                className="text-3xl font-bold mb-2 tracking-tight tabular-nums"
-                style={{ color: config.color }}
-              >
+              {/* Number — R6: color del design system */}
+              <div className={cn("text-3xl font-bold mb-2 tracking-tight tabular-nums", config.tailwind)}>
                 {mesa.numero}
               </div>
 
@@ -98,12 +104,13 @@ export default function MesasPage() {
                 {mesa.ubicacion}
               </div>
 
-              {/* Status pill */}
-              <div
-                className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider px-3 py-1 rounded-full"
-                style={{ backgroundColor: config.bg, color: config.color }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: config.color }} />
+              {/* R6: Status pill con clases del design system */}
+              <div className={cn(
+                "inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider px-3 py-1 rounded-full",
+                config.bg,
+                config.tailwind
+              )}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: `var(${config.cssVar})` }} />
                 {config.label}
               </div>
             </button>
@@ -111,13 +118,13 @@ export default function MesasPage() {
         })}
       </div>
 
-      {/* Status summary */}
+      {/* Status summary — R6: clases del design system */}
       <div className="flex items-center gap-6 mt-8 pt-6 border-t border-border">
         {(Object.entries(estadoConfig) as [string, typeof estadoConfig.disponible][]).map(([key, config]) => {
           const count = MOCK_MESAS.filter((m) => m.estado === key).length;
           return (
             <div key={key} className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: config.color }} />
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: `var(${config.cssVar})` }} />
               <span className="text-xs text-text-70">
                 {config.label}: <span className="font-semibold text-text-100">{count}</span>
               </span>
