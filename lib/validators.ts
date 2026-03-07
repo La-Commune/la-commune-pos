@@ -42,6 +42,7 @@ export const ItemOrdenSchema = z.object({
 export const OrdenSchema = z.object({
   id: z.string().uuid().optional(),
   negocio_id: z.string().uuid(),
+  folio: z.number().int().positive().optional(), // auto-generado por secuencia PG
   mesa_id: z.string().uuid().nullable(),
   usuario_id: z.string().uuid(),
   items: z.array(ItemOrdenSchema).min(1),
@@ -141,6 +142,47 @@ export const PromocionSchema = z.object({
   activo: z.boolean().default(true),
 });
 
+export const ModificadorSchema = z.object({
+  id: z.string().uuid().optional(),
+  negocio_id: z.string().uuid(),
+  nombre: z.string().min(1, "Nombre requerido"),
+  precio_adicional: z.number().nonnegative().default(0),
+  categoria: z.string().default("general"),
+  disponible: z.boolean().default(true),
+  orden: z.number().int().nonnegative().default(0),
+});
+
+export const CorteCajaSchema = z.object({
+  id: z.string().uuid().optional(),
+  negocio_id: z.string().uuid(),
+  usuario_id: z.string().uuid(),
+  fondo_inicial: z.number().nonnegative().default(0),
+  ventas_efectivo: z.number().nonnegative().default(0),
+  ventas_tarjeta: z.number().nonnegative().default(0),
+  ventas_transferencia: z.number().nonnegative().default(0),
+  total_ventas: z.number().nonnegative().default(0),
+  propinas: z.number().nonnegative().default(0),
+  descuentos: z.number().nonnegative().default(0),
+  efectivo_esperado: z.number().nonnegative().default(0),
+  efectivo_real: z.number().nullable().optional(),
+  diferencia: z.number().nullable().optional(),
+  ordenes_count: z.number().int().nonnegative().default(0),
+  notas: z.string().optional(),
+  abierto_en: z.string().datetime().optional(),
+  cerrado_en: z.string().datetime().nullable().optional(),
+});
+
+export const NegocioSchema = z.object({
+  id: z.string().uuid().optional(),
+  nombre: z.string().min(1, "Nombre requerido"),
+  direccion: z.string().optional(),
+  telefono: z.string().optional(),
+  rfc: z.string().optional(),
+  divisa: z.string().default("MXN"),
+  zona_horaria: z.string().default("America/Mexico_City"),
+  firebase_project_id: z.string().optional(),
+});
+
 // ── Types inferidos ──
 export type Mesa = z.infer<typeof MesaSchema>;
 export type ItemOrden = z.infer<typeof ItemOrdenSchema>;
@@ -153,3 +195,6 @@ export type Usuario = z.infer<typeof UsuarioSchema>;
 export type ItemKDS = z.infer<typeof ItemKDSSchema>;
 export type TicketKDS = z.infer<typeof TicketKDSSchema>;
 export type Promocion = z.infer<typeof PromocionSchema>;
+export type Modificador = z.infer<typeof ModificadorSchema>;
+export type CorteCaja = z.infer<typeof CorteCajaSchema>;
+export type Negocio = z.infer<typeof NegocioSchema>;

@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase, USE_MOCK } from "@/lib/supabase";
+import type { Database } from "@/types/database";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import {
   MOCK_CATEGORIAS,
   MOCK_PRODUCTOS,
@@ -14,9 +16,13 @@ import {
   type MockTicketKDS,
 } from "@/lib/mock-data";
 
+// ── Tipos auxiliares ──
+type Tables = Database["public"]["Tables"];
+type TableName = keyof Tables;
+
 // ── Generic hook for Supabase queries with mock fallback ──
 function useQuery<T>(
-  table: string,
+  table: TableName,
   mockData: T[],
   options?: {
     select?: string;
@@ -39,18 +45,18 @@ function useQuery<T>(
     setError(null);
 
     try {
-      let query = supabase!.from(table as any).select(options?.select ?? "*");
+      let query = supabase!.from(table).select(options?.select ?? "*");
 
       if (options?.filters) {
         Object.entries(options.filters).forEach(([key, value]) => {
-          query = query.eq(key, value as string) as any;
+          query = query.eq(key, value as string);
         });
       }
 
       if (options?.orderBy) {
         query = query.order(options.orderBy.column, {
           ascending: options.orderBy.ascending ?? true,
-        }) as any;
+        });
       }
 
       const { data: result, error: err } = await query;
@@ -115,38 +121,39 @@ export function useTicketsKDS() {
 
 // ── Mutation helpers ──
 
-export async function insertRecord<T extends Record<string, unknown>>(
-  table: string,
-  data: T
+export async function insertRecord(
+  table: TableName,
+  data: Record<string, unknown>
 ): Promise<{ success: boolean; error?: string }> {
   if (USE_MOCK) {
     console.log(`[MOCK] Insert into ${table}:`, data);
     return { success: true };
   }
 
-  const { error } = await supabase!.from(table as any).insert(data as any);
+  // @ts-expect-error — tipo exacto de insert data se resolverá con `supabase gen types`
+  const { error } = await supabase!.from(table).insert(data);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
-export async function updateRecord<T extends Record<string, unknown>>(
-  table: string,
+export async function updateRecord(
+  table: TableName,
   id: string,
-  data: T
+  data: Record<string, unknown>
 ): Promise<{ success: boolean; error?: string }> {
   if (USE_MOCK) {
     console.log(`[MOCK] Update ${table} (${id}):`, data);
     return { success: true };
   }
 
-  // @ts-expect-error — tipos placeholder, se resolverá con `supabase gen types`
+  // @ts-expect-error — tipo exacto de update data se resolverá con `supabase gen types`
   const { error } = await supabase!.from(table).update(data).eq("id", id);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
 export async function deleteRecord(
-  table: string,
+  table: TableName,
   id: string
 ): Promise<{ success: boolean; error?: string }> {
   if (USE_MOCK) {
@@ -155,16 +162,16 @@ export async function deleteRecord(
   }
 
   // Soft delete
-  // @ts-expect-error — tipos placeholder, se resolverá con `supabase gen types`
+  // @ts-expect-error — tipo exacto de update data se resolverá con `supabase gen types`
   const { error } = await supabase!.from(table).update({ eliminado_en: new Date().toISOString() }).eq("id", id);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
 // ── Offline-aware mutation wrapper ──
-export async function offlineAwareMutation<T extends Record<string, unknown>>(
+export async function offlineAwareMutation(
   action: () => Promise<{ success: boolean; error?: string }>,
-  offlineAction?: { type: string; payload: T }
+  offlineAction?: { type: string; payload: Record<string, unknown> }
 ): Promise<{ success: boolean; error?: string }> {
   if (USE_MOCK) {
     return action();
@@ -189,18 +196,29 @@ export async function offlineAwareMutation<T extends Record<string, unknown>>(
 
 // ── Realtime subscription helper ──
 
+interface RealtimePayload {
+  eventType: string;
+  new: Record<string, unknown>;
+  old: Record<string, unknown>;
+}
+
 export function subscribeToTable(
   table: string,
-  callback: (payload: { eventType: string; new: unknown; old: unknown }) => void
+  callback: (payload: RealtimePayload) => void
 ) {
   if (USE_MOCK) return { unsubscribe: () => {} };
 
   const channel = supabase!
     .channel(`${table}-changes`)
     .on(
-      "postgres_changes" as any,
+      "postgres_changes",
       { event: "*", schema: "public", table },
-      (payload: any) => callback(payload)
+      (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) =>
+        callback({
+          eventType: payload.eventType,
+          new: (payload.new ?? {}) as Record<string, unknown>,
+          old: (payload.old ?? {}) as Record<string, unknown>,
+        })
     )
     .subscribe();
 

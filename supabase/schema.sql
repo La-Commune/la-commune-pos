@@ -30,6 +30,9 @@ CREATE TYPE estado_ticket AS ENUM ('nueva', 'preparando', 'lista');
 CREATE TABLE negocios (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   nombre      TEXT NOT NULL,
+  direccion   TEXT,                    -- dirección para ticket impreso
+  telefono    TEXT,                    -- teléfono para ticket impreso
+  rfc         TEXT,                    -- RFC para facturación
   divisa      TEXT NOT NULL DEFAULT 'MXN',
   zona_horaria TEXT NOT NULL DEFAULT 'America/Mexico_City',
   firebase_project_id TEXT,
@@ -110,18 +113,42 @@ CREATE TABLE mesas (
   UNIQUE(negocio_id, numero)
 );
 
+-- ── Modificadores de producto ──
+CREATE TABLE modificadores (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  negocio_id  UUID NOT NULL REFERENCES negocios(id) ON DELETE CASCADE,
+  nombre      TEXT NOT NULL,            -- "Extra shot", "Sin azúcar", "Leche de avena"
+  precio_adicional NUMERIC(10,2) NOT NULL DEFAULT 0,
+  categoria   TEXT NOT NULL DEFAULT 'general',  -- para agrupar: leche, extras, azúcar, etc.
+  disponible  BOOLEAN NOT NULL DEFAULT TRUE,
+  orden       INTEGER NOT NULL DEFAULT 0,
+  creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── Relación productos ↔ modificadores ──
+CREATE TABLE productos_modificadores (
+  producto_id   UUID NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
+  modificador_id UUID NOT NULL REFERENCES modificadores(id) ON DELETE CASCADE,
+  PRIMARY KEY (producto_id, modificador_id)
+);
+
+-- ── Secuencia de folios por negocio ──
+CREATE SEQUENCE folio_ordenes_seq START 1;
+
 -- ── Órdenes ──
 CREATE TABLE ordenes (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   negocio_id  UUID NOT NULL REFERENCES negocios(id) ON DELETE CASCADE,
+  folio       INTEGER NOT NULL DEFAULT nextval('folio_ordenes_seq'),  -- ORD-001, ORD-002...
   mesa_id     UUID REFERENCES mesas(id) ON DELETE SET NULL,
   usuario_id  UUID NOT NULL REFERENCES usuarios(id),
   items       JSONB NOT NULL DEFAULT '[]',
-  subtotal    NUMERIC(10,2) NOT NULL DEFAULT 0,
-  impuesto    NUMERIC(10,2) NOT NULL DEFAULT 0,
+  subtotal    NUMERIC(10,2) NOT NULL DEFAULT 0,  -- base gravable (total / 1.16)
+  impuesto    NUMERIC(10,2) NOT NULL DEFAULT 0,  -- IVA desglosado (total - subtotal)
   descuento   NUMERIC(10,2) NOT NULL DEFAULT 0,
   propina     NUMERIC(10,2) NOT NULL DEFAULT 0,
-  total       NUMERIC(10,2) NOT NULL DEFAULT 0,
+  total       NUMERIC(10,2) NOT NULL DEFAULT 0,  -- lo que paga el cliente (precios ya incluyen IVA)
   estado      estado_orden NOT NULL DEFAULT 'nueva',
   origen      origen_orden NOT NULL DEFAULT 'mesa',
   notas       TEXT,
@@ -202,6 +229,29 @@ CREATE TABLE historico_ordenes (
   creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ── Cortes de caja ──
+CREATE TABLE cortes_caja (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  negocio_id      UUID NOT NULL REFERENCES negocios(id) ON DELETE CASCADE,
+  usuario_id      UUID NOT NULL REFERENCES usuarios(id),
+  fondo_inicial   NUMERIC(10,2) NOT NULL DEFAULT 0,
+  ventas_efectivo NUMERIC(10,2) NOT NULL DEFAULT 0,
+  ventas_tarjeta  NUMERIC(10,2) NOT NULL DEFAULT 0,
+  ventas_transferencia NUMERIC(10,2) NOT NULL DEFAULT 0,
+  total_ventas    NUMERIC(10,2) NOT NULL DEFAULT 0,
+  propinas        NUMERIC(10,2) NOT NULL DEFAULT 0,
+  descuentos      NUMERIC(10,2) NOT NULL DEFAULT 0,
+  efectivo_esperado NUMERIC(10,2) NOT NULL DEFAULT 0,   -- fondo + ventas_efectivo
+  efectivo_real   NUMERIC(10,2),                         -- lo que se contó
+  diferencia      NUMERIC(10,2),                         -- real - esperado
+  ordenes_count   INTEGER NOT NULL DEFAULT 0,
+  notas           TEXT,
+  abierto_en      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  cerrado_en      TIMESTAMPTZ,                           -- null = turno abierto
+  creado_en       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  actualizado_en  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- ── Configuración de sync ──
 CREATE TABLE configuracion_sync (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -250,6 +300,17 @@ CREATE INDEX idx_pagos_negocio_fecha ON pagos(negocio_id, creado_en DESC);
 -- Promociones
 CREATE INDEX idx_promos_negocio ON promociones(negocio_id) WHERE eliminado_en IS NULL AND activo = TRUE;
 
+-- Modificadores
+CREATE INDEX idx_modificadores_negocio ON modificadores(negocio_id, orden);
+CREATE INDEX idx_prod_mod_producto ON productos_modificadores(producto_id);
+
+-- Cortes de caja
+CREATE INDEX idx_cortes_negocio ON cortes_caja(negocio_id, abierto_en DESC);
+CREATE INDEX idx_cortes_usuario ON cortes_caja(usuario_id);
+
+-- Folio único por negocio
+CREATE UNIQUE INDEX idx_ordenes_folio ON ordenes(negocio_id, folio);
+
 -- Histórico
 CREATE INDEX idx_historico_negocio_fecha ON historico_ordenes(negocio_id, completada_en DESC);
 CREATE INDEX idx_historico_tipo_pago ON historico_ordenes(negocio_id, tipo_pago);
@@ -277,6 +338,8 @@ CREATE TRIGGER trg_ordenes_updated BEFORE UPDATE ON ordenes FOR EACH ROW EXECUTE
 CREATE TRIGGER trg_tickets_updated BEFORE UPDATE ON tickets_kds FOR EACH ROW EXECUTE FUNCTION actualizar_timestamp();
 CREATE TRIGGER trg_pagos_updated BEFORE UPDATE ON pagos FOR EACH ROW EXECUTE FUNCTION actualizar_timestamp();
 CREATE TRIGGER trg_promos_updated BEFORE UPDATE ON promociones FOR EACH ROW EXECUTE FUNCTION actualizar_timestamp();
+CREATE TRIGGER trg_modificadores_updated BEFORE UPDATE ON modificadores FOR EACH ROW EXECUTE FUNCTION actualizar_timestamp();
+CREATE TRIGGER trg_cortes_updated BEFORE UPDATE ON cortes_caja FOR EACH ROW EXECUTE FUNCTION actualizar_timestamp();
 
 
 -- ┌─────────────────────────────────────┐
@@ -295,6 +358,9 @@ ALTER TABLE tickets_kds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pagos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE promociones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE historico_ordenes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE modificadores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE productos_modificadores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cortes_caja ENABLE ROW LEVEL SECURITY;
 ALTER TABLE configuracion_sync ENABLE ROW LEVEL SECURITY;
 
 -- ── Función helper: obtener negocio_id del usuario autenticado ──
@@ -453,6 +519,47 @@ CREATE POLICY "historico_select" ON historico_ordenes
 CREATE POLICY "historico_insert" ON historico_ordenes
   FOR INSERT WITH CHECK (negocio_id = get_mi_negocio_id());
 
+-- ── MODIFICADORES ──
+CREATE POLICY "modificadores_select" ON modificadores
+  FOR SELECT USING (negocio_id = get_mi_negocio_id());
+
+CREATE POLICY "modificadores_insert" ON modificadores
+  FOR INSERT WITH CHECK (negocio_id = get_mi_negocio_id() AND get_mi_rol() IN ('admin', 'barista'));
+
+CREATE POLICY "modificadores_update" ON modificadores
+  FOR UPDATE USING (negocio_id = get_mi_negocio_id() AND get_mi_rol() IN ('admin', 'barista'));
+
+CREATE POLICY "modificadores_delete" ON modificadores
+  FOR DELETE USING (negocio_id = get_mi_negocio_id() AND get_mi_rol() = 'admin');
+
+-- ── PRODUCTOS_MODIFICADORES ──
+CREATE POLICY "prod_mod_select" ON productos_modificadores
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM productos p WHERE p.id = producto_id AND p.negocio_id = get_mi_negocio_id())
+  );
+
+CREATE POLICY "prod_mod_insert" ON productos_modificadores
+  FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM productos p WHERE p.id = producto_id AND p.negocio_id = get_mi_negocio_id())
+    AND get_mi_rol() IN ('admin', 'barista')
+  );
+
+CREATE POLICY "prod_mod_delete" ON productos_modificadores
+  FOR DELETE USING (
+    EXISTS (SELECT 1 FROM productos p WHERE p.id = producto_id AND p.negocio_id = get_mi_negocio_id())
+    AND get_mi_rol() IN ('admin', 'barista')
+  );
+
+-- ── CORTES DE CAJA ──
+CREATE POLICY "cortes_select" ON cortes_caja
+  FOR SELECT USING (negocio_id = get_mi_negocio_id());
+
+CREATE POLICY "cortes_insert" ON cortes_caja
+  FOR INSERT WITH CHECK (negocio_id = get_mi_negocio_id() AND get_mi_rol() IN ('admin', 'barista'));
+
+CREATE POLICY "cortes_update" ON cortes_caja
+  FOR UPDATE USING (negocio_id = get_mi_negocio_id() AND get_mi_rol() IN ('admin', 'barista'));
+
 -- ── CONFIGURACIÓN SYNC ──
 CREATE POLICY "sync_select" ON configuracion_sync
   FOR SELECT USING (negocio_id = get_mi_negocio_id());
@@ -485,8 +592,8 @@ CREATE POLICY "sync_update" ON configuracion_sync
 -- └─────────────────────────────────────┘
 
 -- Crear el negocio "La Commune"
-INSERT INTO negocios (nombre, divisa, zona_horaria)
-VALUES ('La Commune', 'MXN', 'America/Mexico_City');
+INSERT INTO negocios (nombre, direccion, telefono, divisa, zona_horaria)
+VALUES ('La Commune', 'Mineral de la Reforma, Hidalgo', '', 'MXN', 'America/Mexico_City');
 
 -- NOTA: Después de crear el negocio, copia su UUID y:
 -- 1. Crea un usuario en Supabase Auth (Authentication → Users → Add user)

@@ -138,9 +138,11 @@ export default function OrdenesPage() {
     return lista;
   }, [categoriaActiva, busqueda]);
 
-  const subtotal = carrito.reduce((acc, item) => acc + item.precio_unitario * item.cantidad, 0);
-  const impuesto = Math.round(subtotal * 0.16 * 100) / 100;
-  const total = subtotal + impuesto;
+  // Precios ya incluyen IVA — el total es la suma directa
+  const total = carrito.reduce((acc, item) => acc + item.precio_unitario * item.cantidad, 0);
+  // Desglose fiscal (hacia atrás): base gravable + IVA = total
+  const baseGravable = Math.round((total / 1.16) * 100) / 100;
+  const iva = Math.round((total - baseGravable) * 100) / 100;
 
   const agregarAlCarrito = (producto: MockProducto) => {
     const existente = carrito.find((i) => i.producto_id === producto.id);
@@ -601,17 +603,13 @@ export default function OrdenesPage() {
 
                 {/* Totales y enviar */}
                 <div className="p-6 border-t border-border/50 space-y-3">
-                  <div className="flex justify-between text-xs text-text-45">
-                    <span>Subtotal</span>
-                    <span className="tabular-nums font-medium">{formatMXN(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-text-45">
-                    <span>IVA (16%)</span>
-                    <span className="tabular-nums font-medium">{formatMXN(impuesto)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm font-bold text-text-100 pt-2 border-t border-border/50">
+                  <div className="flex justify-between text-sm font-bold text-text-100">
                     <span>Total</span>
                     <span className="tabular-nums text-accent">{formatMXN(total)}</span>
+                  </div>
+                  <div className="flex justify-between text-[11px] text-text-25">
+                    <span>IVA incluido</span>
+                    <span className="tabular-nums">{formatMXN(iva)}</span>
                   </div>
 
                   {/* P5: Botón con loading state */}
@@ -718,17 +716,13 @@ export default function OrdenesPage() {
 
             {/* Totales */}
             <div className="p-6 border-t border-border/50 space-y-3">
-              <div className="flex justify-between text-xs text-text-45">
-                <span>Subtotal</span>
-                <span className="tabular-nums font-medium">{formatMXN(ordenSeleccionada.subtotal)}</span>
-              </div>
-              <div className="flex justify-between text-xs text-text-45">
-                <span>IVA</span>
-                <span className="tabular-nums font-medium">{formatMXN(ordenSeleccionada.impuesto)}</span>
-              </div>
-              <div className="flex justify-between text-sm font-bold text-text-100 pt-2 border-t border-border/50">
+              <div className="flex justify-between text-sm font-bold text-text-100">
                 <span>Total</span>
                 <span className="tabular-nums text-accent">{formatMXN(ordenSeleccionada.total)}</span>
+              </div>
+              <div className="flex justify-between text-[11px] text-text-25">
+                <span>IVA incluido</span>
+                <span className="tabular-nums">{formatMXN(ordenSeleccionada.impuesto)}</span>
               </div>
 
               {/* Acciones con P5 loading y P7 deep-link */}

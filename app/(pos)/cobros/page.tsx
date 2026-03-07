@@ -56,12 +56,15 @@ export default function CobrosPage() {
     }
   }, [searchParams, ordenesCobrables]);
 
-  // Cálculos
-  const subtotalConDescuento = ordenSeleccionada
-    ? ordenSeleccionada.subtotal * (1 - descuento / 100)
-    : 0;
-  const impuesto = Math.round(subtotalConDescuento * 0.16 * 100) / 100;
-  const totalFinal = subtotalConDescuento + impuesto + propina;
+  // Cálculos — precios ya incluyen IVA
+  // total de la orden = suma directa de items (IVA incluido)
+  const totalOrden = ordenSeleccionada ? ordenSeleccionada.total : 0;
+  const montoDescuento = Math.round(totalOrden * (descuento / 100) * 100) / 100;
+  const totalConDescuento = totalOrden - montoDescuento;
+  const totalFinal = totalConDescuento + propina;
+  // Desglose fiscal (hacia atrás)
+  const baseGravable = Math.round((totalConDescuento / 1.16) * 100) / 100;
+  const ivaDesglosado = Math.round((totalConDescuento - baseGravable) * 100) / 100;
   const monto = parseFloat(montoRecibido) || 0;
   const cambio = metodoPago === "efectivo" ? Math.max(0, monto - totalFinal) : 0;
   const puedeCobar =
@@ -324,20 +327,16 @@ export default function CobrosPage() {
                 <div className="border-t border-border pt-3 space-y-1.5">
                   <div className="flex justify-between text-xs text-text-45">
                     <span>Subtotal</span>
-                    <span className="tabular-nums">{formatMXN(ordenSeleccionada.subtotal)}</span>
+                    <span className="tabular-nums">{formatMXN(totalOrden)}</span>
                   </div>
                   {descuento > 0 && (
                     <div className="flex justify-between text-xs text-status-ok">
                       <span>Descuento ({descuento}%)</span>
                       <span className="tabular-nums">
-                        -{formatMXN(ordenSeleccionada.subtotal * (descuento / 100))}
+                        -{formatMXN(montoDescuento)}
                       </span>
                     </div>
                   )}
-                  <div className="flex justify-between text-xs text-text-45">
-                    <span>IVA (16%)</span>
-                    <span className="tabular-nums">{formatMXN(impuesto)}</span>
-                  </div>
                   {propina > 0 && (
                     <div className="flex justify-between text-xs text-accent">
                       <span>Propina</span>
@@ -347,6 +346,10 @@ export default function CobrosPage() {
                   <div className="flex justify-between text-base font-semibold text-text-100 pt-2 border-t border-border">
                     <span>Total</span>
                     <span className="tabular-nums">{formatMXN(totalFinal)}</span>
+                  </div>
+                  <div className="flex justify-between text-[11px] text-text-25">
+                    <span>IVA incluido</span>
+                    <span className="tabular-nums">{formatMXN(ivaDesglosado)}</span>
                   </div>
                 </div>
               </div>
@@ -439,7 +442,7 @@ export default function CobrosPage() {
                 </span>
                 <div className="flex gap-1.5">
                   {[0, 10, 15, 20].map((pct) => {
-                    const amount = pct === 0 ? 0 : Math.round(subtotalConDescuento * (pct / 100) * 100) / 100;
+                    const amount = pct === 0 ? 0 : Math.round(totalConDescuento * (pct / 100) * 100) / 100;
                     return (
                       <button
                         key={pct}
