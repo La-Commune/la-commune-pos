@@ -392,7 +392,11 @@ export default function CobrosPage() {
                   <input
                     type="number"
                     value={montoRecibido}
-                    onChange={(e) => setMontoRecibido(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "" || parseFloat(val) >= 0) setMontoRecibido(val);
+                    }}
+                    min="0"
                     placeholder="0.00"
                     className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-border text-text-100 text-lg font-semibold tabular-nums placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 min-h-[44px]"
                   />

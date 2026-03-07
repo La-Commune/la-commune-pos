@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Clock,
   ChefHat,
@@ -245,6 +245,13 @@ function TicketCard({ ticket, onAction }: { ticket: TicketKDS; onAction?: (actio
 
 export default function KDSPage() {
   const [filtroEstado, setFiltroEstado] = useState<"todas" | "nueva" | "preparando" | "lista">("todas");
+
+  /* Timer live: forzar re-render cada 10s para actualizar tiempos */
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const conteo = {
     nueva: MOCK_TICKETS_KDS.filter((t) => t.estado === "nueva").length,

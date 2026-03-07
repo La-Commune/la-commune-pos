@@ -67,7 +67,8 @@ function useQuery<T>(
     } finally {
       setLoading(false);
     }
-  }, [table, mockData, options?.select, options?.orderBy?.column]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table, USE_MOCK, options?.select, options?.orderBy?.column, JSON.stringify(options?.filters)]);
 
   useEffect(() => {
     fetch();
@@ -158,6 +159,32 @@ export async function deleteRecord(
   const { error } = await supabase!.from(table).update({ eliminado_en: new Date().toISOString() }).eq("id", id);
   if (error) return { success: false, error: error.message };
   return { success: true };
+}
+
+// ── Offline-aware mutation wrapper ──
+export async function offlineAwareMutation<T extends Record<string, unknown>>(
+  action: () => Promise<{ success: boolean; error?: string }>,
+  offlineAction?: { type: string; payload: T }
+): Promise<{ success: boolean; error?: string }> {
+  if (USE_MOCK) {
+    return action();
+  }
+
+  if (!navigator.onLine && offlineAction) {
+    // Queue for later sync
+    try {
+      const { enqueueAction } = await import("@/lib/offline-queue");
+      await enqueueAction(
+        offlineAction.type as import("@/lib/offline-queue").OfflineActionType,
+        offlineAction.payload
+      );
+      return { success: true };
+    } catch {
+      return { success: false, error: "No se pudo guardar para sync offline" };
+    }
+  }
+
+  return action();
 }
 
 // ── Realtime subscription helper ──

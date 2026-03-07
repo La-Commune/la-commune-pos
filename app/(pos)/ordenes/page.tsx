@@ -98,10 +98,18 @@ export default function OrdenesPage() {
   useEffect(() => {
     const mesaParam = searchParams.get("mesa");
     if (mesaParam) {
-      setVista("nueva");
-      setPasoOrden("productos");
-      setOrigenSeleccionado("mesa");
-      setMesaSeleccionada(parseInt(mesaParam));
+      const mesaNum = parseInt(mesaParam);
+      const mesaExiste = MOCK_MESAS_DISPONIBLES.some((m) => m.numero === mesaNum);
+      if (mesaExiste) {
+        setVista("nueva");
+        setPasoOrden("productos");
+        setOrigenSeleccionado("mesa");
+        setMesaSeleccionada(mesaNum);
+      } else {
+        // Mesa no existe, ir a selección de origen
+        setVista("nueva");
+        setPasoOrden("origen");
+      }
     }
   }, [searchParams]);
 

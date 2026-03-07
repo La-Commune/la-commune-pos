@@ -10,6 +10,7 @@ interface Toast {
   id: string;
   message: string;
   type: ToastType;
+  duration?: number;
 }
 
 const iconMap = {
@@ -27,19 +28,21 @@ const styleMap = {
 // Simple event-based toast system
 const listeners: Set<(toast: Toast) => void> = new Set();
 
-export function showToast(message: string, type: ToastType = "success") {
-  const toast: Toast = { id: `toast-${Date.now()}`, message, type };
+export function showToast(message: string, type: ToastType = "success", duration?: number) {
+  const toast: Toast = { id: `toast-${Date.now()}`, message, type, duration };
   listeners.forEach((fn) => fn(toast));
 }
 
 export default function ToastContainer() {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [dismissing, setDismissing] = useState<string | null>(null);
 
   const addToast = useCallback((toast: Toast) => {
     setToasts((prev) => [...prev, toast]);
+    const dur = toast.duration ?? (toast.type === "error" ? 5000 : 3500);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== toast.id));
-    }, 3500);
+    }, dur);
   }, []);
 
   useEffect(() => {
@@ -48,30 +51,40 @@ export default function ToastContainer() {
   }, [addToast]);
 
   const dismiss = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+    setDismissing(id);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+      setDismissing(null);
+    }, 200);
   };
 
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none">
+    <div
+      className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"
+      aria-label="Notificaciones"
+      role="region"
+    >
       {toasts.map((toast) => {
         const Icon = iconMap[toast.type];
         return (
           <div
             key={toast.id}
+            role={toast.type === "error" ? "alert" : "status"}
+            aria-live={toast.type === "error" ? "assertive" : "polite"}
+            aria-atomic="true"
             className={cn(
-              "pointer-events-auto flex items-center gap-2.5 pl-4 pr-3 py-3 rounded-xl border shadow-lg backdrop-blur-sm animate-in slide-in-from-right min-w-[280px] max-w-sm",
-              styleMap[toast.type]
+              "pointer-events-auto flex items-center gap-2.5 pl-4 pr-3 py-3 rounded-xl border shadow-lg backdrop-blur-sm min-w-[280px] max-w-sm transition-all duration-200",
+              styleMap[toast.type],
+              dismissing === toast.id ? "opacity-0 translate-x-full" : "animate-[slideInRight_0.3s_ease-out]"
             )}
-            style={{
-              animation: "slideIn 0.3s ease-out",
-            }}
           >
-            <Icon size={16} className="flex-shrink-0" />
+            <Icon size={16} className="flex-shrink-0" aria-hidden="true" />
             <span className="text-xs font-medium flex-1">{toast.message}</span>
             <button
               onClick={() => dismiss(toast.id)}
+              aria-label={`Cerrar notificación: ${toast.message}`}
               className="p-0.5 rounded-lg opacity-60 hover:opacity-100 transition-opacity"
             >
               <X size={12} />

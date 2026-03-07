@@ -28,9 +28,9 @@
 
   /* Text: warm whites */
   --text-100: #F5F2EE;
-  --text-70: #B5AFA6;
-  --text-45: #79736C;
-  --text-25: #45403B;
+  --text-70: #BDB7AE;
+  --text-45: #918A82;
+  --text-25: #4D4842;
 
   /* Accent: warm amber */
   --accent: #C49A3C;
@@ -178,9 +178,9 @@
   --border-active: rgba(255,255,255, 0.12);
 
   --text-100: #EDEDF0;
-  --text-70: #A8A8B0;
-  --text-45: #6E6E78;
-  --text-25: #4A4A52;
+  --text-70: #B0B0B8;
+  --text-45: #8A8A94;
+  --text-25: #525258;
 
   --accent: #8E8EAA;
   --accent-soft: rgba(142,142,170, 0.10);
@@ -417,10 +417,23 @@ body {
 *:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--accent-soft);
 }
 
 @layer utilities {
   .text-balance { text-wrap: balance; }
+}
+
+/* ── Toast animation ── */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* ── Glass card ── */
@@ -441,7 +454,7 @@ body {
 
 .btn-primary {
   background: var(--btn-gradient);
-  color: #ffffff;
+  color: var(--btn-text, #ffffff);
   font-weight: 600;
   border: none;
   border-radius: var(--radius-md);
@@ -645,4 +658,18 @@ body {
 :root {
   --sidebar-width: 240px;
   --sidebar-collapsed: 76px;
+}
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE — Mobile density overrides
+   ══════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  :root,
+  [data-density="spacious"],
+  [data-density="comfortable"],
+  [data-density="compact"] {
+    --density-page-padding: 1rem;
+    --density-gap: 0.75rem;
+    --density-card-padding: 0.75rem;
+  }
 }

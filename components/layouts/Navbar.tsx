@@ -136,6 +136,14 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
 
   useEffect(() => setMounted(true), []);
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
+
   if (!mounted) return null;
 
   return (
@@ -147,6 +155,7 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
           <span className="text-xs font-semibold text-text-100">Personalizar</span>
           <button
             onClick={onClose}
+            aria-label="Cerrar personalización"
             className="p-1 rounded-md text-text-45 hover:text-text-70 hover:bg-surface-4 transition-all"
           >
             <X size={14} />
@@ -247,6 +256,8 @@ function HamburgerNav() {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
+        aria-label={open ? "Cerrar menú" : "Abrir menú"}
+        aria-expanded={open}
         className="flex items-center justify-center w-9 h-9 rounded-lg text-text-45 hover:text-text-70 hover:bg-surface-3 transition-all duration-200"
       >
         {open ? <X size={18} /> : <Menu size={18} />}
@@ -401,6 +412,8 @@ export default function Navbar() {
         <div className="relative">
           <button
             onClick={() => setSettingsOpen(!settingsOpen)}
+            aria-label="Personalizar POS"
+            aria-expanded={settingsOpen}
             className={cn(
               "flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200",
               settingsOpen
@@ -419,6 +432,8 @@ export default function Navbar() {
           <div className="relative">
             <button
               onClick={() => setMenuUsuario(!menuUsuario)}
+              aria-label={`Menú de ${user?.nombre || 'usuario'}`}
+              aria-expanded={menuUsuario}
               className="flex items-center gap-2.5 ml-2 pl-3 border-l border-border hover:opacity-80 transition-opacity duration-200"
             >
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center">
@@ -436,9 +451,9 @@ export default function Navbar() {
                 <div className="fixed inset-0 z-40" onClick={() => setMenuUsuario(false)} />
                 <div className="absolute right-0 top-14 w-48 py-1.5 bg-surface-3 border border-border rounded-lg shadow-lg z-50">
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       setMenuUsuario(false);
-                      logout();
+                      await logout();
                     }}
                     className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-status-err hover:bg-status-err-bg transition-all duration-200"
                   >
