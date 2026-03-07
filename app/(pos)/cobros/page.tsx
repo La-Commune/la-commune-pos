@@ -15,7 +15,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
-import { MOCK_ORDENES, type OrdenMock } from "@/lib/mock-data";
+import { MOCK_ORDENES, type MockOrden } from "@/lib/mock-data";
 
 type MetodoPago = "efectivo" | "tarjeta" | "transferencia";
 
@@ -29,7 +29,7 @@ const quickAmounts = [50, 100, 200, 500, 1000];
 
 export default function CobrosPage() {
   const searchParams = useSearchParams();
-  const [ordenSeleccionada, setOrdenSeleccionada] = useState<OrdenMock | null>(null);
+  const [ordenSeleccionada, setOrdenSeleccionada] = useState<MockOrden | null>(null);
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("efectivo");
   const [montoRecibido, setMontoRecibido] = useState("");
   const [propina, setPropina] = useState(0);
@@ -78,7 +78,7 @@ export default function CobrosPage() {
     setProcesando(false);
   };
 
-  const handleSeleccionarOrden = (orden: OrdenMock) => {
+  const handleSeleccionarOrden = (orden: MockOrden) => {
     setOrdenSeleccionada(orden);
     resetCobro();
   };

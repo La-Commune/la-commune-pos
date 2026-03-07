@@ -46,7 +46,9 @@ CREATE TABLE usuarios (
   nombre      TEXT NOT NULL,
   email       TEXT NOT NULL,
   rol         rol_usuario NOT NULL DEFAULT 'barista',
+  pin         TEXT,                    -- PIN de 4 dígitos para acceso rápido
   activo      BOOLEAN NOT NULL DEFAULT TRUE,
+  ultimo_acceso TIMESTAMPTZ,           -- último login/actividad
   creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   eliminado_en TIMESTAMPTZ

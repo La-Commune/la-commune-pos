@@ -15,7 +15,7 @@ import {
   Volume2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MOCK_TICKETS_KDS, type TicketKDS } from "@/lib/mock-data";
+import { MOCK_TICKETS_KDS, type MockTicketKDS } from "@/lib/mock-data";
 
 const estadoConfig = {
   nueva: {
@@ -60,7 +60,7 @@ function timerColor(mins: number | null) {
 }
 
 /* R5: Rediseño completo del ticket KDS para legibilidad a distancia */
-function TicketCard({ ticket, onAction }: { ticket: TicketKDS; onAction?: (action: string) => void }) {
+function TicketCard({ ticket, onAction }: { ticket: MockTicketKDS; onAction?: (action: string) => void }) {
   const config = estadoConfig[ticket.estado];
   const Icon = config.icon;
   const tiempoPrep = tiempoPreparacion(ticket.tiempo_inicio, ticket.tiempo_fin);
@@ -137,7 +137,7 @@ function TicketCard({ ticket, onAction }: { ticket: TicketKDS; onAction?: (actio
 
         {/* Items — R5: más legibles */}
         <div className="space-y-2.5 mb-4">
-          {ticket.items.map((item, idx) => (
+          {ticket.items_kds.map((item, idx) => (
             <div key={idx} className="flex items-start gap-3">
               <span className="text-sm font-bold text-accent tabular-nums w-7 text-center mt-0.5 bg-accent-soft rounded-md py-0.5">
                 {item.cantidad}x

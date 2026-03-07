@@ -21,7 +21,7 @@ import ProductoForm from "@/components/menu/ProductoForm";
 import {
   MOCK_CATEGORIAS,
   MOCK_PRODUCTOS,
-  type Producto,
+  type MockProducto,
 } from "@/lib/mock-data";
 
 const tipoIcon = {
@@ -34,13 +34,13 @@ export default function MenuPage() {
   const [categoriaActiva, setCategoriaActiva] = useState<string | "todas">("todas");
   const [busqueda, setBusqueda] = useState("");
   const [soloDisponibles, setSoloDisponibles] = useState(false);
-  const [productoDetalle, setProductoDetalle] = useState<Producto | null>(null);
+  const [productoDetalle, setProductoDetalle] = useState<MockProducto | null>(null);
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [productoEditando, setProductoEditando] = useState<Producto | null>(null);
+  const [productoEditando, setProductoEditando] = useState<MockProducto | null>(null);
   /* R2: Estado para confirmación de eliminar */
   const [confirmEliminar, setConfirmEliminar] = useState(false);
-  const [productoAEliminar, setProductoAEliminar] = useState<Producto | null>(null);
+  const [productoAEliminar, setProductoAEliminar] = useState<MockProducto | null>(null);
 
   /* R12: Ref para detectar click fuera del context menu */
   const menuRef = useRef<HTMLDivElement>(null);
