@@ -183,6 +183,45 @@ export const NegocioSchema = z.object({
   firebase_project_id: z.string().optional(),
 });
 
+// ── Schemas V2 (migration-v2.sql) ──
+
+export const ItemOrdenDBSchema = z.object({
+  id: z.string().uuid().optional(),
+  orden_id: z.string().uuid(),
+  producto_id: z.string().uuid(),
+  nombre: z.string().min(1),
+  cantidad: z.number().int().positive(),
+  precio_unitario: z.number().nonnegative(),
+  tamano: z.string().nullable().optional(),
+  modificadores: z.array(z.string()).default([]),
+  notas: z.string().nullable().optional(),
+});
+
+export const AuditLogSchema = z.object({
+  id: z.string().uuid().optional(),
+  negocio_id: z.string().uuid(),
+  usuario_id: z.string().uuid().nullable().optional(),
+  tabla: z.string().min(1),
+  registro_id: z.string().uuid(),
+  accion: z.enum(["INSERT", "UPDATE", "DELETE"]),
+  datos_antes: z.any().nullable().optional(),
+  datos_despues: z.any().nullable().optional(),
+  ip: z.string().nullable().optional(),
+});
+
+export const TipoCategoriaGasto = z.enum(["proveedores", "insumos", "servicios", "otros", "general"]);
+
+export const GastoSchema = z.object({
+  id: z.string().uuid().optional(),
+  negocio_id: z.string().uuid(),
+  usuario_id: z.string().uuid(),
+  corte_caja_id: z.string().uuid().nullable().optional(),
+  concepto: z.string().min(1, "Concepto requerido"),
+  monto: z.number().positive("El monto debe ser mayor a 0"),
+  categoria: TipoCategoriaGasto.default("general"),
+  notas: z.string().nullable().optional(),
+});
+
 // ── Types inferidos ──
 export type Mesa = z.infer<typeof MesaSchema>;
 export type ItemOrden = z.infer<typeof ItemOrdenSchema>;
@@ -198,3 +237,6 @@ export type Promocion = z.infer<typeof PromocionSchema>;
 export type Modificador = z.infer<typeof ModificadorSchema>;
 export type CorteCaja = z.infer<typeof CorteCajaSchema>;
 export type Negocio = z.infer<typeof NegocioSchema>;
+export type ItemOrdenDB = z.infer<typeof ItemOrdenDBSchema>;
+export type AuditLog = z.infer<typeof AuditLogSchema>;
+export type Gasto = z.infer<typeof GastoSchema>;

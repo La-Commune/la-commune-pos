@@ -14,6 +14,7 @@ import {
   Heart,
   ChevronLeft,
   ChevronRight,
+  Vault,
 } from "lucide-react";
 import { useUIStore } from "@/store/ui.store";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ export const navItems = [
   { href: "/menu", label: "Menú", icon: UtensilsCrossed, color: "#81D4A8" },
   { href: "/kds", label: "Cocina", icon: ChefHat, color: "#FFB347" },
   { href: "/cobros", label: "Cobros", icon: CreditCard, color: "#F5C26B" },
+  { href: "/caja", label: "Caja", icon: Vault, color: "#34D399" },
   { href: "/reportes", label: "Reportes", icon: BarChart3, color: "#60A5FA" },
   { href: "/usuarios", label: "Usuarios", icon: Users, color: "#F2A7C3" },
   { href: "/fidelidad", label: "Fidelidad", icon: Heart, color: "#B8A9EA" },
