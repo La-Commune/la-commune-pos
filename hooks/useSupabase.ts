@@ -28,11 +28,12 @@ function useQuery<T>(
     select?: string;
     filters?: Record<string, unknown>;
     orderBy?: { column: string; ascending?: boolean };
-  }
+  },
 ) {
-  const [data, setData] = useState<T[]>(mockData);
+  const [data, setData] = useState<T[]>(USE_MOCK ? mockData : []);
   const [loading, setLoading] = useState(!USE_MOCK);
   const [error, setError] = useState<string | null>(null);
+  const filtersKey = JSON.stringify(options?.filters);
 
   const fetch = useCallback(async () => {
     if (USE_MOCK) {
@@ -46,6 +47,15 @@ function useQuery<T>(
 
     try {
       let query = supabase!.from(table).select(options?.select ?? "*");
+
+      // Filtrar registros no eliminados (soft delete) — solo en tablas que tienen ese campo
+      const tablasConSoftDelete: TableName[] = [
+        "negocios", "usuarios", "categorias_menu", "productos",
+        "mesas", "ordenes", "promociones",
+      ];
+      if (tablasConSoftDelete.includes(table)) {
+        query = query.is("eliminado_en", null);
+      }
 
       if (options?.filters) {
         Object.entries(options.filters).forEach(([key, value]) => {
@@ -62,19 +72,24 @@ function useQuery<T>(
       const { data: result, error: err } = await query;
 
       if (err) {
+        console.warn(`[Supabase] Error en ${table}:`, err.message);
         setError(err.message);
-        setData(mockData); // fallback to mock
       } else {
-        setData((result as T[]) ?? mockData);
+        setData(result ?? []);
       }
     } catch {
       setError("Error de conexión");
-      setData(mockData);
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [table, USE_MOCK, options?.select, options?.orderBy?.column, JSON.stringify(options?.filters)]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    table,
+    USE_MOCK,
+    options?.select,
+    options?.orderBy?.column,
+    filtersKey,
+  ]);
 
   useEffect(() => {
     fetch();
@@ -123,7 +138,7 @@ export function useTicketsKDS() {
 
 export async function insertRecord(
   table: TableName,
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
 ): Promise<{ success: boolean; error?: string }> {
   if (USE_MOCK) {
     console.log(`[MOCK] Insert into ${table}:`, data);
@@ -139,7 +154,7 @@ export async function insertRecord(
 export async function updateRecord(
   table: TableName,
   id: string,
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
 ): Promise<{ success: boolean; error?: string }> {
   if (USE_MOCK) {
     console.log(`[MOCK] Update ${table} (${id}):`, data);
@@ -154,7 +169,7 @@ export async function updateRecord(
 
 export async function deleteRecord(
   table: TableName,
-  id: string
+  id: string,
 ): Promise<{ success: boolean; error?: string }> {
   if (USE_MOCK) {
     console.log(`[MOCK] Delete from ${table}: ${id}`);
@@ -162,8 +177,11 @@ export async function deleteRecord(
   }
 
   // Soft delete
-  // @ts-expect-error — tipo exacto de update data se resolverá con `supabase gen types`
-  const { error } = await supabase!.from(table).update({ eliminado_en: new Date().toISOString() }).eq("id", id);
+  const { error } = await supabase!
+    .from(table)
+    // @ts-expect-error — tipo exacto de update data se resolverá con `supabase gen types`
+    .update({ eliminado_en: new Date().toISOString() })
+    .eq("id", id);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
@@ -171,7 +189,7 @@ export async function deleteRecord(
 // ── Offline-aware mutation wrapper ──
 export async function offlineAwareMutation(
   action: () => Promise<{ success: boolean; error?: string }>,
-  offlineAction?: { type: string; payload: Record<string, unknown> }
+  offlineAction?: { type: string; payload: Record<string, unknown> },
 ): Promise<{ success: boolean; error?: string }> {
   if (USE_MOCK) {
     return action();
@@ -183,7 +201,7 @@ export async function offlineAwareMutation(
       const { enqueueAction } = await import("@/lib/offline-queue");
       await enqueueAction(
         offlineAction.type as import("@/lib/offline-queue").OfflineActionType,
-        offlineAction.payload
+        offlineAction.payload,
       );
       return { success: true };
     } catch {
@@ -204,7 +222,7 @@ interface RealtimePayload {
 
 export function subscribeToTable(
   table: string,
-  callback: (payload: RealtimePayload) => void
+  callback: (payload: RealtimePayload) => void,
 ) {
   if (USE_MOCK) return { unsubscribe: () => {} };
 
@@ -218,7 +236,7 @@ export function subscribeToTable(
           eventType: payload.eventType,
           new: (payload.new ?? {}) as Record<string, unknown>,
           old: (payload.old ?? {}) as Record<string, unknown>,
-        })
+        }),
     )
     .subscribe();
 

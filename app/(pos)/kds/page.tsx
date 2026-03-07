@@ -15,7 +15,7 @@ import {
   Volume2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MOCK_TICKETS_KDS, type MockTicketKDS } from "@/lib/mock-data";
+import { useTicketsKDS } from "@/hooks/useSupabase";
 
 const estadoConfig = {
   nueva: {
@@ -60,9 +60,9 @@ function timerColor(mins: number | null) {
 }
 
 /* R5: Rediseño completo del ticket KDS para legibilidad a distancia */
-function TicketCard({ ticket, onAction }: { ticket: MockTicketKDS; onAction?: (action: string) => void }) {
-  const config = estadoConfig[ticket.estado];
-  const Icon = config.icon;
+function TicketCard({ ticket, onAction }: { ticket: any; onAction?: (action: string) => void }) {
+  const config = estadoConfig[ticket.estado as keyof typeof estadoConfig];
+  const Icon = config?.icon ?? AlertTriangle;
   const tiempoPrep = tiempoPreparacion(ticket.tiempo_inicio, ticket.tiempo_fin);
   const esUrgente = ticket.estado === "preparando" && tiempoPrep !== null && tiempoPrep > 10;
   /* R3: loading states */
@@ -137,7 +137,7 @@ function TicketCard({ ticket, onAction }: { ticket: MockTicketKDS; onAction?: (a
 
         {/* Items — R5: más legibles */}
         <div className="space-y-2.5 mb-4">
-          {ticket.items_kds.map((item, idx) => (
+          {(ticket.items_kds ?? []).map((item: any, idx: number) => (
             <div key={idx} className="flex items-start gap-3">
               <span className="text-sm font-bold text-accent tabular-nums w-7 text-center mt-0.5 bg-accent-soft rounded-md py-0.5">
                 {item.cantidad}x
@@ -244,6 +244,7 @@ function TicketCard({ ticket, onAction }: { ticket: MockTicketKDS; onAction?: (a
 }
 
 export default function KDSPage() {
+  const { data: tickets } = useTicketsKDS();
   const [filtroEstado, setFiltroEstado] = useState<"todas" | "nueva" | "preparando" | "lista">("todas");
 
   /* Timer live: forzar re-render cada 10s para actualizar tiempos */
@@ -254,13 +255,13 @@ export default function KDSPage() {
   }, []);
 
   const conteo = {
-    nueva: MOCK_TICKETS_KDS.filter((t) => t.estado === "nueva").length,
-    preparando: MOCK_TICKETS_KDS.filter((t) => t.estado === "preparando").length,
-    lista: MOCK_TICKETS_KDS.filter((t) => t.estado === "lista").length,
+    nueva: (tickets as any[]).filter((t) => t.estado === "nueva").length,
+    preparando: (tickets as any[]).filter((t) => t.estado === "preparando").length,
+    lista: (tickets as any[]).filter((t) => t.estado === "lista").length,
   };
 
   /* R5: Conteo de urgentes para badge */
-  const urgentes = MOCK_TICKETS_KDS.filter((t) => {
+  const urgentes = (tickets as any[]).filter((t) => {
     if (t.estado !== "preparando" || !t.tiempo_inicio) return false;
     const mins = Math.floor((Date.now() - new Date(t.tiempo_inicio).getTime()) / 60000);
     return mins > 10;
@@ -273,7 +274,7 @@ export default function KDSPage() {
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-medium text-text-100 tracking-tight">Cocina (KDS)</h1>
           <span className="text-xs font-medium px-3.5 py-1 rounded-full border border-border text-text-45">
-            {MOCK_TICKETS_KDS.length} ticket{MOCK_TICKETS_KDS.length !== 1 ? "s" : ""}
+            {(tickets as any[]).length} ticket{(tickets as any[]).length !== 1 ? "s" : ""}
           </span>
           {urgentes > 0 && (
             <span className="text-xs font-bold px-3.5 py-1 rounded-full bg-status-err/10 text-status-err border border-status-err/20 animate-pulse">
@@ -286,7 +287,7 @@ export default function KDSPage() {
       {/* Filtros — R1: min-h-[44px] */}
       <div className="flex items-center gap-1 mb-5 bg-surface-2 p-1 rounded-xl w-fit">
         {(["todas", "nueva", "preparando", "lista"] as const).map((estado) => {
-          const count = estado === "todas" ? MOCK_TICKETS_KDS.length : conteo[estado];
+          const count = estado === "todas" ? (tickets as any[]).length : conteo[estado];
           const conf = estado !== "todas" ? estadoConfig[estado] : null;
           return (
             <button
@@ -323,7 +324,7 @@ export default function KDSPage() {
             </div>
             <div className="flex-1 overflow-y-auto space-y-3 pr-1">
               {(filtroEstado === "todas" || filtroEstado === "nueva"
-                ? MOCK_TICKETS_KDS.filter((t) => t.estado === "nueva")
+                ? (tickets as any[]).filter((t) => t.estado === "nueva")
                 : []
               ).map((ticket) => (
                 <TicketCard key={ticket.id} ticket={ticket} />
@@ -340,7 +341,7 @@ export default function KDSPage() {
             </div>
             <div className="flex-1 overflow-y-auto space-y-3 pr-1">
               {(filtroEstado === "todas" || filtroEstado === "preparando"
-                ? MOCK_TICKETS_KDS.filter((t) => t.estado === "preparando")
+                ? (tickets as any[]).filter((t) => t.estado === "preparando")
                 : []
               ).map((ticket) => (
                 <TicketCard key={ticket.id} ticket={ticket} />
@@ -357,7 +358,7 @@ export default function KDSPage() {
             </div>
             <div className="flex-1 overflow-y-auto space-y-3 pr-1">
               {(filtroEstado === "todas" || filtroEstado === "lista"
-                ? MOCK_TICKETS_KDS.filter((t) => t.estado === "lista")
+                ? (tickets as any[]).filter((t) => t.estado === "lista")
                 : []
               ).map((ticket) => (
                 <TicketCard key={ticket.id} ticket={ticket} />

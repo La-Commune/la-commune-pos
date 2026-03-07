@@ -3,25 +3,26 @@
 import { useState } from "react";
 import { Plus, Trash2, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MOCK_CATEGORIAS, type MockProducto } from "@/lib/mock-data";
+import { useCategorias } from "@/hooks/useSupabase";
 
 interface ProductoFormProps {
-  producto?: MockProducto | null;
-  onSave: (data: Partial<MockProducto>) => void;
+  producto?: any | null;
+  onSave: (data: any) => void;
   onCancel: () => void;
 }
 
 export default function ProductoForm({ producto, onSave, onCancel }: ProductoFormProps) {
+  const { data: categorias } = useCategorias();
   const isEditing = !!producto;
 
   const [nombre, setNombre] = useState(producto?.nombre ?? "");
   const [descripcion, setDescripcion] = useState(producto?.descripcion ?? "");
   const [precioBase, setPrecioBase] = useState(producto?.precio_base?.toString() ?? "");
-  const [categoriaId, setCategoriaId] = useState(producto?.categoria_id ?? MOCK_CATEGORIAS[0]?.id ?? "");
+  const [categoriaId, setCategoriaId] = useState(producto?.categoria_id ?? (categorias as any[])[0]?.id ?? "");
   const [disponible, setDisponible] = useState(producto?.disponible ?? true);
   const [ingredientes, setIngredientes] = useState(producto?.ingredientes?.join(", ") ?? "");
   const [etiquetas, setEtiquetas] = useState(producto?.etiquetas?.join(", ") ?? "");
-  const [tamanos, setTamanos] = useState(
+  const [tamanos, setTamanos] = useState<any[]>(
     producto?.tamanos ?? []
   );
 
@@ -30,11 +31,11 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
   };
 
   const actualizarTamano = (idx: number, field: string, value: string | number) => {
-    setTamanos(tamanos.map((t, i) => (i === idx ? { ...t, [field]: value } : t)));
+    setTamanos(tamanos.map((t: any, i: number) => (i === idx ? { ...t, [field]: value } : t)));
   };
 
   const eliminarTamano = (idx: number) => {
-    setTamanos(tamanos.filter((_, i) => i !== idx));
+    setTamanos(tamanos.filter((_: any, i: number) => i !== idx));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -51,13 +52,13 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
       disponible,
       ingredientes: ingredientes
         .split(",")
-        .map((i) => i.trim())
+        .map((i: string) => i.trim())
         .filter(Boolean),
       etiquetas: etiquetas
         .split(",")
-        .map((e) => e.trim())
+        .map((e: string) => e.trim())
         .filter(Boolean),
-      tamanos: tamanos.filter((t) => t.nombre.trim()),
+      tamanos: tamanos.filter((t: any) => t.nombre.trim()),
     });
   };
 
@@ -123,7 +124,7 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
             onChange={(e) => setCategoriaId(e.target.value)}
             className="w-full px-3 py-2.5 rounded-lg bg-surface-3 border border-border text-text-100 text-sm focus:outline-none focus:border-border-hover transition-all duration-300"
           >
-            {MOCK_CATEGORIAS.map((cat) => (
+            {(categorias as any[]).map((cat) => (
               <option key={cat.id} value={cat.id}>
                 {cat.nombre}
               </option>

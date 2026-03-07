@@ -276,6 +276,19 @@ export interface Database {
         Args: Record<string, never>;
         Returns: RolUsuario;
       };
+      login_por_pin: {
+        Args: { pin_input: string };
+        Returns: {
+          success: boolean;
+          error?: string;
+          id?: string;
+          negocio_id?: string;
+          auth_uid?: string;
+          nombre?: string;
+          email?: string;
+          rol?: string;
+        };
+      };
     };
     Enums: {
       rol_usuario: RolUsuario;
