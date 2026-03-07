@@ -15,7 +15,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
-import { MOCK_ORDENES, type MockOrden } from "@/lib/mock-data";
+import { useOrdenes } from "@/hooks/useSupabase";
 
 type MetodoPago = "efectivo" | "tarjeta" | "transferencia";
 
@@ -29,7 +29,8 @@ const quickAmounts = [50, 100, 200, 500, 1000];
 
 export default function CobrosPage() {
   const searchParams = useSearchParams();
-  const [ordenSeleccionada, setOrdenSeleccionada] = useState<MockOrden | null>(null);
+  const { data: ordenes } = useOrdenes();
+  const [ordenSeleccionada, setOrdenSeleccionada] = useState<any | null>(null);
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("efectivo");
   const [montoRecibido, setMontoRecibido] = useState("");
   const [propina, setPropina] = useState(0);
@@ -43,8 +44,8 @@ export default function CobrosPage() {
 
   // Órdenes listas para cobrar
   const ordenesCobrables = useMemo(
-    () => MOCK_ORDENES.filter((o) => ["lista", "confirmada", "preparando"].includes(o.estado)),
-    []
+    () => (ordenes as any[]).filter((o: any) => ["lista", "confirmada", "preparando"].includes(o.estado)),
+    [ordenes]
   );
 
   /* R11: Deep-link — recibir orden desde query param */
@@ -81,7 +82,7 @@ export default function CobrosPage() {
     setProcesando(false);
   };
 
-  const handleSeleccionarOrden = (orden: MockOrden) => {
+  const handleSeleccionarOrden = (orden: any) => {
     setOrdenSeleccionada(orden);
     resetCobro();
   };
@@ -132,7 +133,7 @@ export default function CobrosPage() {
                 </span>
               </div>
               <div className="text-[11px] text-text-25">
-                {orden.items.reduce((a, i) => a + i.cantidad, 0)} items · {orden.items.map((i) => i.nombre).slice(0, 2).join(", ")}
+                {(orden.items ?? []).reduce((a: number, i: any) => a + i.cantidad, 0)} items · {(orden.items ?? []).map((i: any) => i.nombre).slice(0, 2).join(", ")}
                 {orden.items.length > 2 && "..."}
               </div>
             </button>
@@ -227,7 +228,7 @@ export default function CobrosPage() {
                     {ordenSeleccionada.mesa_numero
                       ? `Mesa ${ordenSeleccionada.mesa_numero}`
                       : ordenSeleccionada.origen.replace("_", " ")}
-                    {" · "}{ordenSeleccionada.items.reduce((a, i) => a + i.cantidad, 0)} items
+                    {" · "}{(ordenSeleccionada.items ?? []).reduce((a: number, i: any) => a + i.cantidad, 0)} items
                   </p>
                   <p className="flex items-center justify-center gap-2">
                     {(() => {
@@ -309,7 +310,7 @@ export default function CobrosPage() {
 
                 {/* Items */}
                 <div className="space-y-2.5 mb-4">
-                  {ordenSeleccionada.items.map((item) => (
+                  {(ordenSeleccionada.items ?? []).map((item: any) => (
                     <div key={item.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <span className="text-xs font-medium text-accent tabular-nums w-5 text-center">

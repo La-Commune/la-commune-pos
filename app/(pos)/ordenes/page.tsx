@@ -22,14 +22,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
-import {
-  MOCK_CATEGORIAS,
-  MOCK_PRODUCTOS,
-  MOCK_ORDENES,
-  type MockProducto,
-  type MockItemOrden,
-  type MockOrden,
-} from "@/lib/mock-data";
+import { useCategorias, useProductos, useOrdenes, useMesas } from "@/hooks/useSupabase";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 /* P11: Colores migrados al design system */
@@ -57,23 +50,21 @@ const origenOptions = [
   { id: "online" as const, label: "Online", icon: Globe, desc: "Pedido web/app" },
 ];
 
-const MOCK_MESAS_DISPONIBLES = [
-  { numero: 1, capacidad: 2, ubicacion: "Interior" },
-  { numero: 4, capacidad: 6, ubicacion: "Terraza" },
-  { numero: 7, capacidad: 8, ubicacion: "Interior" },
-  { numero: 8, capacidad: 2, ubicacion: "Barra" },
-];
-
 type OrigenOrden = "mesa" | "delivery" | "para_llevar" | "online";
 
 export default function OrdenesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: categorias } = useCategorias();
+  const { data: productos } = useProductos();
+  const { data: ordenes } = useOrdenes();
+  const { data: mesas } = useMesas();
+  const mesasDisponibles = (mesas as any[]).filter((m: any) => m.estado === "disponible");
   const [vista, setVista] = useState<"nueva" | "activas">("activas");
   const [categoriaActiva, setCategoriaActiva] = useState<string | "todas">("todas");
   const [busqueda, setBusqueda] = useState("");
-  const [carrito, setCarrito] = useState<MockItemOrden[]>([]);
-  const [ordenSeleccionada, setOrdenSeleccionada] = useState<MockOrden | null>(null);
+  const [carrito, setCarrito] = useState<any[]>([]);
+  const [ordenSeleccionada, setOrdenSeleccionada] = useState<any | null>(null);
   const [notasOrden, setNotasOrden] = useState("");
 
   /* P6: Estado del selector de origen */
@@ -99,7 +90,7 @@ export default function OrdenesPage() {
     const mesaParam = searchParams.get("mesa");
     if (mesaParam) {
       const mesaNum = parseInt(mesaParam);
-      const mesaExiste = MOCK_MESAS_DISPONIBLES.some((m) => m.numero === mesaNum);
+      const mesaExiste = mesasDisponibles.some((m) => m.numero === mesaNum);
       if (mesaExiste) {
         setVista("nueva");
         setPasoOrden("productos");
@@ -127,7 +118,7 @@ export default function OrdenesPage() {
   }, [vista, pasoOrden]);
 
   const productosFiltrados = useMemo(() => {
-    let lista = MOCK_PRODUCTOS.filter((p) => p.disponible);
+    let lista = (productos as any[]).filter((p: any) => p.disponible);
     if (categoriaActiva !== "todas") {
       lista = lista.filter((p) => p.categoria_id === categoriaActiva);
     }
@@ -144,7 +135,7 @@ export default function OrdenesPage() {
   const baseGravable = Math.round((total / 1.16) * 100) / 100;
   const iva = Math.round((total - baseGravable) * 100) / 100;
 
-  const agregarAlCarrito = (producto: MockProducto) => {
+  const agregarAlCarrito = (producto: any) => {
     const existente = carrito.find((i) => i.producto_id === producto.id);
     if (existente) {
       setCarrito(
@@ -242,7 +233,7 @@ export default function OrdenesPage() {
           >
             Órdenes activas
             <span className="ml-2 text-[11px] px-2 py-0.5 rounded-md bg-accent-soft text-accent tabular-nums font-medium">
-              {MOCK_ORDENES.filter((o) => !["completada", "cancelada"].includes(o.estado)).length}
+              {(ordenes as any[]).filter((o) => !["completada", "cancelada"].includes(o.estado)).length}
             </span>
           </button>
           <button
@@ -265,9 +256,9 @@ export default function OrdenesPage() {
         {vista === "activas" ? (
           /* ── Lista de órdenes activas ── */
           <div className="flex-1 overflow-y-auto space-y-2">
-            {MOCK_ORDENES.filter((o) => !["completada", "cancelada"].includes(o.estado)).map(
+            {(ordenes as any[]).filter((o) => !["completada", "cancelada"].includes(o.estado)).map(
               (orden) => {
-                const config = estadoOrdenConfig[orden.estado];
+                const config = estadoOrdenConfig[orden.estado as keyof typeof estadoOrdenConfig];
                 return (
                   <button
                     key={orden.id}
@@ -282,10 +273,10 @@ export default function OrdenesPage() {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2.5">
                         <span className="text-sm font-medium text-text-100">
-                          {orden.mesa_numero ? `Mesa ${orden.mesa_numero}` : origenLabel[orden.origen]}
+                          {orden.mesa_numero ? `Mesa ${orden.mesa_numero}` : origenLabel[orden.origen as keyof typeof origenLabel]}
                         </span>
-                        <span className={cn("text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg", config.bg, config.text)}>
-                          {config.label}
+                        <span className={cn("text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg", config?.bg, config?.text)}>
+                          {config?.label}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 text-text-45">
@@ -297,12 +288,12 @@ export default function OrdenesPage() {
                     </div>
 
                     <div className="text-[11px] text-text-45 mb-2">
-                      {orden.items.map((i) => `${i.cantidad}x ${i.nombre}`).join(" · ")}
+                      {(orden.items ?? []).map((i: any) => `${i.cantidad}x ${i.nombre}`).join(" · ")}
                     </div>
 
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-text-45">
-                        {orden.items.reduce((a, i) => a + i.cantidad, 0)} items
+                        {(orden.items ?? []).reduce((a: number, i: any) => a + i.cantidad, 0)} items
                       </span>
                       <span className="text-sm font-semibold text-accent tabular-nums">
                         {formatMXN(orden.total)}
@@ -314,7 +305,7 @@ export default function OrdenesPage() {
             )}
 
             {/* P15: Empty state mejorado */}
-            {MOCK_ORDENES.filter((o) => !["completada", "cancelada"].includes(o.estado)).length === 0 && (
+            {(ordenes as any[]).filter((o) => !["completada", "cancelada"].includes(o.estado)).length === 0 && (
               <div className="flex-1 flex flex-col items-center justify-center py-16">
                 <div className="w-16 h-16 rounded-2xl bg-surface-2 flex items-center justify-center mb-4">
                   <ClipboardList size={28} className="text-text-25" />
@@ -375,7 +366,7 @@ export default function OrdenesPage() {
                 <h3 className="text-sm font-medium text-text-100 mb-1">Selecciona mesa</h3>
                 <p className="text-xs text-text-25 mb-4">Mesas disponibles</p>
                 <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-                  {MOCK_MESAS_DISPONIBLES.map((mesa) => (
+                  {mesasDisponibles.map((mesa) => (
                     <button
                       key={mesa.numero}
                       onClick={() => handleSeleccionarMesa(mesa.numero)}
@@ -443,7 +434,7 @@ export default function OrdenesPage() {
                 >
                   Todas
                 </button>
-                {MOCK_CATEGORIAS.map((cat) => (
+                {(categorias as any[]).map((cat) => (
                   <button
                     key={cat.id}
                     onClick={() => setCategoriaActiva(cat.id)}
@@ -654,7 +645,7 @@ export default function OrdenesPage() {
                 <h2 className="text-sm font-semibold text-text-100">
                   {ordenSeleccionada.mesa_numero
                     ? `Mesa ${ordenSeleccionada.mesa_numero}`
-                    : origenLabel[ordenSeleccionada.origen]}
+                    : origenLabel[ordenSeleccionada.origen as keyof typeof origenLabel]}
                 </h2>
                 <button
                   onClick={() => setOrdenSeleccionada(null)}
@@ -666,10 +657,10 @@ export default function OrdenesPage() {
 
               <div className="flex items-center gap-2 flex-wrap">
                 {(() => {
-                  const config = estadoOrdenConfig[ordenSeleccionada.estado];
+                  const config = estadoOrdenConfig[ordenSeleccionada.estado as keyof typeof estadoOrdenConfig];
                   return (
-                    <span className={cn("text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-lg", config.bg, config.text)}>
-                      {config.label}
+                    <span className={cn("text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-lg", config?.bg, config?.text)}>
+                      {config?.label}
                     </span>
                   );
                 })()}
@@ -681,7 +672,7 @@ export default function OrdenesPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {ordenSeleccionada.items.map((item) => (
+              {(ordenSeleccionada.items ?? []).map((item: any) => (
                 <div key={item.id} className="flex items-start justify-between gap-3 p-3 bg-surface-3/50 rounded-xl">
                   <div className="flex items-start gap-3 min-w-0 flex-1">
                     <span className="text-sm font-bold text-accent tabular-nums w-5 text-center flex-shrink-0">

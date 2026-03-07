@@ -18,11 +18,7 @@ import { cn, formatMXN } from "@/lib/utils";
 import Modal from "@/components/ui/Modal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ProductoForm from "@/components/menu/ProductoForm";
-import {
-  MOCK_CATEGORIAS,
-  MOCK_PRODUCTOS,
-  type MockProducto,
-} from "@/lib/mock-data";
+import { useCategorias, useProductos } from "@/hooks/useSupabase";
 
 const tipoIcon = {
   drink: Coffee,
@@ -31,16 +27,19 @@ const tipoIcon = {
 };
 
 export default function MenuPage() {
+  const { data: categorias, loading: loadingCats } = useCategorias();
+  const { data: productos, loading: loadingProds } = useProductos();
   const [categoriaActiva, setCategoriaActiva] = useState<string | "todas">("todas");
   const [busqueda, setBusqueda] = useState("");
   const [soloDisponibles, setSoloDisponibles] = useState(false);
-  const [productoDetalle, setProductoDetalle] = useState<MockProducto | null>(null);
+  const [productoDetalle, setProductoDetalle] = useState<any | null>(null);
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [productoEditando, setProductoEditando] = useState<MockProducto | null>(null);
+  const [productoEditando, setProductoEditando] = useState<any | null>(null);
   /* R2: Estado para confirmación de eliminar */
   const [confirmEliminar, setConfirmEliminar] = useState(false);
-  const [productoAEliminar, setProductoAEliminar] = useState<MockProducto | null>(null);
+  const [productoAEliminar, setProductoAEliminar] = useState<any | null>(null);
+  const loading = loadingCats || loadingProds;
 
   /* R12: Ref para detectar click fuera del context menu */
   const menuRef = useRef<HTMLDivElement>(null);
@@ -64,7 +63,7 @@ export default function MenuPage() {
   }, [menuAbierto]);
 
   const productosFiltrados = useMemo(() => {
-    let lista = MOCK_PRODUCTOS;
+    let lista = productos as any[];
 
     if (categoriaActiva !== "todas") {
       lista = lista.filter((p) => p.categoria_id === categoriaActiva);
@@ -73,22 +72,22 @@ export default function MenuPage() {
     if (busqueda.trim()) {
       const q = busqueda.toLowerCase();
       lista = lista.filter(
-        (p) =>
+        (p: any) =>
           p.nombre.toLowerCase().includes(q) ||
           p.descripcion?.toLowerCase().includes(q) ||
-          p.etiquetas.some((e) => e.toLowerCase().includes(q))
+          (p.etiquetas ?? []).some((e: string) => e.toLowerCase().includes(q))
       );
     }
 
     if (soloDisponibles) {
-      lista = lista.filter((p) => p.disponible);
+      lista = lista.filter((p: any) => p.disponible);
     }
 
     return lista;
-  }, [categoriaActiva, busqueda, soloDisponibles]);
+  }, [categoriaActiva, busqueda, soloDisponibles, productos]);
 
   const categoriaNombre = (id: string) =>
-    MOCK_CATEGORIAS.find((c) => c.id === id)?.nombre ?? "";
+    (categorias as any[]).find((c) => c.id === id)?.nombre ?? "";
 
   return (
     <div className="flex h-[calc(100vh-3.5rem-4rem)]" style={{ gap: "var(--density-gap)" }}>
@@ -116,12 +115,12 @@ export default function MenuPage() {
           >
             <span>Todas</span>
             <span className="text-[11px] text-text-25 tabular-nums">
-              {MOCK_PRODUCTOS.length}
+              {productos.length}
             </span>
           </button>
 
-          {MOCK_CATEGORIAS.map((cat) => {
-            const Icon = tipoIcon[cat.tipo];
+          {(categorias as any[]).map((cat) => {
+            const Icon = tipoIcon[cat.tipo as keyof typeof tipoIcon] ?? Package;
             return (
               <button
                 key={cat.id}
@@ -144,7 +143,7 @@ export default function MenuPage() {
                   <span className="truncate">{cat.nombre}</span>
                 </div>
                 <span className="text-[11px] text-text-25 tabular-nums flex-shrink-0">
-                  {cat._count}
+                  {productos.filter((p: any) => p.categoria_id === cat.id).length}
                 </span>
               </button>
             );
@@ -240,12 +239,12 @@ export default function MenuPage() {
                   <span className="text-[10px] text-text-25 px-2 py-0.5 rounded-lg bg-surface-3">
                     {categoriaNombre(producto.categoria_id)}
                   </span>
-                  {producto.tamanos && producto.tamanos.length > 0 && (
+                  {(producto.tamanos ?? []).length > 0 && (
                     <span className="text-[10px] text-text-25 px-2 py-0.5 rounded-lg bg-surface-3">
-                      {producto.tamanos.length} tamaños
+                      {(producto.tamanos ?? []).length} tamaños
                     </span>
                   )}
-                  {producto.etiquetas.map((tag) => (
+                  {(producto.etiquetas ?? []).map((tag: string) => (
                     <span
                       key={tag}
                       className={cn(
@@ -371,13 +370,13 @@ export default function MenuPage() {
             </span>
           </div>
 
-          {productoDetalle.tamanos && productoDetalle.tamanos.length > 0 && (
+          {(productoDetalle.tamanos ?? []).length > 0 && (
             <div className="mb-4">
               <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">
                 Tamaños
               </span>
               <div className="space-y-1">
-                {productoDetalle.tamanos.map((t) => (
+                {(productoDetalle.tamanos ?? []).map((t: any) => (
                   <div
                     key={t.id}
                     className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-surface-3"
@@ -392,13 +391,13 @@ export default function MenuPage() {
             </div>
           )}
 
-          {productoDetalle.ingredientes.length > 0 && (
+          {(productoDetalle.ingredientes ?? []).length > 0 && (
             <div className="mb-4">
               <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">
                 Ingredientes
               </span>
               <div className="flex flex-wrap gap-1.5">
-                {productoDetalle.ingredientes.map((ing) => (
+                {(productoDetalle.ingredientes ?? []).map((ing: string) => (
                   <span key={ing} className="text-[10px] text-text-45 px-2 py-0.5 rounded-lg bg-surface-3">
                     {ing}
                   </span>
@@ -407,13 +406,13 @@ export default function MenuPage() {
             </div>
           )}
 
-          {productoDetalle.etiquetas.length > 0 && (
+          {(productoDetalle.etiquetas ?? []).length > 0 && (
             <div className="mb-4">
               <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">
                 Etiquetas
               </span>
               <div className="flex flex-wrap gap-1.5">
-                {productoDetalle.etiquetas.map((tag) => (
+                {(productoDetalle.etiquetas ?? []).map((tag: string) => (
                   <span
                     key={tag}
                     className={cn(

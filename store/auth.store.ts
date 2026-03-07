@@ -49,7 +49,45 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     try {
-      // 1. Sign in con Supabase Auth
+      // ── Login por PIN ──
+      if (email.startsWith("pin:")) {
+        const pin = email.replace("pin:", "");
+
+        const { data: result, error: rpcError } = await (supabase as any).rpc(
+          "login_por_pin",
+          { pin_input: pin }
+        );
+
+        if (rpcError) {
+          set({ error: "Error al verificar PIN", isLoading: false });
+          return false;
+        }
+
+        const userData = typeof result === "string" ? JSON.parse(result) : result;
+
+        if (!userData?.success) {
+          set({ error: userData?.error ?? "PIN inválido", isLoading: false });
+          return false;
+        }
+
+        set({
+          user: {
+            id: userData.id,
+            auth_uid: userData.auth_uid,
+            negocio_id: userData.negocio_id,
+            nombre: userData.nombre,
+            email: userData.email,
+            rol: userData.rol as RolUsuario,
+          },
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+
+        return true;
+      }
+
+      // ── Login por email/password (Supabase Auth) ──
       const { data: authData, error: authError } = await supabase!.auth.signInWithPassword({
         email,
         password,
@@ -115,6 +153,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   checkSession: async () => {
     if (USE_MOCK || !supabase) {
+      set({ isLoading: false });
+      return;
+    }
+
+    // Si ya hay usuario por PIN login (sin sesión Auth), mantener
+    const current = get();
+    if (current.isAuthenticated && current.user) {
       set({ isLoading: false });
       return;
     }
