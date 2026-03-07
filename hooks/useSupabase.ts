@@ -8,10 +8,10 @@ import {
   MOCK_ORDENES,
   MOCK_MESAS,
   MOCK_TICKETS_KDS,
-  type Categoria,
-  type Producto,
-  type OrdenMock,
-  type TicketKDS,
+  type MockCategoria,
+  type MockProducto,
+  type MockOrden,
+  type MockTicketKDS,
 } from "@/lib/mock-data";
 
 // ── Generic hook for Supabase queries with mock fallback ──
@@ -80,14 +80,14 @@ function useQuery<T>(
 // ── Specific hooks ──
 
 export function useCategorias() {
-  return useQuery<Categoria>("categorias", MOCK_CATEGORIAS, {
+  return useQuery<MockCategoria>("categorias_menu", MOCK_CATEGORIAS, {
     orderBy: { column: "orden", ascending: true },
   });
 }
 
 export function useProductos(categoriaId?: string) {
   const filters = categoriaId ? { categoria_id: categoriaId } : undefined;
-  return useQuery<Producto>("productos", MOCK_PRODUCTOS, {
+  return useQuery<MockProducto>("productos", MOCK_PRODUCTOS, {
     filters,
     orderBy: { column: "orden", ascending: true },
   });
@@ -95,7 +95,7 @@ export function useProductos(categoriaId?: string) {
 
 export function useOrdenes(estado?: string) {
   const filters = estado ? { estado } : undefined;
-  return useQuery<OrdenMock>("ordenes", MOCK_ORDENES, {
+  return useQuery<MockOrden>("ordenes", MOCK_ORDENES, {
     filters,
     orderBy: { column: "creado_en", ascending: false },
   });
@@ -108,7 +108,7 @@ export function useMesas() {
 }
 
 export function useTicketsKDS() {
-  return useQuery<TicketKDS>("tickets_kds", MOCK_TICKETS_KDS, {
+  return useQuery<MockTicketKDS>("tickets_kds", MOCK_TICKETS_KDS, {
     orderBy: { column: "creado_en", ascending: true },
   });
 }

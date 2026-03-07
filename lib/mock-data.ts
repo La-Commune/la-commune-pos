@@ -1,15 +1,25 @@
 // ── Mock data para desarrollo sin Supabase ──
+// Interfaces de mock incluyen campos extra de display (mesa_numero, _count, etc.)
+// que en producción se obtienen via JOINs o computed fields.
 
-export interface Categoria {
+export interface MockCategoria {
   id: string;
   nombre: string;
   tipo: "drink" | "food" | "other";
   orden: number;
   activo: boolean;
-  _count?: number; // productos en esta categoría
+  _count?: number; // computed: productos en esta categoría
 }
 
-export interface Producto {
+export interface MockTamano {
+  id: string;
+  producto_id: string;
+  nombre: string;
+  precio_adicional: number;
+  orden: number;
+}
+
+export interface MockProducto {
   id: string;
   categoria_id: string;
   nombre: string;
@@ -20,10 +30,11 @@ export interface Producto {
   etiquetas: string[];
   imagen_url: string | null;
   orden: number;
-  tamanos?: { id: string; nombre: string; precio_adicional: number }[];
+  // En DB es tabla separada opciones_tamano, en mock lo embebemos por conveniencia
+  tamanos?: Omit<MockTamano, "producto_id">[];
 }
 
-export interface ItemOrdenMock {
+export interface MockItemOrden {
   id: string;
   producto_id: string;
   nombre: string;
@@ -33,12 +44,12 @@ export interface ItemOrdenMock {
   notas?: string;
 }
 
-export interface OrdenMock {
+export interface MockOrden {
   id: string;
   mesa_id: string | null;
-  mesa_numero: number | null;
-  usuario_nombre: string;
-  items: ItemOrdenMock[];
+  mesa_numero: number | null; // computed via JOIN en producción
+  usuario_nombre: string;     // computed via JOIN en producción
+  items: MockItemOrden[];
   subtotal: number;
   impuesto: number;
   descuento: number;
@@ -47,15 +58,16 @@ export interface OrdenMock {
   estado: "nueva" | "confirmada" | "preparando" | "lista" | "completada" | "cancelada";
   origen: "mesa" | "delivery" | "para_llevar" | "online";
   notas: string | null;
+  cliente_firebase_id?: string | null;
   creado_en: string;
 }
 
-export interface TicketKDS {
+export interface MockTicketKDS {
   id: string;
   orden_id: string;
-  mesa_numero: number | null;
-  origen: string;
-  items: { nombre: string; cantidad: number; notas?: string }[];
+  mesa_numero: number | null; // computed via JOIN en producción
+  origen: string;             // computed via JOIN en producción
+  items_kds: { nombre: string; cantidad: number; notas?: string }[];
   estado: "nueva" | "preparando" | "lista";
   prioridad: number;
   tiempo_inicio: string | null;
@@ -64,7 +76,7 @@ export interface TicketKDS {
 }
 
 // ── CATEGORÍAS ──
-export const MOCK_CATEGORIAS: Categoria[] = [
+export const MOCK_CATEGORIAS: MockCategoria[] = [
   { id: "cat-1", nombre: "Café Caliente", tipo: "drink", orden: 0, activo: true, _count: 6 },
   { id: "cat-2", nombre: "Café Frío", tipo: "drink", orden: 1, activo: true, _count: 4 },
   { id: "cat-3", nombre: "Té & Infusiones", tipo: "drink", orden: 2, activo: true, _count: 3 },
@@ -76,16 +88,16 @@ export const MOCK_CATEGORIAS: Categoria[] = [
 ];
 
 // ── PRODUCTOS ──
-export const MOCK_PRODUCTOS: Producto[] = [
+export const MOCK_PRODUCTOS: MockProducto[] = [
   // Café Caliente
   {
     id: "prod-1", categoria_id: "cat-1", nombre: "Americano", descripcion: "Espresso con agua caliente",
     precio_base: 45, ingredientes: ["espresso", "agua"], disponible: true, etiquetas: ["popular"],
     imagen_url: null, orden: 0,
     tamanos: [
-      { id: "t-1", nombre: "10 oz", precio_adicional: 0 },
-      { id: "t-2", nombre: "12 oz", precio_adicional: 10 },
-      { id: "t-3", nombre: "16 oz", precio_adicional: 20 },
+      { id: "t-1", nombre: "10 oz", precio_adicional: 0, orden: 0 },
+      { id: "t-2", nombre: "12 oz", precio_adicional: 10, orden: 1 },
+      { id: "t-3", nombre: "16 oz", precio_adicional: 20, orden: 2 },
     ],
   },
   {
@@ -93,8 +105,8 @@ export const MOCK_PRODUCTOS: Producto[] = [
     precio_base: 55, ingredientes: ["espresso", "leche"], disponible: true, etiquetas: ["popular"],
     imagen_url: null, orden: 1,
     tamanos: [
-      { id: "t-4", nombre: "12 oz", precio_adicional: 0 },
-      { id: "t-5", nombre: "16 oz", precio_adicional: 15 },
+      { id: "t-4", nombre: "12 oz", precio_adicional: 0, orden: 0 },
+      { id: "t-5", nombre: "16 oz", precio_adicional: 15, orden: 1 },
     ],
   },
   {
@@ -102,8 +114,8 @@ export const MOCK_PRODUCTOS: Producto[] = [
     precio_base: 55, ingredientes: ["espresso", "leche", "espuma"], disponible: true, etiquetas: [],
     imagen_url: null, orden: 2,
     tamanos: [
-      { id: "t-6", nombre: "10 oz", precio_adicional: 0 },
-      { id: "t-7", nombre: "12 oz", precio_adicional: 10 },
+      { id: "t-6", nombre: "10 oz", precio_adicional: 0, orden: 0 },
+      { id: "t-7", nombre: "12 oz", precio_adicional: 10, orden: 1 },
     ],
   },
   {
@@ -128,8 +140,8 @@ export const MOCK_PRODUCTOS: Producto[] = [
     precio_base: 60, ingredientes: ["café"], disponible: true, etiquetas: ["popular"],
     imagen_url: null, orden: 0,
     tamanos: [
-      { id: "t-8", nombre: "12 oz", precio_adicional: 0 },
-      { id: "t-9", nombre: "16 oz", precio_adicional: 15 },
+      { id: "t-8", nombre: "12 oz", precio_adicional: 0, orden: 0 },
+      { id: "t-9", nombre: "16 oz", precio_adicional: 15, orden: 1 },
     ],
   },
   {
@@ -279,7 +291,7 @@ export const MOCK_MESAS = [
 ];
 
 // ── ÓRDENES ──
-export const MOCK_ORDENES: OrdenMock[] = [
+export const MOCK_ORDENES: MockOrden[] = [
   {
     id: "ord-1", mesa_id: "mesa-2", mesa_numero: 2, usuario_nombre: "David",
     items: [
@@ -323,10 +335,10 @@ export const MOCK_ORDENES: OrdenMock[] = [
 ];
 
 // ── TICKETS KDS ──
-export const MOCK_TICKETS_KDS: TicketKDS[] = [
+export const MOCK_TICKETS_KDS: MockTicketKDS[] = [
   {
     id: "tk-1", orden_id: "ord-3", mesa_numero: 6, origen: "mesa",
-    items: [
+    items_kds: [
       { nombre: "Matcha Latte", cantidad: 1 },
       { nombre: "Pan de Chocolate", cantidad: 2 },
     ],
@@ -335,7 +347,7 @@ export const MOCK_TICKETS_KDS: TicketKDS[] = [
   },
   {
     id: "tk-2", orden_id: "ord-2", mesa_numero: 3, origen: "mesa",
-    items: [
+    items_kds: [
       { nombre: "Panini Caprese", cantidad: 2, notas: "Sin cebolla" },
       { nombre: "Cheesecake", cantidad: 1 },
     ],
@@ -344,7 +356,7 @@ export const MOCK_TICKETS_KDS: TicketKDS[] = [
   },
   {
     id: "tk-3", orden_id: "ord-2", mesa_numero: 3, origen: "mesa",
-    items: [
+    items_kds: [
       { nombre: "Americano 12oz", cantidad: 2 },
     ],
     estado: "preparando", prioridad: 0, tiempo_inicio: new Date(Date.now() - 12 * 60000).toISOString(), tiempo_fin: null,
@@ -352,7 +364,7 @@ export const MOCK_TICKETS_KDS: TicketKDS[] = [
   },
   {
     id: "tk-4", orden_id: "ord-1", mesa_numero: 2, origen: "mesa",
-    items: [
+    items_kds: [
       { nombre: "Latte 12oz", cantidad: 2 },
       { nombre: "Croissant", cantidad: 1 },
     ],
@@ -363,7 +375,7 @@ export const MOCK_TICKETS_KDS: TicketKDS[] = [
   },
   {
     id: "tk-5", orden_id: "ord-4", mesa_numero: null, origen: "para_llevar",
-    items: [
+    items_kds: [
       { nombre: "Cold Brew 16oz", cantidad: 1 },
     ],
     estado: "lista", prioridad: 0,

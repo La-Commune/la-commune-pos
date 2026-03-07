@@ -25,8 +25,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           useAuthStore.setState({
             user: {
               id: "dev-user-1",
-              authUid: "dev-auth-1",
-              negocioId: "dev-negocio-1",
+              auth_uid: "dev-auth-1",
+              negocio_id: "dev-negocio-1",
               nombre: "David (Dev)",
               email: "david@lacommune.mx",
               rol: "admin",

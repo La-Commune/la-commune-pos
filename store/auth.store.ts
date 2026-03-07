@@ -7,8 +7,8 @@ type Rol = "admin" | "barista" | "camarero" | "cocina";
 
 interface AuthUser {
   id: string;
-  authUid: string;
-  negocioId: string;
+  auth_uid: string;
+  negocio_id: string;
   nombre: string;
   email: string;
   rol: Rol;
@@ -83,8 +83,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         user: {
           id: u.id,
-          authUid: authData.user.id,
-          negocioId: u.negocio_id,
+          auth_uid: authData.user.id,
+          negocio_id: u.negocio_id,
           nombre: u.nombre,
           email: u.email,
           rol: u.rol as Rol,
@@ -142,8 +142,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         user: {
           id: u.id,
-          authUid: session.user.id,
-          negocioId: u.negocio_id,
+          auth_uid: session.user.id,
+          negocio_id: u.negocio_id,
           nombre: u.nombre,
           email: u.email,
           rol: u.rol as Rol,

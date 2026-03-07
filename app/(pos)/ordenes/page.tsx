@@ -26,9 +26,9 @@ import {
   MOCK_CATEGORIAS,
   MOCK_PRODUCTOS,
   MOCK_ORDENES,
-  type Producto,
-  type ItemOrdenMock,
-  type OrdenMock,
+  type MockProducto,
+  type MockItemOrden,
+  type MockOrden,
 } from "@/lib/mock-data";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
@@ -72,8 +72,8 @@ export default function OrdenesPage() {
   const [vista, setVista] = useState<"nueva" | "activas">("activas");
   const [categoriaActiva, setCategoriaActiva] = useState<string | "todas">("todas");
   const [busqueda, setBusqueda] = useState("");
-  const [carrito, setCarrito] = useState<ItemOrdenMock[]>([]);
-  const [ordenSeleccionada, setOrdenSeleccionada] = useState<OrdenMock | null>(null);
+  const [carrito, setCarrito] = useState<MockItemOrden[]>([]);
+  const [ordenSeleccionada, setOrdenSeleccionada] = useState<MockOrden | null>(null);
   const [notasOrden, setNotasOrden] = useState("");
 
   /* P6: Estado del selector de origen */
@@ -142,7 +142,7 @@ export default function OrdenesPage() {
   const impuesto = Math.round(subtotal * 0.16 * 100) / 100;
   const total = subtotal + impuesto;
 
-  const agregarAlCarrito = (producto: Producto) => {
+  const agregarAlCarrito = (producto: MockProducto) => {
     const existente = carrito.find((i) => i.producto_id === producto.id);
     if (existente) {
       setCarrito(

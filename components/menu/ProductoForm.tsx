@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { Plus, Trash2, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MOCK_CATEGORIAS, type Producto } from "@/lib/mock-data";
+import { MOCK_CATEGORIAS, type MockProducto } from "@/lib/mock-data";
 
 interface ProductoFormProps {
-  producto?: Producto | null;
-  onSave: (data: Partial<Producto>) => void;
+  producto?: MockProducto | null;
+  onSave: (data: Partial<MockProducto>) => void;
   onCancel: () => void;
 }
 
@@ -26,7 +26,7 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
   );
 
   const agregarTamano = () => {
-    setTamanos([...tamanos, { id: `t-new-${Date.now()}`, nombre: "", precio_adicional: 0 }]);
+    setTamanos([...tamanos, { id: `t-new-${Date.now()}`, nombre: "", precio_adicional: 0, orden: tamanos.length }]);
   };
 
   const actualizarTamano = (idx: number, field: string, value: string | number) => {
