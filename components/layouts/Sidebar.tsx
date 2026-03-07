@@ -78,6 +78,8 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
               title={isCollapsed ? item.label : undefined}
               className={cn(
                 "group relative flex items-center rounded-lg text-[13px] font-medium transition-all duration-200",
@@ -143,6 +145,8 @@ export default function Sidebar() {
         <div className="p-3 border-t border-border">
           <button
             onClick={() => collapseSidebar(!sidebarCollapsed)}
+            aria-label={sidebarCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
+            aria-expanded={!sidebarCollapsed}
             className="w-full flex items-center justify-center py-2.5 rounded-lg text-text-45 hover:text-text-70 hover:bg-[rgba(255,255,255,0.03)] transition-all duration-200"
           >
             {sidebarCollapsed ? (

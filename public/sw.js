@@ -1,5 +1,5 @@
-// La Commune POS — Service Worker v2
-const CACHE_VERSION = 2;
+// La Commune POS — Service Worker v3
+const CACHE_VERSION = 3;
 const STATIC_CACHE = `lc-pos-static-v${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `lc-pos-dynamic-v${CACHE_VERSION}`;
 const MAX_DYNAMIC_ITEMS = 50;
@@ -18,18 +18,30 @@ const APP_SHELL = [
   "/manifest.json",
 ];
 
-// Recursos que NUNCA se cachean
-const NEVER_CACHE = [
-  "/api/",
-  "supabase.co",
-  "supabase.in",
-  "chrome-extension://",
+// Patrones de URLs que NUNCA se cachean
+const NEVER_CACHE_PATTERNS = [
+  /\/api\//,
+  /supabase\.(co|in)/,
+  /chrome-extension:\/\//,
+  /localhost:\d+\/api/,
 ];
 
-// ── Install ──
+function shouldNeverCache(url) {
+  return NEVER_CACHE_PATTERNS.some((pattern) => pattern.test(url));
+}
+
+// ── Install — cache app shell con tolerancia a errores ──
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(STATIC_CACHE).then((cache) =>
+      Promise.allSettled(
+        APP_SHELL.map((url) =>
+          cache.add(url).catch((err) => {
+            console.warn(`[SW] No se pudo cachear ${url}:`, err.message);
+          })
+        )
+      )
+    )
   );
   self.skipWaiting();
 });
@@ -51,13 +63,12 @@ self.addEventListener("activate", (event) => {
 // ── Fetch — estrategia por tipo de recurso ──
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  const url = new URL(request.url);
 
   // Ignorar non-GET
   if (request.method !== "GET") return;
 
   // Ignorar recursos que no se cachean
-  if (NEVER_CACHE.some((pattern) => request.url.includes(pattern))) return;
+  if (shouldNeverCache(request.url)) return;
 
   // Navegación (páginas HTML): Network first → cache → offline fallback
   if (request.mode === "navigate") {
@@ -78,6 +89,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Assets estáticos (JS, CSS, fonts, imágenes): Cache first → network
+  const url = new URL(request.url);
   if (
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/icons/") ||
@@ -100,11 +112,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Todo lo demás: Network first → cache dinámico
+  // Todo lo demás: Network first → cache dinámico (solo cachear respuestas OK)
   event.respondWith(
     fetch(request)
       .then((response) => {
-        if (response.ok) {
+        if (response.ok && response.status < 400) {
           const clone = response.clone();
           caches.open(DYNAMIC_CACHE).then((cache) => {
             cache.put(request, clone);

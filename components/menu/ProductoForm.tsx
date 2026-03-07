@@ -39,6 +39,10 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const precio = parseFloat(precioBase);
+    if (isNaN(precio) || precio < 0) {
+      return; // HTML5 validation will handle the message
+    }
     onSave({
       nombre,
       descripcion: descripcion || null,
@@ -61,12 +65,14 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Nombre */}
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+        <label htmlFor="prod-nombre" className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
           Nombre del producto *
         </label>
         <input
+          id="prod-nombre"
           type="text"
           value={nombre}
+          maxLength={100}
           onChange={(e) => setNombre(e.target.value)}
           placeholder="Ej: Latte"
           required
@@ -76,10 +82,11 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
 
       {/* Descripción */}
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+        <label htmlFor="prod-descripcion" className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
           Descripción
         </label>
         <input
+          id="prod-descripcion"
           type="text"
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
@@ -91,10 +98,11 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
       {/* Precio y Categoría */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+          <label htmlFor="prod-precio" className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
             Precio base (MXN) *
           </label>
           <input
+            id="prod-precio"
             type="number"
             value={precioBase}
             onChange={(e) => setPrecioBase(e.target.value)}
@@ -106,10 +114,11 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
           />
         </div>
         <div>
-          <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+          <label htmlFor="prod-categoria" className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
             Categoría *
           </label>
           <select
+            id="prod-categoria"
             value={categoriaId}
             onChange={(e) => setCategoriaId(e.target.value)}
             className="w-full px-3 py-2.5 rounded-lg bg-surface-3 border border-border text-text-100 text-sm focus:outline-none focus:border-border-hover transition-all duration-300"
@@ -125,10 +134,11 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
 
       {/* Ingredientes */}
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+        <label htmlFor="prod-ingredientes" className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
           Ingredientes (separados por coma)
         </label>
         <input
+          id="prod-ingredientes"
           type="text"
           value={ingredientes}
           onChange={(e) => setIngredientes(e.target.value)}
@@ -139,10 +149,11 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
 
       {/* Etiquetas */}
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+        <label htmlFor="prod-etiquetas" className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
           Etiquetas (separadas por coma)
         </label>
         <input
+          id="prod-etiquetas"
           type="text"
           value={etiquetas}
           onChange={(e) => setEtiquetas(e.target.value)}
@@ -203,11 +214,17 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
 
       {/* Disponible */}
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => setDisponible(!disponible)}
+        <input
+          id="prod-disponible"
+          type="checkbox"
+          checked={disponible}
+          onChange={(e) => setDisponible(e.target.checked)}
+          className="sr-only peer"
+        />
+        <label
+          htmlFor="prod-disponible"
           className={cn(
-            "w-10 h-6 rounded-full transition-all duration-300 relative",
+            "w-10 h-6 rounded-full transition-all duration-300 relative cursor-pointer",
             disponible ? "bg-status-ok" : "bg-surface-3"
           )}
         >
@@ -217,10 +234,10 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
               disponible ? "left-5" : "left-1"
             )}
           />
-        </button>
-        <span className="text-xs text-text-70">
+        </label>
+        <label htmlFor="prod-disponible" className="text-xs text-text-70 cursor-pointer">
           {disponible ? "Disponible" : "No disponible"}
-        </span>
+        </label>
       </div>
 
       {/* Actions */}

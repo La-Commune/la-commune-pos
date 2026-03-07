@@ -55,8 +55,51 @@ export const PagoSchema = z.object({
   referencia: z.string().optional(),
 });
 
+export const CategoriaSchema = z.object({
+  id: z.string().uuid().optional(),
+  nombre: z.string().min(1, "Nombre requerido"),
+  color: z.string().optional(),
+  icono: z.string().optional(),
+  orden: z.number().int().nonnegative().default(0),
+  activa: z.boolean().default(true),
+});
+
+export const TamanoSchema = z.object({
+  id: z.string(),
+  nombre: z.string().min(1, "Nombre del tamaño requerido"),
+  precio_adicional: z.number().nonnegative().default(0),
+});
+
+export const ProductoSchema = z.object({
+  id: z.string().uuid().optional(),
+  nombre: z.string().min(1, "Nombre requerido").max(100),
+  descripcion: z.string().nullable().optional(),
+  precio_base: z.number().nonnegative("El precio debe ser positivo"),
+  categoria_id: z.string().uuid(),
+  disponible: z.boolean().default(true),
+  ingredientes: z.array(z.string()).default([]),
+  etiquetas: z.array(z.string()).default([]),
+  tamanos: z.array(TamanoSchema).default([]),
+  imagen_url: z.string().url().nullable().optional(),
+  orden: z.number().int().nonnegative().default(0),
+});
+
+export const UsuarioSchema = z.object({
+  id: z.string().uuid().optional(),
+  authUid: z.string(),
+  negocioId: z.string().uuid(),
+  nombre: z.string().min(1, "Nombre requerido"),
+  email: z.string().email("Email inválido"),
+  rol: RolUsuario,
+  activo: z.boolean().default(true),
+});
+
 // ── Types inferidos ──
 export type Mesa = z.infer<typeof MesaSchema>;
 export type ItemOrden = z.infer<typeof ItemOrdenSchema>;
 export type Orden = z.infer<typeof OrdenSchema>;
 export type Pago = z.infer<typeof PagoSchema>;
+export type Categoria = z.infer<typeof CategoriaSchema>;
+export type Tamano = z.infer<typeof TamanoSchema>;
+export type Producto = z.infer<typeof ProductoSchema>;
+export type Usuario = z.infer<typeof UsuarioSchema>;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,9 +20,13 @@ const sizeClasses = {
 
 export default function Modal({ open, onClose, title, children, size = "md" }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
+  // Store previous focus and manage body overflow
   useEffect(() => {
     if (open) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -32,13 +36,59 @@ export default function Modal({ open, onClose, title, children, size = "md" }: M
     };
   }, [open]);
 
+  // Auto-focus first focusable element
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    if (open) window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [open, onClose]);
+    if (!open || !modalRef.current) return;
+    const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length > 0) {
+      setTimeout(() => focusable[0].focus(), 0);
+    }
+  }, [open]);
+
+  // Restore focus on close
+  useEffect(() => {
+    if (!open && previousFocusRef.current) {
+      previousFocusRef.current.focus();
+      previousFocusRef.current = null;
+    }
+  }, [open]);
+
+  // ESC key and focus trap
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+
+      if (e.key === "Tab" && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    },
+    [onClose]
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, handleKeyDown]);
 
   if (!open) return null;
 
@@ -49,6 +99,11 @@ export default function Modal({ open, onClose, title, children, size = "md" }: M
       className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.6)] backdrop-blur-sm"
     >
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        onClick={(e) => e.stopPropagation()}
         className={cn(
           "w-full mx-4 bg-surface-2 border border-border rounded-2xl shadow-2xl shadow-black/30 max-h-[85vh] flex flex-col",
           sizeClasses[size]
@@ -56,9 +111,10 @@ export default function Modal({ open, onClose, title, children, size = "md" }: M
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="text-sm font-medium text-text-100">{title}</h2>
+          <h2 id="modal-title" className="text-sm font-medium text-text-100">{title}</h2>
           <button
             onClick={onClose}
+            aria-label="Cerrar diálogo"
             className="p-1 rounded-lg text-text-25 hover:text-text-45 hover:bg-surface-3 transition-all duration-300"
           >
             <X size={16} />

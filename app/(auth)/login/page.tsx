@@ -16,6 +16,18 @@ export default function LoginPage() {
     e.preventDefault();
     clearError();
 
+    // Validación de email en cliente
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      useAuthStore.setState({ error: "Ingresa un email válido" });
+      return;
+    }
+
+    if (password.length < 6) {
+      useAuthStore.setState({ error: "La contraseña debe tener al menos 6 caracteres" });
+      return;
+    }
+
     const success = await login(email, password);
     if (success) {
       router.push("/mesas");
@@ -47,10 +59,11 @@ export default function LoginPage() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-[11px] font-medium text-text-25 mb-1.5 uppercase tracking-wider">
+              <label htmlFor="login-email" className="block text-[11px] font-medium text-text-25 mb-1.5 uppercase tracking-wider">
                 Email
               </label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -62,11 +75,12 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-[11px] font-medium text-text-25 mb-1.5 uppercase tracking-wider">
+              <label htmlFor="login-password" className="block text-[11px] font-medium text-text-25 mb-1.5 uppercase tracking-wider">
                 Contraseña
               </label>
               <div className="relative">
                 <input
+                  id="login-password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
