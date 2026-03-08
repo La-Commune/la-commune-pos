@@ -175,6 +175,20 @@ export interface Database {
         actualizado_en: string;
         eliminado_en: string | null;
       }>;
+      items_orden: TableDef<{
+        id: string;
+        negocio_id: string;
+        orden_id: string;
+        producto_id: string;
+        nombre: string;
+        cantidad: number;
+        precio_unitario: number;
+        tamano: string | null;
+        modificadores: string[];
+        notas: string | null;
+        creado_en: string;
+        actualizado_en: string;
+      }>;
       tickets_kds: TableDef<{
         id: string;
         negocio_id: string;

@@ -137,6 +137,7 @@ export function useProductos(categoriaId?: string) {
 export function useOrdenes(estado?: string) {
   const filters = estado ? { estado } : undefined;
   return useQuery<MockOrden>("ordenes", MOCK_ORDENES, {
+    select: "*, mesas:mesa_id(numero)",
     filters,
     orderBy: { column: "creado_en", ascending: false },
   });
@@ -156,6 +157,7 @@ export function useZonas() {
 
 export function useTicketsKDS() {
   return useQuery<MockTicketKDS>("tickets_kds", MOCK_TICKETS_KDS, {
+    select: "*, ordenes:orden_id(folio, origen, estado, mesa_id, mesas:mesa_id(numero))",
     orderBy: { column: "creado_en", ascending: true },
   });
 }
@@ -205,6 +207,23 @@ export async function insertRecord(
   const { error } = await supabase!.from(table).insert(data);
   if (error) return { success: false, error: error.message };
   return { success: true };
+}
+
+/** Insert que retorna el registro insertado (para obtener id, folio, etc.) */
+export async function insertRecordReturning<T = Record<string, unknown>>(
+  table: TableName,
+  data: Record<string, unknown>,
+): Promise<{ success: boolean; data?: T; error?: string }> {
+  if (USE_MOCK) {
+    console.log(`[MOCK] Insert+returning into ${table}:`, data);
+    const mockRow = { ...data, id: `mock-${Date.now()}` } as T;
+    return { success: true, data: mockRow };
+  }
+
+  // @ts-expect-error — tipo exacto se resolverá con `supabase gen types`
+  const { data: result, error } = await supabase!.from(table).insert(data).select().single();
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: result as T };
 }
 
 export async function updateRecord(

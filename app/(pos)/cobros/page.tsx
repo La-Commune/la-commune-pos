@@ -17,7 +17,9 @@ import {
   Zap,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
-import { useOrdenes } from "@/hooks/useSupabase";
+import { useOrdenes, insertRecord, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
+import { useAuthStore } from "@/store/auth.store";
+import { showToast } from "@/components/ui/Toast";
 
 type MetodoPago = "efectivo" | "tarjeta" | "transferencia";
 
@@ -38,7 +40,8 @@ const quickAmounts = [50, 100, 200, 500, 1000];
 
 export default function CobrosPage() {
   const searchParams = useSearchParams();
-  const { data: ordenes } = useOrdenes();
+  const { data: ordenes, refetch: refetchOrdenes } = useOrdenes();
+  const user = useAuthStore((s) => s.user);
   const [ordenSeleccionada, setOrdenSeleccionada] = useState<any | null>(null);
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("efectivo");
   const [montoRecibido, setMontoRecibido] = useState("");
@@ -56,20 +59,49 @@ export default function CobrosPage() {
     { id: "1", metodo: "efectivo", monto: 0 }
   ]);
 
+  // ── Realtime: refetch cuando cambian ordenes o mesas ──
+  useEffect(() => {
+    const subOrdenes = subscribeToTable("ordenes", () => refetchOrdenes());
+    const subMesas = subscribeToTable("mesas", () => refetchOrdenes());
+    return () => {
+      subOrdenes.unsubscribe();
+      subMesas.unsubscribe();
+    };
+  }, [refetchOrdenes]);
+
+  // Normalizar mesa_numero desde join
+  const ordenesNormalizadas = useMemo(
+    () =>
+      (ordenes as any[]).map((o: any) => ({
+        ...o,
+        mesa_numero: o.mesas?.numero ?? o.mesa_numero ?? null,
+      })),
+    [ordenes],
+  );
+
   // Órdenes listas para cobrar
   const ordenesCobrables = useMemo(
-    () => (ordenes as any[]).filter((o: any) => ["lista", "confirmada", "preparando"].includes(o.estado)),
-    [ordenes]
+    () => ordenesNormalizadas.filter((o: any) => ["lista", "confirmada", "preparando"].includes(o.estado)),
+    [ordenesNormalizadas],
   );
 
   /* R11: Deep-link — recibir orden desde query param */
   useEffect(() => {
     const ordenParam = searchParams.get("orden");
     if (ordenParam) {
-      const orden = ordenesCobrables.find((o) => o.id === ordenParam);
+      const orden = ordenesCobrables.find((o: any) => o.id === ordenParam);
       if (orden) setOrdenSeleccionada(orden);
     }
   }, [searchParams, ordenesCobrables]);
+
+  // Sincronizar orden seleccionada cuando llegan updates realtime
+  useEffect(() => {
+    if (!ordenSeleccionada) return;
+    const updated = ordenesNormalizadas.find((o: any) => o.id === ordenSeleccionada.id);
+    if (updated && JSON.stringify(updated) !== JSON.stringify(ordenSeleccionada)) {
+      setOrdenSeleccionada(updated);
+    }
+  }, [ordenesNormalizadas, ordenSeleccionada]);
 
   // Cálculos — precios ya incluyen IVA
   // total de la orden = suma directa de items (IVA incluido)
@@ -137,14 +169,91 @@ export default function CobrosPage() {
     setVerificando(true);
   };
 
-  /* R7: Paso 2 — confirmar cobro con loading */
+  /* R7: Paso 2 — confirmar cobro con loading → Supabase */
   const handleConfirmarCobro = async () => {
+    if (!ordenSeleccionada || !user) return;
     setProcesando(true);
-    // TODO: Procesar en Supabase
-    await new Promise((r) => setTimeout(r, 1200));
-    setProcesando(false);
-    setVerificando(false);
-    setCobrado(true);
+
+    try {
+      const negocioId = user.negocio_id;
+
+      // 1. Insertar pago(s) en tabla `pagos`
+      if (dividirPago) {
+        // Split payments — un registro por cada método
+        for (const split of splits) {
+          if (split.monto <= 0) continue;
+          const res = await insertRecord("pagos", {
+            negocio_id: negocioId,
+            orden_id: ordenSeleccionada.id,
+            monto: split.monto,
+            tipo_pago: split.metodo,
+            estado: "completado",
+            propina: 0, // propina va en el primer split o en la orden
+          });
+          if (!res.success) {
+            showToast(`Error al registrar pago: ${res.error}`, "error");
+            setProcesando(false);
+            return;
+          }
+        }
+        // Propina como pago extra si hay
+        if (propina > 0) {
+          await insertRecord("pagos", {
+            negocio_id: negocioId,
+            orden_id: ordenSeleccionada.id,
+            monto: 0,
+            tipo_pago: splits[0].metodo,
+            estado: "completado",
+            propina,
+          });
+        }
+      } else {
+        // Pago único
+        const res = await insertRecord("pagos", {
+          negocio_id: negocioId,
+          orden_id: ordenSeleccionada.id,
+          monto: totalConDescuento,
+          tipo_pago: metodoPago,
+          estado: "completado",
+          propina,
+        });
+        if (!res.success) {
+          showToast(`Error al registrar pago: ${res.error}`, "error");
+          setProcesando(false);
+          return;
+        }
+      }
+
+      // 2. Actualizar orden → estado 'completada' + descuento + propina
+      const resOrden = await updateRecord("ordenes", ordenSeleccionada.id, {
+        estado: "completada",
+        descuento: montoDescuento,
+        propina,
+      });
+
+      if (!resOrden.success) {
+        showToast(`Error al actualizar orden: ${resOrden.error}`, "error");
+        setProcesando(false);
+        return;
+      }
+
+      // 3. Liberar mesa (si la orden tiene mesa vinculada)
+      if (ordenSeleccionada.mesa_id) {
+        await updateRecord("mesas", ordenSeleccionada.mesa_id, {
+          estado: "disponible",
+          orden_actual_id: null,
+          ocupada_desde: null,
+        });
+      }
+
+      showToast("Cobro completado", "success");
+      setProcesando(false);
+      setVerificando(false);
+      setCobrado(true);
+    } catch {
+      showToast("Error de conexión al procesar cobro", "error");
+      setProcesando(false);
+    }
   };
 
   return (
@@ -171,6 +280,7 @@ export default function CobrosPage() {
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-sm font-medium text-text-100">
                   {orden.mesa_numero ? `Mesa ${orden.mesa_numero}` : orden.origen.replace("_", " ")}
+                  {orden.folio && <span className="ml-1.5 text-[10px] text-text-25 font-normal">#{orden.folio}</span>}
                 </span>
                 <span className="text-sm font-semibold text-text-100 tabular-nums">
                   {formatMXN(orden.total)}
@@ -178,7 +288,7 @@ export default function CobrosPage() {
               </div>
               <div className="text-[11px] text-text-25">
                 {(orden.items ?? []).reduce((a: number, i: any) => a + i.cantidad, 0)} items · {(orden.items ?? []).map((i: any) => i.nombre).slice(0, 2).join(", ")}
-                {orden.items.length > 2 && "..."}
+                {(orden.items ?? []).length > 2 && "..."}
               </div>
             </button>
           ))}
@@ -285,6 +395,7 @@ export default function CobrosPage() {
                     {ordenSeleccionada.mesa_numero
                       ? `Mesa ${ordenSeleccionada.mesa_numero}`
                       : ordenSeleccionada.origen.replace("_", " ")}
+                    {ordenSeleccionada.folio && ` · #${ordenSeleccionada.folio}`}
                     {" · "}{(ordenSeleccionada.items ?? []).reduce((a: number, i: any) => a + i.cantidad, 0)} items
                   </p>
 
@@ -374,6 +485,7 @@ export default function CobrosPage() {
                     {ordenSeleccionada.mesa_numero
                       ? `Mesa ${ordenSeleccionada.mesa_numero}`
                       : ordenSeleccionada.origen.replace("_", " ")}
+                    {ordenSeleccionada.folio && <span className="ml-2 text-[11px] text-text-25 font-normal">#{ordenSeleccionada.folio}</span>}
                   </h3>
                   {/* R1: Target táctil de 44px */}
                   <button

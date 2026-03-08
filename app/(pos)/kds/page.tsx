@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Clock,
   ChefHat,
@@ -15,11 +15,12 @@ import {
   Volume2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTicketsKDS } from "@/hooks/useSupabase";
+import { useTicketsKDS, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { formatTiempoTranscurrido } from "@/hooks/useTiempoTranscurrido";
 import { useUIStore } from "@/store/ui.store";
+import { showToast } from "@/components/ui/Toast";
 
 const estadoConfig = {
   nueva: {
@@ -61,7 +62,7 @@ function timerColor(mins: number | null) {
 }
 
 /* R5: Rediseño completo del ticket KDS para legibilidad a distancia */
-function TicketCard({ ticket, onAction, onConfirmLista }: { ticket: any; onAction?: (action: string) => void; onConfirmLista?: (ticketId: string) => void }) {
+function TicketCard({ ticket, onConfirmLista, onRefetch }: { ticket: any; onConfirmLista?: (ticketId: string) => void; onRefetch?: () => void }) {
   const config = estadoConfig[ticket.estado as keyof typeof estadoConfig];
   const Icon = config?.icon ?? AlertTriangle;
   const tiempoPrep = tiempoPreparacion(ticket.tiempo_inicio, ticket.tiempo_fin);
@@ -69,12 +70,34 @@ function TicketCard({ ticket, onAction, onConfirmLista }: { ticket: any; onActio
   /* R3: loading states */
   const [loading, setLoading] = useState(false);
 
+  // Datos normalizados del join con ordenes
+  const mesaNumero = ticket.ordenes?.mesas?.numero ?? ticket.mesa_numero ?? null;
+  const origen = ticket.ordenes?.origen ?? ticket.origen ?? "mesa";
+  const folio = ticket.ordenes?.folio ?? ticket.folio ?? null;
+  const ordenCompletada = ticket.ordenes?.estado === "completada" || ticket.ordenes?.estado === "cancelada";
+
   const handleAction = async (action: string) => {
     setLoading(true);
-    // TODO: Actualizar en Supabase
-    await new Promise((r) => setTimeout(r, 800));
-    setLoading(false);
-    onAction?.(action);
+    try {
+      if (action === "iniciar") {
+        await updateRecord("tickets_kds", ticket.id, {
+          estado: "preparando",
+          tiempo_inicio: new Date().toISOString(),
+        });
+        showToast("Preparación iniciada");
+      } else if (action === "regresar") {
+        await updateRecord("tickets_kds", ticket.id, {
+          estado: "preparando",
+          tiempo_fin: null,
+        });
+        showToast("Ticket regresado a preparación");
+      }
+      onRefetch?.();
+    } catch {
+      showToast("Error al actualizar ticket", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleMarcarLista = () => {
@@ -123,20 +146,23 @@ function TicketCard({ ticket, onAction, onConfirmLista }: { ticket: any; onActio
       <div className="p-4">
         {/* R5: Número de mesa GRANDE */}
         <div className="flex items-center gap-2.5 mb-4">
-          {ticket.mesa_numero ? (
+          {mesaNumero ? (
             <>
               <MapPin size={18} className="text-text-45" />
               <span className="text-2xl font-bold text-text-100 tracking-tight">
-                Mesa {ticket.mesa_numero}
+                Mesa {mesaNumero}
               </span>
             </>
           ) : (
             <>
               <ShoppingBag size={18} className="text-text-45" />
               <span className="text-2xl font-bold text-text-100 capitalize tracking-tight">
-                {ticket.origen.replace("_", " ")}
+                {(origen ?? "").replace("_", " ")}
               </span>
             </>
+          )}
+          {folio && (
+            <span className="text-xs text-text-25 tabular-nums font-medium">#{folio}</span>
           )}
         </div>
 
@@ -224,7 +250,7 @@ function TicketCard({ ticket, onAction, onConfirmLista }: { ticket: any; onActio
             )}
           </button>
         )}
-        {ticket.estado === "lista" && (
+        {ticket.estado === "lista" && !ordenCompletada && (
           <button
             onClick={() => handleAction("regresar")}
             disabled={loading}
@@ -249,7 +275,7 @@ function TicketCard({ ticket, onAction, onConfirmLista }: { ticket: any; onActio
 }
 
 function KDSPageContent() {
-  const { data: tickets } = useTicketsKDS();
+  const { data: tickets, refetch: refetchTickets } = useTicketsKDS();
   const { kdsDisplayMode } = useUIStore();
   const [filtroEstado, setFiltroEstado] = useState<"todas" | "nueva" | "preparando" | "lista">("todas");
   const [confirmListaId, setConfirmListaId] = useState<string | null>(null);
@@ -261,14 +287,38 @@ function KDSPageContent() {
     return () => clearInterval(interval);
   }, []);
 
+  /* Realtime: refetch tickets cuando cambian ordenes o tickets */
+  useEffect(() => {
+    const subTickets = subscribeToTable("tickets_kds", () => refetchTickets());
+    const subOrdenes = subscribeToTable("ordenes", () => refetchTickets());
+    return () => {
+      subTickets.unsubscribe();
+      subOrdenes.unsubscribe();
+    };
+  }, [refetchTickets]);
+
+  // ── Filtrar tickets cuya orden ya fue completada o cancelada ──
+  // En POS profesionales, una vez cobrada la orden el ticket desaparece del KDS
+  const ticketsActivos = useMemo(
+    () =>
+      (tickets as any[]).filter((t) => {
+        const estadoOrden = t.ordenes?.estado;
+        // Si no hay join data, mostrar (mock mode)
+        if (!estadoOrden) return true;
+        // Ocultar si la orden ya está completada o cancelada
+        return estadoOrden !== "completada" && estadoOrden !== "cancelada";
+      }),
+    [tickets],
+  );
+
   const conteo = {
-    nueva: (tickets as any[]).filter((t) => t.estado === "nueva").length,
-    preparando: (tickets as any[]).filter((t) => t.estado === "preparando").length,
-    lista: (tickets as any[]).filter((t) => t.estado === "lista").length,
+    nueva: ticketsActivos.filter((t) => t.estado === "nueva").length,
+    preparando: ticketsActivos.filter((t) => t.estado === "preparando").length,
+    lista: ticketsActivos.filter((t) => t.estado === "lista").length,
   };
 
   /* R5: Conteo de urgentes para badge */
-  const urgentes = (tickets as any[]).filter((t) => {
+  const urgentes = ticketsActivos.filter((t: any) => {
     if (t.estado !== "preparando" || !t.tiempo_inicio) return false;
     const mins = Math.floor((Date.now() - new Date(t.tiempo_inicio).getTime()) / 60000);
     return mins > 10;
@@ -278,9 +328,30 @@ function KDSPageContent() {
     setConfirmListaId(ticketId);
   };
 
-  const handleConfirmListaAction = () => {
-    // TODO: Actualizar en Supabase
-    setConfirmListaId(null);
+  const handleConfirmListaAction = async () => {
+    if (!confirmListaId) return;
+    try {
+      // 1. Marcar ticket como lista
+      await updateRecord("tickets_kds", confirmListaId, {
+        estado: "lista",
+        tiempo_fin: new Date().toISOString(),
+      });
+
+      // 2. Encontrar la orden vinculada y marcarla como 'lista'
+      const ticket = ticketsActivos.find((t: any) => t.id === confirmListaId);
+      if (ticket?.orden_id) {
+        await updateRecord("ordenes", ticket.orden_id, {
+          estado: "lista",
+        });
+      }
+
+      showToast("Ticket marcado como listo");
+      refetchTickets();
+    } catch {
+      showToast("Error al marcar como listo", "error");
+    } finally {
+      setConfirmListaId(null);
+    }
   };
 
   return (
@@ -291,7 +362,7 @@ function KDSPageContent() {
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-medium text-text-100 tracking-tight">Cocina (KDS)</h1>
             <span className="text-xs font-medium px-3.5 py-1 rounded-full border border-border text-text-45">
-              {(tickets as any[]).length} ticket{(tickets as any[]).length !== 1 ? "s" : ""}
+              {ticketsActivos.length} ticket{ticketsActivos.length !== 1 ? "s" : ""}
             </span>
             {urgentes > 0 && (
               <span className="text-xs font-bold px-3.5 py-1 rounded-full bg-status-err/10 text-status-err border border-status-err/20 animate-pulse">
@@ -304,7 +375,7 @@ function KDSPageContent() {
         {/* Filtros — R1: min-h-[44px] */}
         <div className="flex items-center gap-1 mb-5 bg-surface-2 p-1 rounded-xl w-fit">
           {(["todas", "nueva", "preparando", "lista"] as const).map((estado) => {
-            const count = estado === "todas" ? (tickets as any[]).length : conteo[estado];
+            const count = estado === "todas" ? ticketsActivos.length : conteo[estado];
             const conf = estado !== "todas" ? estadoConfig[estado] : null;
             return (
               <button
@@ -338,7 +409,7 @@ function KDSPageContent() {
                 const conf = estadoConfig[estado];
                 const statusColor = estado === "nueva" ? "bg-status-info" : estado === "preparando" ? "bg-status-warn" : "bg-status-ok";
                 const filtered = filtroEstado === "todas" || filtroEstado === estado
-                  ? (tickets as any[]).filter((t) => t.estado === estado)
+                  ? ticketsActivos.filter((t: any) => t.estado === estado)
                   : [];
                 return (
                   <div key={estado} className="flex flex-col min-h-0">
@@ -349,7 +420,7 @@ function KDSPageContent() {
                     </div>
                     <div className="flex-1 overflow-y-auto space-y-3 pr-1">
                       {filtered.map((ticket) => (
-                        <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} />
+                        <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} onRefetch={refetchTickets} />
                       ))}
                     </div>
                   </div>
@@ -360,10 +431,10 @@ function KDSPageContent() {
             /* ── Tiled: Grid compact ── */
             <div className="h-full overflow-y-auto">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {(tickets as any[])
+                {ticketsActivos
                   .filter((t) => filtroEstado === "todas" || t.estado === filtroEstado)
                   .map((ticket) => (
-                    <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} />
+                    <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} onRefetch={refetchTickets} />
                   ))}
               </div>
             </div>
@@ -377,10 +448,10 @@ function KDSPageContent() {
                 </div>
                 <div className="flex-1 overflow-y-auto">
                   <div className="grid grid-cols-3 gap-3">
-                    {(tickets as any[])
-                      .filter((t) => (filtroEstado === "todas" || t.estado === filtroEstado) && t.mesa_numero)
+                    {ticketsActivos
+                      .filter((t) => (filtroEstado === "todas" || t.estado === filtroEstado) && (t.ordenes?.mesas?.numero || t.mesa_numero))
                       .map((ticket) => (
-                        <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} />
+                        <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} onRefetch={refetchTickets} />
                       ))}
                   </div>
                 </div>
@@ -392,10 +463,10 @@ function KDSPageContent() {
                 </div>
                 <div className="flex-1 overflow-y-auto">
                   <div className="grid grid-cols-3 gap-3">
-                    {(tickets as any[])
-                      .filter((t) => (filtroEstado === "todas" || t.estado === filtroEstado) && !t.mesa_numero)
+                    {ticketsActivos
+                      .filter((t) => (filtroEstado === "todas" || t.estado === filtroEstado) && !(t.ordenes?.mesas?.numero || t.mesa_numero))
                       .map((ticket) => (
-                        <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} />
+                        <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} onRefetch={refetchTickets} />
                       ))}
                   </div>
                 </div>
