@@ -22,11 +22,13 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
-import { useCategorias, useProductos, useOrdenes, useMesas } from "@/hooks/useSupabase";
+import { useCategorias, useProductos, useOrdenes, useMesas, insertRecordReturning, insertRecord, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
+import { useAuthStore } from "@/store/auth.store";
 import { calcularIVA } from "@/hooks/useIVA";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useUIStore } from "@/store/ui.store";
+import { showToast } from "@/components/ui/Toast";
 import { Star } from "lucide-react";
 
 /* P11: Colores migrados al design system */
@@ -59,11 +61,21 @@ type OrigenOrden = "mesa" | "delivery" | "para_llevar" | "online";
 export default function OrdenesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const user = useAuthStore((s) => s.user);
   const { data: categorias } = useCategorias();
   const { data: productos } = useProductos();
-  const { data: ordenes } = useOrdenes();
-  const { data: mesas } = useMesas();
+  const { data: ordenes, refetch: refetchOrdenes } = useOrdenes();
+  const { data: mesas, refetch: refetchMesas } = useMesas();
   const mesasDisponibles = (mesas as any[]).filter((m: any) => m.estado === "disponible");
+
+  // Normalizar órdenes: agregar mesa_numero desde el join de Supabase
+  const ordenesNormalizadas = useMemo(() => {
+    return (ordenes as any[]).map((o) => ({
+      ...o,
+      mesa_numero: o.mesas?.numero ?? o.mesa_numero ?? null,
+    }));
+  }, [ordenes]);
+
   const { favoriteProductIds, toggleFavoriteProduct, lastActiveTabs, setLastActiveTab } = useUIStore();
   const [vista, setVista] = useState<"nueva" | "activas">((lastActiveTabs.ordenes as "nueva" | "activas") || "activas");
   const [categoriaActiva, setCategoriaActiva] = useState<string | "todas">("todas");
@@ -178,25 +190,185 @@ export default function OrdenesPage() {
     return `${Math.floor(mins / 60)}h ${mins % 60}m`;
   };
 
-  /* P5: Simular envío de orden con loading */
+  /* ── Enviar orden a Supabase ── */
   const handleEnviarOrden = async () => {
+    if (!user || carrito.length === 0) return;
     setEnviandoOrden(true);
-    // TODO: Enviar a Supabase
-    await new Promise((r) => setTimeout(r, 1200));
-    setEnviandoOrden(false);
-    setCarrito([]);
-    setNotasOrden("");
-    setPasoOrden("origen");
-    setOrigenSeleccionado(null);
-    setMesaSeleccionada(null);
-    setVista("activas");
+
+    try {
+      // 1. Encontrar mesa_id real si es orden de mesa
+      let mesaId: string | null = null;
+      if (origenSeleccionado === "mesa" && mesaSeleccionada) {
+        const mesa = (mesas as any[]).find((m: any) => m.numero === mesaSeleccionada);
+        mesaId = mesa?.id ?? null;
+      }
+
+      // 2. Calcular totales
+      const itemsSnapshot = carrito.map((item) => ({
+        producto_id: item.producto_id,
+        nombre: item.nombre,
+        cantidad: item.cantidad,
+        precio_unitario: item.precio_unitario,
+        tamano: item.tamano ?? null,
+      }));
+
+      // 3. Insertar orden
+      const { success, data: ordenCreada, error } = await insertRecordReturning<any>("ordenes", {
+        negocio_id: user.negocio_id,
+        mesa_id: mesaId,
+        usuario_id: user.id,
+        items: itemsSnapshot,
+        subtotal: baseGravable,
+        impuesto: iva,
+        total: totalCarrito,
+        estado: "nueva",
+        origen: origenSeleccionado ?? "mesa",
+        notas: notasOrden || null,
+      });
+
+      if (!success || !ordenCreada) {
+        showToast(`Error al crear orden: ${error}`, "error");
+        setEnviandoOrden(false);
+        return;
+      }
+
+      // 4. Insertar items_orden (tabla normalizada)
+      for (const item of carrito) {
+        await insertRecord("items_orden", {
+          negocio_id: user.negocio_id,
+          orden_id: ordenCreada.id,
+          producto_id: item.producto_id,
+          nombre: item.nombre,
+          cantidad: item.cantidad,
+          precio_unitario: item.precio_unitario,
+          tamano: item.tamano ?? null,
+        });
+      }
+
+      // 5. Si es orden de mesa, marcar mesa como ocupada
+      if (mesaId) {
+        await updateRecord("mesas", mesaId, {
+          estado: "ocupada",
+          orden_actual_id: ordenCreada.id,
+        });
+        refetchMesas();
+      }
+
+      showToast(`Orden #${ordenCreada.folio} creada`);
+      setCarrito([]);
+      setNotasOrden("");
+      setPasoOrden("origen");
+      setOrigenSeleccionado(null);
+      setMesaSeleccionada(null);
+      setVista("activas");
+      refetchOrdenes();
+    } catch (err) {
+      showToast("Error inesperado al crear orden", "error");
+      console.error(err);
+    } finally {
+      setEnviandoOrden(false);
+    }
   };
 
+  /* ── Confirmar orden → estado 'confirmada' + crear ticket KDS ── */
   const handleConfirmarOrden = async () => {
+    if (!ordenSeleccionada || !user) return;
     setConfirmandoOrden(true);
-    // TODO: Confirmar en Supabase
-    await new Promise((r) => setTimeout(r, 800));
-    setConfirmandoOrden(false);
+
+    try {
+      // 1. Cambiar estado de la orden
+      const { success, error } = await updateRecord("ordenes", ordenSeleccionada.id, {
+        estado: "confirmada",
+      });
+
+      if (!success) {
+        showToast(`Error: ${error}`, "error");
+        setConfirmandoOrden(false);
+        return;
+      }
+
+      // 2. Crear ticket KDS para cocina
+      await insertRecord("tickets_kds", {
+        negocio_id: user.negocio_id,
+        orden_id: ordenSeleccionada.id,
+        items_kds: ordenSeleccionada.items ?? [],
+        estado: "nueva",
+        prioridad: 0,
+        tiempo_inicio: new Date().toISOString(),
+      });
+
+      // 3. Si tiene mesa, cambiar estado mesa a 'preparando'
+      if (ordenSeleccionada.mesa_id) {
+        await updateRecord("mesas", ordenSeleccionada.mesa_id, {
+          estado: "preparando",
+        });
+        refetchMesas();
+      }
+
+      showToast("Orden confirmada y enviada a cocina");
+      setOrdenSeleccionada({ ...ordenSeleccionada, estado: "confirmada" });
+      refetchOrdenes();
+    } catch (err) {
+      showToast("Error al confirmar orden", "error");
+      console.error(err);
+    } finally {
+      setConfirmandoOrden(false);
+    }
+  };
+
+  /* ── Cancelar orden ── */
+  const handleCancelarOrden = async () => {
+    if (!ordenSeleccionada) return;
+
+    try {
+      const { success, error } = await updateRecord("ordenes", ordenSeleccionada.id, {
+        estado: "cancelada",
+      });
+
+      if (!success) {
+        showToast(`Error: ${error}`, "error");
+        return;
+      }
+
+      // Liberar mesa si tenía una
+      if (ordenSeleccionada.mesa_id) {
+        await updateRecord("mesas", ordenSeleccionada.mesa_id, {
+          estado: "disponible",
+          orden_actual_id: null,
+        });
+        refetchMesas();
+      }
+
+      showToast("Orden cancelada");
+      setOrdenSeleccionada(null);
+      refetchOrdenes();
+    } catch (err) {
+      showToast("Error al cancelar", "error");
+      console.error(err);
+    }
+  };
+
+  /* ── Enviar a cocina: estado 'preparando' ── */
+  const handleEnviarACocina = async () => {
+    if (!ordenSeleccionada) return;
+
+    try {
+      const { success, error } = await updateRecord("ordenes", ordenSeleccionada.id, {
+        estado: "preparando",
+      });
+
+      if (!success) {
+        showToast(`Error: ${error}`, "error");
+        return;
+      }
+
+      showToast("Orden enviada a cocina");
+      setOrdenSeleccionada({ ...ordenSeleccionada, estado: "preparando" });
+      refetchOrdenes();
+    } catch (err) {
+      showToast("Error al enviar a cocina", "error");
+      console.error(err);
+    }
   };
 
   /* P6: Handler para seleccionar origen y avanzar */
@@ -212,6 +384,16 @@ export default function OrdenesPage() {
     setMesaSeleccionada(numero);
     setPasoOrden("productos");
   };
+
+  /* Realtime: refetch órdenes y mesas cuando cambian en la BD */
+  useEffect(() => {
+    const subOrdenes = subscribeToTable("ordenes", () => refetchOrdenes());
+    const subMesas = subscribeToTable("mesas", () => refetchMesas());
+    return () => {
+      subOrdenes.unsubscribe();
+      subMesas.unsubscribe();
+    };
+  }, [refetchOrdenes, refetchMesas]);
 
   /* P17: Scroll helpers */
   const scrollCategorias = (direction: "left" | "right") => {
@@ -238,7 +420,7 @@ export default function OrdenesPage() {
           >
             Órdenes activas
             <span className="ml-2 text-[11px] px-2 py-0.5 rounded-md bg-accent-soft text-accent tabular-nums font-medium">
-              {(ordenes as any[]).filter((o) => !["completada", "cancelada"].includes(o.estado)).length}
+              {ordenesNormalizadas.filter((o) => !["completada", "cancelada"].includes(o.estado)).length}
             </span>
           </button>
           <button
@@ -262,7 +444,7 @@ export default function OrdenesPage() {
         {vista === "activas" ? (
           /* ── Lista de órdenes activas ── */
           <div className="flex-1 overflow-y-auto space-y-2">
-            {(ordenes as any[]).filter((o) => !["completada", "cancelada"].includes(o.estado)).map(
+            {ordenesNormalizadas.filter((o) => !["completada", "cancelada"].includes(o.estado)).map(
               (orden) => {
                 const config = estadoOrdenConfig[orden.estado as keyof typeof estadoOrdenConfig];
                 return (
@@ -311,7 +493,7 @@ export default function OrdenesPage() {
             )}
 
             {/* P15: Empty state mejorado */}
-            {(ordenes as any[]).filter((o) => !["completada", "cancelada"].includes(o.estado)).length === 0 && (
+            {ordenesNormalizadas.filter((o) => !["completada", "cancelada"].includes(o.estado)).length === 0 && (
               <div className="flex-1 flex flex-col items-center justify-center py-16">
                 <div className="w-16 h-16 rounded-2xl bg-surface-2 flex items-center justify-center mb-4">
                   <ClipboardList size={28} className="text-text-25" />
@@ -784,7 +966,10 @@ export default function OrdenesPage() {
                   </button>
                 )}
                 {ordenSeleccionada.estado === "confirmada" && (
-                  <button className="w-full py-3.5 rounded-xl btn-primary text-[13px] font-semibold min-h-[48px]">
+                  <button
+                    onClick={handleEnviarACocina}
+                    className="w-full py-3.5 rounded-xl btn-primary text-[13px] font-semibold min-h-[48px]"
+                  >
                     Enviar a cocina
                   </button>
                 )}
@@ -837,10 +1022,7 @@ export default function OrdenesPage() {
       <ConfirmDialog
         open={confirmCancelar}
         onClose={() => setConfirmCancelar(false)}
-        onConfirm={() => {
-          // TODO: Cancelar en Supabase
-          setOrdenSeleccionada(null);
-        }}
+        onConfirm={handleCancelarOrden}
         title="Cancelar orden"
         description={`¿Estás seguro de cancelar la orden de ${ordenSeleccionada?.mesa_numero ? `Mesa ${ordenSeleccionada.mesa_numero}` : ""}? Esta acción no se puede deshacer.`}
         confirmLabel="Cancelar orden"

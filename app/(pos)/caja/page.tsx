@@ -1,33 +1,35 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   DollarSign,
-  Clock,
   TrendingUp,
   CreditCard,
   Banknote,
   ArrowRightLeft,
   Lock,
   Unlock,
-  AlertCircle,
   CheckCircle2,
   Calendar,
   FileText,
-  MoreVertical,
   Loader2,
   X,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { supabase, USE_MOCK } from "@/lib/supabase";
+import { useAuthStore } from "@/store/auth.store";
+import { insertRecordReturning, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
+import { showToast } from "@/components/ui/Toast";
 
 // ── TIPOS ──
 
-type EstadoTurno = "sin_turno" | "abierto" | "cerrando" | "cerrado";
+type EstadoTurno = "cargando" | "sin_turno" | "abierto" | "cerrando" | "cerrado";
 
-interface CorteDatosMock {
+interface CorteCaja {
   id: string;
-  fecha: string;
+  negocio_id: string;
+  usuario_id: string;
   fondo_inicial: number;
   ventas_efectivo: number;
   ventas_tarjeta: number;
@@ -36,242 +38,249 @@ interface CorteDatosMock {
   propinas: number;
   descuentos: number;
   efectivo_esperado: number;
-  efectivo_real: number;
-  diferencia: number;
+  efectivo_real: number | null;
+  diferencia: number | null;
   ordenes_count: number;
-  notas: string;
+  notas: string | null;
   abierto_en: string;
-  cerrado_en: string;
+  cerrado_en: string | null;
 }
 
-// ── MOCK DATA: Histórico de cortes ──
-const MOCK_CORTES_HISTORICO: CorteDatosMock[] = [
-  {
-    id: "corte-5",
-    fecha: "2026-03-06",
-    fondo_inicial: 500,
-    ventas_efectivo: 2840,
-    ventas_tarjeta: 1500,
-    ventas_transferencia: 800,
-    total_ventas: 5140,
-    propinas: 320,
-    descuentos: 150,
-    efectivo_esperado: 3340,
-    efectivo_real: 3345,
-    diferencia: 5,
-    ordenes_count: 42,
-    notas: "Día normal, sin incidentes",
-    abierto_en: "2026-03-06T08:00:00",
-    cerrado_en: "2026-03-06T20:00:00",
-  },
-  {
-    id: "corte-4",
-    fecha: "2026-03-05",
-    fondo_inicial: 500,
-    ventas_efectivo: 2650,
-    ventas_tarjeta: 1200,
-    ventas_transferencia: 600,
-    total_ventas: 4450,
-    propinas: 280,
-    descuentos: 100,
-    efectivo_esperado: 3150,
-    efectivo_real: 3140,
-    diferencia: -10,
-    ordenes_count: 38,
-    notas: "Falta de $10 en caja, probablemente cambio mal dado",
-    abierto_en: "2026-03-05T08:00:00",
-    cerrado_en: "2026-03-05T20:00:00",
-  },
-  {
-    id: "corte-3",
-    fecha: "2026-03-04",
-    fondo_inicial: 500,
-    ventas_efectivo: 3120,
-    ventas_tarjeta: 1800,
-    ventas_transferencia: 900,
-    total_ventas: 5820,
-    propinas: 450,
-    descuentos: 200,
-    efectivo_esperado: 3620,
-    efectivo_real: 3620,
-    diferencia: 0,
-    ordenes_count: 51,
-    notas: "Cuadre perfecto",
-    abierto_en: "2026-03-04T08:00:00",
-    cerrado_en: "2026-03-04T20:00:00",
-  },
-  {
-    id: "corte-2",
-    fecha: "2026-03-03",
-    fondo_inicial: 500,
-    ventas_efectivo: 2400,
-    ventas_tarjeta: 950,
-    ventas_transferencia: 500,
-    total_ventas: 3850,
-    propinas: 200,
-    descuentos: 75,
-    efectivo_esperado: 2900,
-    efectivo_real: 2925,
-    diferencia: 25,
-    ordenes_count: 32,
-    notas: "Sobra de $25, cliente dejó propina en efectivo",
-    abierto_en: "2026-03-03T08:00:00",
-    cerrado_en: "2026-03-03T20:00:00",
-  },
-  {
-    id: "corte-1",
-    fecha: "2026-03-02",
-    fondo_inicial: 500,
-    ventas_efectivo: 2750,
-    ventas_tarjeta: 1100,
-    ventas_transferencia: 650,
-    total_ventas: 4500,
-    propinas: 320,
-    descuentos: 120,
-    efectivo_esperado: 3250,
-    efectivo_real: 3255,
-    diferencia: 5,
-    ordenes_count: 44,
-    notas: "Sin incidencias",
-    abierto_en: "2026-03-02T08:00:00",
-    cerrado_en: "2026-03-02T20:00:00",
-  },
-];
-
-// ── MOCK DATA: Órdenes del turno actual ──
-const MOCK_ORDENES_HOY = [
-  {
-    id: "ord-1",
-    mesa_numero: 2,
-    total: 155,
-    tipo_pago: "efectivo" as const,
-    propina: 20,
-    descuento: 0,
-    creado_en: new Date(Date.now() - 120 * 60000).toISOString(),
-  },
-  {
-    id: "ord-2",
-    mesa_numero: 3,
-    total: 355,
-    tipo_pago: "tarjeta" as const,
-    propina: 0,
-    descuento: 0,
-    creado_en: new Date(Date.now() - 95 * 60000).toISOString(),
-  },
-  {
-    id: "ord-3",
-    mesa_numero: null,
-    total: 165,
-    tipo_pago: "efectivo" as const,
-    propina: 15,
-    descuento: 0,
-    creado_en: new Date(Date.now() - 60 * 60000).toISOString(),
-  },
-  {
-    id: "ord-4",
-    mesa_numero: null,
-    total: 75,
-    tipo_pago: "efectivo" as const,
-    propina: 0,
-    descuento: 0,
-    creado_en: new Date(Date.now() - 45 * 60000).toISOString(),
-  },
-  {
-    id: "ord-5",
-    mesa_numero: 5,
-    total: 220,
-    tipo_pago: "transferencia" as const,
-    propina: 0,
-    descuento: 10,
-    creado_en: new Date(Date.now() - 30 * 60000).toISOString(),
-  },
-  {
-    id: "ord-6",
-    mesa_numero: 1,
-    total: 110,
-    tipo_pago: "tarjeta" as const,
-    propina: 0,
-    descuento: 0,
-    creado_en: new Date(Date.now() - 15 * 60000).toISOString(),
-  },
-];
+interface PagoTurno {
+  monto: number;
+  tipo_pago: string;
+  propina: number;
+  ordenes: { descuento: number } | null;
+}
 
 export default function CajaPage() {
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
   // ── ESTADO PRINCIPAL ──
-  const [estadoTurno, setEstadoTurno] = useState<EstadoTurno>("abierto");
+  const [estadoTurno, setEstadoTurno] = useState<EstadoTurno>("cargando");
+  const [turnoActivo, setTurnoActivo] = useState<CorteCaja | null>(null);
   const [fondoInicial, setFondoInicial] = useState<string>("");
   const [efectivoReal, setEfectivoReal] = useState<string>("");
   const [notasCierre, setNotasCierre] = useState<string>("");
-  const [confirmandoCierre, setConfirmandoCierre] = useState(false);
   const [procesando, setProcesando] = useState(false);
+
+  // ── DATOS TURNO ──
+  const [pagosTurno, setPagosTurno] = useState<PagoTurno[]>([]);
+  const [ordenesCompletadas, setOrdenesCompletadas] = useState<number>(0);
+
+  // ── HISTORIAL ──
+  const [cortesHistorial, setCortesHistorial] = useState<CorteCaja[]>([]);
 
   // ── CONFIRMACIONES ──
   const [confirmarApertura, setConfirmarApertura] = useState(false);
   const [confirmarCierre, setConfirmarCierre] = useState(false);
   const [mostrarHistorial, setMostrarHistorial] = useState(false);
 
+  // ── CARGAR TURNO ACTIVO ──
+  const cargarTurnoActivo = useCallback(async () => {
+    if (USE_MOCK || !supabase || !isAuthenticated || !user) {
+      setEstadoTurno("sin_turno");
+      return;
+    }
+
+    try {
+      // Buscar corte abierto (sin cerrado_en)
+      const { data: corteAbierto, error } = await supabase
+        .from("cortes_caja")
+        .select("*")
+        .eq("negocio_id", user.negocio_id)
+        .is("cerrado_en", null)
+        .order("abierto_en", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (corteAbierto && !error) {
+        const corte = corteAbierto as unknown as CorteCaja;
+        setTurnoActivo(corte);
+        setFondoInicial(String(corte.fondo_inicial));
+        setEstadoTurno("abierto");
+      } else {
+        setEstadoTurno("sin_turno");
+      }
+    } catch {
+      // No hay turno abierto (PGRST116 = no rows)
+      setEstadoTurno("sin_turno");
+    }
+  }, [isAuthenticated, user]);
+
+  // ── CARGAR PAGOS DEL TURNO ──
+  const cargarPagosTurno = useCallback(async () => {
+    if (USE_MOCK || !supabase || !turnoActivo) return;
+
+    try {
+      // Pagos de ordenes completadas desde que se abrió el turno
+      const { data: pagos } = await supabase
+        .from("pagos")
+        .select("monto, tipo_pago, propina, ordenes:orden_id(descuento)")
+        .eq("negocio_id", turnoActivo.negocio_id)
+        .eq("estado", "completado")
+        .gte("creado_en", turnoActivo.abierto_en);
+
+      if (pagos) {
+        setPagosTurno(pagos as unknown as PagoTurno[]);
+      }
+
+      // Contar ordenes completadas del turno
+      const { count } = await supabase
+        .from("ordenes")
+        .select("id", { count: "exact", head: true })
+        .eq("negocio_id", turnoActivo.negocio_id)
+        .eq("estado", "completada")
+        .gte("creado_en", turnoActivo.abierto_en);
+
+      setOrdenesCompletadas(count ?? 0);
+    } catch {
+      console.warn("[Caja] Error cargando pagos del turno");
+    }
+  }, [turnoActivo]);
+
+  // ── CARGAR HISTORIAL ──
+  const cargarHistorial = useCallback(async () => {
+    if (USE_MOCK || !supabase || !user) return;
+
+    try {
+      const { data } = await supabase
+        .from("cortes_caja")
+        .select("*")
+        .eq("negocio_id", user.negocio_id)
+        .not("cerrado_en", "is", null)
+        .order("cerrado_en", { ascending: false })
+        .limit(30);
+
+      if (data) setCortesHistorial(data as CorteCaja[]);
+    } catch {
+      console.warn("[Caja] Error cargando historial");
+    }
+  }, [user]);
+
+  // ── EFFECTS ──
+  useEffect(() => {
+    cargarTurnoActivo();
+  }, [cargarTurnoActivo]);
+
+  useEffect(() => {
+    if (turnoActivo) cargarPagosTurno();
+  }, [turnoActivo, cargarPagosTurno]);
+
+  useEffect(() => {
+    cargarHistorial();
+  }, [cargarHistorial]);
+
+  // ── REALTIME: refetch pagos cuando hay nuevos cobros ──
+  useEffect(() => {
+    if (!turnoActivo) return;
+    const subPagos = subscribeToTable("pagos", () => cargarPagosTurno());
+    const subOrdenes = subscribeToTable("ordenes", () => cargarPagosTurno());
+    return () => {
+      subPagos.unsubscribe();
+      subOrdenes.unsubscribe();
+    };
+  }, [turnoActivo, cargarPagosTurno]);
+
   // ── CÁLCULOS: Turno abierto ──
-  const ventasEfectivo = MOCK_ORDENES_HOY.reduce(
-    (acc, ord) => acc + (ord.tipo_pago === "efectivo" ? ord.total : 0),
-    0
+  const ventasEfectivo = useMemo(
+    () => pagosTurno.reduce((acc, p) => acc + (p.tipo_pago === "efectivo" ? Number(p.monto) : 0), 0),
+    [pagosTurno],
   );
-  const ventasTarjeta = MOCK_ORDENES_HOY.reduce(
-    (acc, ord) => acc + (ord.tipo_pago === "tarjeta" ? ord.total : 0),
-    0
+  const ventasTarjeta = useMemo(
+    () => pagosTurno.reduce((acc, p) => acc + (p.tipo_pago === "tarjeta" ? Number(p.monto) : 0), 0),
+    [pagosTurno],
   );
-  const ventasTransferencia = MOCK_ORDENES_HOY.reduce(
-    (acc, ord) => acc + (ord.tipo_pago === "transferencia" ? ord.total : 0),
-    0
+  const ventasTransferencia = useMemo(
+    () => pagosTurno.reduce((acc, p) => acc + (p.tipo_pago === "transferencia" ? Number(p.monto) : 0), 0),
+    [pagosTurno],
   );
   const totalVentas = ventasEfectivo + ventasTarjeta + ventasTransferencia;
-  const propinasTotal = MOCK_ORDENES_HOY.reduce((acc, ord) => acc + ord.propina, 0);
-  const descuentosTotal = MOCK_ORDENES_HOY.reduce(
-    (acc, ord) => acc + ord.descuento,
-    0
+  const propinasTotal = useMemo(
+    () => pagosTurno.reduce((acc, p) => acc + Number(p.propina || 0), 0),
+    [pagosTurno],
   );
-  const efectivoEsperado = (parseFloat(fondoInicial) || 0) + ventasEfectivo;
+  const descuentosTotal = useMemo(
+    () => pagosTurno.reduce((acc, p) => acc + Number((p.ordenes as any)?.descuento || 0), 0),
+    [pagosTurno],
+  );
+  const fondoInicialNum = turnoActivo ? Number(turnoActivo.fondo_inicial) : (parseFloat(fondoInicial) || 0);
+  const efectivoEsperado = fondoInicialNum + ventasEfectivo;
 
   // ── CÁLCULOS: Cierre ──
   const efectivoRealNum = parseFloat(efectivoReal) || 0;
   const diferencia = efectivoRealNum - efectivoEsperado;
-  const diferenciaPorciento =
-    efectivoEsperado > 0
-      ? Math.round((Math.abs(diferencia) / efectivoEsperado) * 1000) / 10
-      : 0;
 
   // ── HANDLERS: Apertura de turno ──
   const handleAbrirTurno = async () => {
+    if (!user) return;
     setProcesando(true);
-    // TODO: Crear registro en Supabase
-    await new Promise((r) => setTimeout(r, 800));
+
+    const res = await insertRecordReturning<CorteCaja>("cortes_caja", {
+      negocio_id: user.negocio_id,
+      usuario_id: user.id,
+      fondo_inicial: parseFloat(fondoInicial) || 0,
+      abierto_en: new Date().toISOString(),
+    });
+
+    if (res.success && res.data) {
+      setTurnoActivo(res.data);
+      setEstadoTurno("abierto");
+      showToast("Turno abierto", "success");
+    } else {
+      showToast(`Error al abrir turno: ${res.error}`, "error");
+    }
+
     setProcesando(false);
     setConfirmarApertura(false);
-    setEstadoTurno("abierto");
-    setFondoInicial("");
   };
 
   // ── HANDLERS: Cierre de turno ──
   const handleIniciarCierre = () => {
     if (!efectivoReal || efectivoRealNum === 0) return;
-    setConfirmandoCierre(true);
     setEstadoTurno("cerrando");
   };
 
   const handleConfirmarCierre = async () => {
+    if (!turnoActivo) return;
     setProcesando(true);
-    // TODO: Guardar corte en Supabase
-    await new Promise((r) => setTimeout(r, 1200));
+
+    const res = await updateRecord("cortes_caja", turnoActivo.id, {
+      ventas_efectivo: ventasEfectivo,
+      ventas_tarjeta: ventasTarjeta,
+      ventas_transferencia: ventasTransferencia,
+      total_ventas: totalVentas,
+      propinas: propinasTotal,
+      descuentos: descuentosTotal,
+      efectivo_esperado: efectivoEsperado,
+      efectivo_real: efectivoRealNum,
+      diferencia,
+      ordenes_count: ordenesCompletadas,
+      notas: notasCierre || null,
+      cerrado_en: new Date().toISOString(),
+    });
+
+    if (res.success) {
+      showToast("Turno cerrado correctamente", "success");
+      setEstadoTurno("cerrado");
+      cargarHistorial();
+    } else {
+      showToast(`Error al cerrar turno: ${res.error}`, "error");
+    }
+
     setProcesando(false);
     setConfirmarCierre(false);
-    setEstadoTurno("cerrado");
   };
 
   const handleNuevoTurno = () => {
     setEstadoTurno("sin_turno");
+    setTurnoActivo(null);
     setFondoInicial("");
     setEfectivoReal("");
     setNotasCierre("");
-    setConfirmandoCierre(false);
+    setPagosTurno([]);
+    setOrdenesCompletadas(0);
   };
 
   // ── ESTILOS: Color de diferencia ──
@@ -288,6 +297,15 @@ export default function CajaPage() {
         ? "text-status-warn"
         : "text-status-err";
 
+  // ── LOADING ──
+  if (estadoTurno === "cargando") {
+    return (
+      <div className="flex h-[calc(100vh-3.5rem-4rem)] items-center justify-center">
+        <Loader2 size={32} className="animate-spin text-accent" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-[calc(100vh-3.5rem-4rem)]" style={{ gap: "var(--density-gap)" }}>
       {/* ── PANEL IZQUIERDO: Historial de cortes ── */}
@@ -299,15 +317,15 @@ export default function CajaPage() {
               <h3 className="text-sm font-semibold text-text-100">Histórico</h3>
             </div>
             <span className="text-[11px] text-text-25 tabular-nums font-medium">
-              {MOCK_CORTES_HISTORICO.length}
+              {cortesHistorial.length}
             </span>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
-          {MOCK_CORTES_HISTORICO.map((corte) => {
-            const fecha = new Date(corte.cerrado_en);
-            const diferenciaCorte = corte.diferencia;
+          {cortesHistorial.map((corte) => {
+            const fecha = new Date(corte.cerrado_en!);
+            const diferenciaCorte = Number(corte.diferencia) || 0;
             const esPositiva = diferenciaCorte > 0;
             const esNegativa = diferenciaCorte < 0;
 
@@ -336,11 +354,18 @@ export default function CajaPage() {
                   )}
                 </div>
                 <div className="text-[10px] text-text-25 tabular-nums">
-                  {formatMXN(corte.total_ventas)} · {corte.ordenes_count} órdenes
+                  {formatMXN(Number(corte.total_ventas))} · {corte.ordenes_count} órdenes
                 </div>
               </button>
             );
           })}
+
+          {cortesHistorial.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Calendar size={24} className="text-text-25 mb-2" />
+              <p className="text-xs text-text-25 text-center">Sin cortes anteriores</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -482,7 +507,7 @@ export default function CajaPage() {
                         Fondo inicial
                       </p>
                       <p className="text-text-100 font-semibold tabular-nums text-base">
-                        {formatMXN(parseFloat(fondoInicial) || 0)}
+                        {formatMXN(fondoInicialNum)}
                       </p>
                     </div>
                     <div>
@@ -535,24 +560,28 @@ export default function CajaPage() {
                   </div>
                   <div className="flex justify-between text-xs text-text-45">
                     <span>Órdenes</span>
-                    <span className="tabular-nums">{MOCK_ORDENES_HOY.length}</span>
+                    <span className="tabular-nums">{ordenesCompletadas}</span>
                   </div>
                 </div>
 
-                {notasCierre && (
-                  <div className="mb-6 p-3 rounded-xl bg-status-warn-bg/20 border border-status-warn/20">
-                    <p className="text-xs text-text-45 mb-1">Notas:</p>
-                    <p className="text-xs text-text-70">{notasCierre}</p>
-                  </div>
-                )}
+                {/* Notas de cierre */}
+                <div className="mb-6">
+                  <label className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">
+                    Notas (opcional)
+                  </label>
+                  <textarea
+                    value={notasCierre}
+                    onChange={(e) => setNotasCierre(e.target.value)}
+                    placeholder="Observaciones del turno..."
+                    rows={2}
+                    className="w-full px-3 py-2 rounded-lg bg-surface-3 border border-border text-sm text-text-100 placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 resize-none"
+                  />
+                </div>
 
                 {/* Botones */}
                 <div className="flex gap-3">
                   <button
-                    onClick={() => {
-                      setEstadoTurno("abierto");
-                      setConfirmandoCierre(false);
-                    }}
+                    onClick={() => setEstadoTurno("abierto")}
                     disabled={procesando}
                     className="flex-1 py-3 rounded-xl btn-ghost text-sm font-medium min-h-[44px]"
                   >
@@ -586,15 +615,14 @@ export default function CajaPage() {
                     Turno abierto
                   </h1>
                   <p className="text-xs text-text-25">
-                    Fondo: {formatMXN(parseFloat(fondoInicial) || 0)}
+                    Fondo: {formatMXN(fondoInicialNum)}
+                    {turnoActivo && (
+                      <span className="ml-2">
+                        · Abierto {new Date(turnoActivo.abierto_en).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    )}
                   </p>
                 </div>
-                <button
-                  onClick={() => setEstadoTurno("abierto")}
-                  className="p-2.5 rounded-xl text-text-45 hover:text-text-100 hover:bg-surface-3 transition-colors duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                >
-                  <MoreVertical size={16} />
-                </button>
               </div>
 
               {/* KPI Cards */}
@@ -603,9 +631,7 @@ export default function CajaPage() {
                 <div className="p-5 rounded-xl bg-surface-2 border border-border">
                   <div className="flex items-center justify-between mb-3">
                     <TrendingUp size={18} className="text-accent" />
-                    <span className="text-[10px] text-text-25 font-medium">
-                      Hoy
-                    </span>
+                    <span className="text-[10px] text-text-25 font-medium">Hoy</span>
                   </div>
                   <p className="text-sm text-text-45 mb-1">Total vendido</p>
                   <p className="text-2xl font-bold text-text-100 tabular-nums">
@@ -617,13 +643,11 @@ export default function CajaPage() {
                 <div className="p-5 rounded-xl bg-surface-2 border border-border">
                   <div className="flex items-center justify-between mb-3">
                     <FileText size={18} className="text-accent" />
-                    <span className="text-[10px] text-text-25 font-medium">
-                      Total
-                    </span>
+                    <span className="text-[10px] text-text-25 font-medium">Total</span>
                   </div>
                   <p className="text-sm text-text-45 mb-1">Órdenes</p>
                   <p className="text-2xl font-bold text-text-100 tabular-nums">
-                    {MOCK_ORDENES_HOY.length}
+                    {ordenesCompletadas}
                   </p>
                 </div>
 
@@ -631,17 +655,11 @@ export default function CajaPage() {
                 <div className="p-5 rounded-xl bg-surface-2 border border-border">
                   <div className="flex items-center justify-between mb-3">
                     <DollarSign size={18} className="text-accent" />
-                    <span className="text-[10px] text-text-25 font-medium">
-                      Promedio
-                    </span>
+                    <span className="text-[10px] text-text-25 font-medium">Promedio</span>
                   </div>
                   <p className="text-sm text-text-45 mb-1">Ticket</p>
                   <p className="text-2xl font-bold text-text-100 tabular-nums">
-                    {formatMXN(
-                      MOCK_ORDENES_HOY.length > 0
-                        ? totalVentas / MOCK_ORDENES_HOY.length
-                        : 0
-                    )}
+                    {formatMXN(ordenesCompletadas > 0 ? totalVentas / ordenesCompletadas : 0)}
                   </p>
                 </div>
 
@@ -649,9 +667,7 @@ export default function CajaPage() {
                 <div className="p-5 rounded-xl bg-surface-2 border border-border">
                   <div className="flex items-center justify-between mb-3">
                     <TrendingUp size={18} className="text-accent" />
-                    <span className="text-[10px] text-text-25 font-medium">
-                      Extra
-                    </span>
+                    <span className="text-[10px] text-text-25 font-medium">Extra</span>
                   </div>
                   <p className="text-sm text-text-45 mb-1">Propinas</p>
                   <p className="text-2xl font-bold text-accent tabular-nums">
@@ -666,9 +682,7 @@ export default function CajaPage() {
                 <div className="p-5 rounded-xl bg-surface-2 border border-border">
                   <div className="flex items-center gap-2 mb-3">
                     <Banknote size={18} className="text-accent" />
-                    <h3 className="text-sm font-medium text-text-100">
-                      Efectivo
-                    </h3>
+                    <h3 className="text-sm font-medium text-text-100">Efectivo</h3>
                   </div>
                   <p className="text-2xl font-bold text-accent tabular-nums mb-3">
                     {formatMXN(ventasEfectivo)}
@@ -682,9 +696,7 @@ export default function CajaPage() {
                     />
                   </div>
                   <p className="text-[10px] text-text-25 mt-2 tabular-nums">
-                    {totalVentas > 0
-                      ? Math.round((ventasEfectivo / totalVentas) * 100)
-                      : 0}%
+                    {totalVentas > 0 ? Math.round((ventasEfectivo / totalVentas) * 100) : 0}%
                   </p>
                 </div>
 
@@ -692,9 +704,7 @@ export default function CajaPage() {
                 <div className="p-5 rounded-xl bg-surface-2 border border-border">
                   <div className="flex items-center gap-2 mb-3">
                     <CreditCard size={18} className="text-accent" />
-                    <h3 className="text-sm font-medium text-text-100">
-                      Tarjeta
-                    </h3>
+                    <h3 className="text-sm font-medium text-text-100">Tarjeta</h3>
                   </div>
                   <p className="text-2xl font-bold text-accent tabular-nums mb-3">
                     {formatMXN(ventasTarjeta)}
@@ -708,9 +718,7 @@ export default function CajaPage() {
                     />
                   </div>
                   <p className="text-[10px] text-text-25 mt-2 tabular-nums">
-                    {totalVentas > 0
-                      ? Math.round((ventasTarjeta / totalVentas) * 100)
-                      : 0}%
+                    {totalVentas > 0 ? Math.round((ventasTarjeta / totalVentas) * 100) : 0}%
                   </p>
                 </div>
 
@@ -718,9 +726,7 @@ export default function CajaPage() {
                 <div className="p-5 rounded-xl bg-surface-2 border border-border">
                   <div className="flex items-center gap-2 mb-3">
                     <ArrowRightLeft size={18} className="text-accent" />
-                    <h3 className="text-sm font-medium text-text-100">
-                      Transf.
-                    </h3>
+                    <h3 className="text-sm font-medium text-text-100">Transf.</h3>
                   </div>
                   <p className="text-2xl font-bold text-accent tabular-nums mb-3">
                     {formatMXN(ventasTransferencia)}
@@ -734,14 +740,12 @@ export default function CajaPage() {
                     />
                   </div>
                   <p className="text-[10px] text-text-25 mt-2 tabular-nums">
-                    {totalVentas > 0
-                      ? Math.round((ventasTransferencia / totalVentas) * 100)
-                      : 0}%
+                    {totalVentas > 0 ? Math.round((ventasTransferencia / totalVentas) * 100) : 0}%
                   </p>
                 </div>
               </div>
 
-              {/* Descuentos y otros */}
+              {/* Descuentos y efectivo esperado */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-5 rounded-xl bg-surface-2 border border-border">
                   <h3 className="text-sm font-medium text-text-45 mb-2">
@@ -761,61 +765,56 @@ export default function CajaPage() {
                 </div>
               </div>
 
-              {/* Órdenes recientes */}
-              <div>
+              {/* Sección de cierre */}
+              <div className="p-5 rounded-xl bg-surface-2 border border-border">
                 <h2 className="text-sm font-semibold text-text-100 mb-3">
-                  Órdenes del turno
+                  Cerrar turno
                 </h2>
-                <div className="space-y-2">
-                  {MOCK_ORDENES_HOY.map((ord) => {
-                    const metodoPagoLabel = {
-                      efectivo: "Efectivo",
-                      tarjeta: "Tarjeta",
-                      transferencia: "Transferencia",
-                    }[ord.tipo_pago];
-                    return (
-                      <div
-                        key={ord.id}
-                        className="p-3 rounded-xl bg-surface-2 border border-border flex items-center justify-between"
-                      >
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-text-100">
-                            {ord.mesa_numero ? `Mesa ${ord.mesa_numero}` : "Para llevar"}
-                          </p>
-                          <p className="text-xs text-text-25">
-                            {metodoPagoLabel} · {new Date(ord.creado_en).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
-                          </p>
-                        </div>
-                        <span className="text-sm font-semibold text-accent tabular-nums flex-shrink-0">
-                          {formatMXN(ord.total)}
-                        </span>
-                      </div>
-                    );
-                  })}
+                <div className="flex items-end gap-3">
+                  <div className="flex-1">
+                    <label className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">
+                      Efectivo contado
+                    </label>
+                    <input
+                      type="number"
+                      value={efectivoReal}
+                      onChange={(e) => setEfectivoReal(e.target.value)}
+                      placeholder="0.00"
+                      min="0"
+                      className="w-full px-4 py-3 rounded-xl bg-surface-3 border border-border text-text-100 text-lg font-semibold tabular-nums placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 min-h-[48px]"
+                    />
+                  </div>
+                  <button
+                    onClick={handleIniciarCierre}
+                    disabled={!efectivoReal || efectivoRealNum === 0}
+                    className={cn(
+                      "flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 min-h-[48px]",
+                      efectivoReal && efectivoRealNum > 0
+                        ? "btn-primary"
+                        : "bg-surface-3 text-text-25 cursor-not-allowed"
+                    )}
+                  >
+                    <Lock size={16} />
+                    Cerrar
+                  </button>
                 </div>
-              </div>
-
-              {/* Botón Cerrar turno */}
-              <div className="pb-4">
-                <button
-                  onClick={() => setEstadoTurno("cerrando")}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl btn-primary text-sm font-semibold min-h-[48px]"
-                >
-                  <Lock size={18} />
-                  Iniciar cierre de turno
-                </button>
+                {efectivoReal && efectivoRealNum > 0 && (
+                  <div className={cn("mt-3 p-3 rounded-xl border", diferenciaBg, diferencia === 0 ? "border-status-ok/20" : diferencia > 0 ? "border-status-warn/20" : "border-status-err/20")}>
+                    <div className="flex items-center justify-between">
+                      <span className={cn("text-xs font-medium", diferenciaText)}>
+                        {diferencia === 0 ? "✓ Cuadra" : diferencia > 0 ? "Sobra" : "Falta"}
+                      </span>
+                      <span className={cn("text-lg font-semibold tabular-nums", diferenciaText)}>
+                        {diferencia >= 0 ? "+" : ""}{formatMXN(diferencia)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
       </div>
-
-      {/* ── MODAL: Cierre de turno ── */}
-      {estadoTurno === "abierto" && !confirmandoCierre && (
-        <div className="fixed inset-0 bg-black/40 z-40 flex items-center justify-center p-4" style={{ display: confirmandoCierre ? "flex" : "none" }}>
-          {/* Placeholder para modal de cierre */}
-        </div>
-      )}
 
       {/* ── CONFIRM DIALOGS ── */}
       <ConfirmDialog
@@ -823,7 +822,7 @@ export default function CajaPage() {
         onClose={() => setConfirmarApertura(false)}
         onConfirm={handleAbrirTurno}
         title="Abrir turno"
-        description={`¿Abrirs con fondo inicial de ${formatMXN(parseFloat(fondoInicial) || 0)}?`}
+        description={`¿Abrir con fondo inicial de ${formatMXN(parseFloat(fondoInicial) || 0)}?`}
         confirmLabel="Abrir"
         loading={procesando}
       />
@@ -832,7 +831,6 @@ export default function CajaPage() {
         open={confirmarCierre}
         onClose={() => {
           setConfirmarCierre(false);
-          setConfirmandoCierre(false);
           setEstadoTurno("abierto");
         }}
         onConfirm={handleConfirmarCierre}
@@ -849,20 +847,20 @@ export default function CajaPage() {
           <div className="w-full max-w-2xl bg-surface-0 rounded-2xl border border-border p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-text-100">
-                Histórico de cortes (últimos 30 días)
+                Histórico de cortes (últimos 30)
               </h2>
               <button
                 onClick={() => setMostrarHistorial(false)}
-                className="p-2 rounded-lg hover:bg-surface-2 transition-colors"
+                className="p-2 rounded-lg hover:bg-surface-2 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               >
                 <X size={20} className="text-text-45" />
               </button>
             </div>
 
             <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-              {MOCK_CORTES_HISTORICO.map((corte) => {
-                const fecha = new Date(corte.cerrado_en);
-                const diferenciaCorte = corte.diferencia;
+              {cortesHistorial.map((corte) => {
+                const fecha = new Date(corte.cerrado_en!);
+                const diferenciaCorte = Number(corte.diferencia) || 0;
                 const esPositiva = diferenciaCorte > 0;
                 const esNegativa = diferenciaCorte < 0;
 
@@ -886,7 +884,7 @@ export default function CajaPage() {
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold text-accent tabular-nums">
-                          {formatMXN(corte.total_ventas)}
+                          {formatMXN(Number(corte.total_ventas))}
                         </p>
                         {diferenciaCorte === 0 && (
                           <p className="text-xs text-status-ok font-medium">
@@ -908,7 +906,7 @@ export default function CajaPage() {
 
                     {corte.notas && (
                       <p className="text-xs text-text-45 p-2 bg-surface-1 rounded italic">
-                        "{corte.notas}"
+                        &ldquo;{corte.notas}&rdquo;
                       </p>
                     )}
 
@@ -916,31 +914,37 @@ export default function CajaPage() {
                       <div>
                         <p className="opacity-70">Fondo</p>
                         <p className="font-medium text-text-70">
-                          {formatMXN(corte.fondo_inicial)}
+                          {formatMXN(Number(corte.fondo_inicial))}
                         </p>
                       </div>
                       <div>
                         <p className="opacity-70">Efectivo</p>
                         <p className="font-medium text-text-70">
-                          {formatMXN(corte.ventas_efectivo)}
+                          {formatMXN(Number(corte.ventas_efectivo))}
                         </p>
                       </div>
                       <div>
                         <p className="opacity-70">Tarjeta</p>
                         <p className="font-medium text-text-70">
-                          {formatMXN(corte.ventas_tarjeta)}
+                          {formatMXN(Number(corte.ventas_tarjeta))}
                         </p>
                       </div>
                       <div>
                         <p className="opacity-70">Propina</p>
                         <p className="font-medium text-text-70">
-                          {formatMXN(corte.propinas)}
+                          {formatMXN(Number(corte.propinas))}
                         </p>
                       </div>
                     </div>
                   </div>
                 );
               })}
+
+              {cortesHistorial.length === 0 && (
+                <div className="py-12 text-center">
+                  <p className="text-sm text-text-45">Sin cortes registrados aún</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
