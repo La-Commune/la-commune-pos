@@ -179,6 +179,40 @@ function MesasPageContent() {
     []
   );
 
+  // ── Resize mesa → optimistic + debounced persist ──
+  const resizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleResizeMesa = useCallback(
+    (mesaId: string, ancho: number, alto: number) => {
+      // Optimistic instant
+      useMesasStore.getState().updateMesa(mesaId, { ancho, alto });
+      // Debounce persist (resize fires many events)
+      if (resizeTimerRef.current) clearTimeout(resizeTimerRef.current);
+      resizeTimerRef.current = setTimeout(async () => {
+        const { success, error: err } = await updateRecord("mesas", mesaId, { ancho, alto });
+        if (!success) {
+          console.warn("[Mesas] Error guardando tamaño:", err);
+        }
+      }, 300);
+    },
+    []
+  );
+
+  // ── Rotate mesa → optimistic + debounced persist ──
+  const rotateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleRotateMesa = useCallback(
+    (mesaId: string, rotacion: number) => {
+      useMesasStore.getState().updateMesa(mesaId, { rotacion });
+      if (rotateTimerRef.current) clearTimeout(rotateTimerRef.current);
+      rotateTimerRef.current = setTimeout(async () => {
+        const { success, error: err } = await updateRecord("mesas", mesaId, { rotacion });
+        if (!success) {
+          console.warn("[Mesas] Error guardando rotación:", err);
+        }
+      }, 300);
+    },
+    []
+  );
+
   // ── Guardar mesa (crear o editar) ──
   const handleSaveMesa = useCallback(
     async (mesa: Partial<Mesa>): Promise<boolean> => {
@@ -192,6 +226,9 @@ function MesasPageContent() {
           forma: mesa.forma,
           pos_x: mesa.pos_x,
           pos_y: mesa.pos_y,
+          ancho: mesa.ancho,
+          alto: mesa.alto,
+          rotacion: mesa.rotacion,
         };
         useMesasStore.getState().updateMesa(editingMesa.id, updates);
         const { success, error: err } = await updateRecord("mesas", editingMesa.id, updates);
@@ -210,6 +247,9 @@ function MesasPageContent() {
           pos_x: mesa.pos_x ?? 80,
           pos_y: mesa.pos_y ?? 80,
           forma: mesa.forma ?? "cuadrada",
+          ancho: mesa.ancho ?? 80,
+          alto: mesa.alto ?? 80,
+          rotacion: mesa.rotacion ?? 0,
         };
         const { success, error: err } = await insertRecord("mesas", newMesa);
         if (!success) {
@@ -238,6 +278,9 @@ function MesasPageContent() {
         pos_x: (mesa.pos_x ?? 80) + 30,
         pos_y: (mesa.pos_y ?? 80) + 30,
         forma: mesa.forma ?? "cuadrada",
+        ancho: mesa.ancho ?? 80,
+        alto: mesa.alto ?? 80,
+        rotacion: mesa.rotacion ?? 0,
       };
       const { success, error: err } = await insertRecord("mesas", newMesa);
       if (!success) {
@@ -334,107 +377,109 @@ function MesasPageContent() {
 
   return (
     <div>
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-6">
+      {/* ── Row 1: Title + admin actions ── */}
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-semibold text-text-100 tracking-tight">Mesas</h1>
           <p className="text-sm text-text-45 mt-0.5">
-            {loading ? "Cargando..." : `${mesas.length} mesas configuradas`}
+            {loading
+              ? "Cargando..."
+              : selectedZonaId
+                ? `${filteredMesas.length} mesas en ${currentZona?.nombre ?? "zona"}`
+                : `${mesas.length} mesas configuradas`}
           </p>
           {error && <p className="text-xs text-status-err mt-1">{error}</p>}
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Vista toggle */}
-          <div className="flex items-center gap-0.5 p-1 bg-surface-2 rounded-lg">
+        {isAdmin && (
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setVista("grid")}
-              className={cn(
-                "p-2 rounded-md transition-all",
-                vista === "grid"
-                  ? "bg-surface-4 text-text-100 shadow-sm"
-                  : "text-text-45 hover:text-text-70"
-              )}
-              title="Vista Grid"
+              onClick={handleAddMesa}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg btn-primary text-[12px] min-h-[40px]"
             >
-              <LayoutGrid size={16} />
+              <Plus size={15} />
+              Nueva mesa
             </button>
             <button
-              onClick={() => setVista("plano")}
-              className={cn(
-                "p-2 rounded-md transition-all",
-                vista === "plano"
-                  ? "bg-surface-4 text-text-100 shadow-sm"
-                  : "text-text-45 hover:text-text-70"
-              )}
-              title="Vista Plano"
+              onClick={() => setZonaManagerOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-2 text-text-70 hover:bg-surface-3 transition-colors text-[12px] min-h-[40px]"
             >
-              <Map size={16} />
+              <Settings2 size={14} />
+              Zonas
             </button>
           </div>
-
-          {/* Admin controls — sin botón "Editar" */}
-          {isAdmin && (
-            <>
-              <button
-                onClick={() => setZonaManagerOpen(true)}
-                className="p-2 rounded-lg bg-surface-2 text-text-70 hover:bg-surface-3 transition-colors min-h-[40px]"
-                title="Gestionar zonas"
-              >
-                <Settings2 size={16} />
-              </button>
-
-              <button
-                onClick={handleAddMesa}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg btn-primary text-[12px] min-h-[40px]"
-              >
-                <Plus size={15} />
-                Nueva mesa
-              </button>
-            </>
-          )}
-        </div>
+        )}
       </div>
 
-      {/* ── Zona filter tabs ── */}
-      <div className="flex items-center gap-1.5 mb-5 p-1 bg-surface-2 rounded-xl w-fit overflow-x-auto">
-        <button
-          onClick={() => selectZona(null)}
-          className={cn(
-            "px-3.5 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap min-h-[40px]",
-            selectedZonaId === null
-              ? "bg-surface-4 text-text-100 shadow-sm"
-              : "text-text-45 hover:text-text-70"
-          )}
-        >
-          Todas
-        </button>
-        {zonas.map((zona) => (
+      {/* ── Row 2: Zona tabs (izq) + vista toggle (der) ── */}
+      <div className="flex items-center justify-between mb-5">
+        {/* Zona tabs */}
+        <div className="flex items-center gap-1 p-1 bg-surface-2 rounded-xl overflow-x-auto">
           <button
-            key={zona.id}
-            onClick={() => selectZona(zona.id ?? null)}
+            onClick={() => selectZona(null)}
             className={cn(
-              "flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap min-h-[40px]",
-              selectedZonaId === zona.id
+              "px-3.5 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap min-h-[36px]",
+              selectedZonaId === null
                 ? "bg-surface-4 text-text-100 shadow-sm"
                 : "text-text-45 hover:text-text-70"
             )}
           >
-            <span
-              className="w-2 h-2 rounded-full shrink-0"
-              style={{ backgroundColor: zona.color ?? "#94a3b8" }}
-            />
-            {zona.nombre}
+            Todas
           </button>
-        ))}
-      </div>
+          {zonas.map((zona) => {
+            const isActive = selectedZonaId === zona.id;
+            const count = mesas.filter((m) => m.zona_id === zona.id).length;
+            return (
+              <button
+                key={zona.id}
+                onClick={() => selectZona(zona.id ?? null)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap min-h-[36px]",
+                  isActive
+                    ? "bg-surface-4 text-text-100 shadow-sm"
+                    : "text-text-45 hover:text-text-70"
+                )}
+                style={isActive ? { borderBottom: `2px solid ${zona.color ?? "#94a3b8"}` } : undefined}
+              >
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: zona.color ?? "#94a3b8" }}
+                />
+                {zona.nombre}
+                <span className="text-[10px] text-text-25 ml-0.5">{count}</span>
+              </button>
+            );
+          })}
+        </div>
 
-      {/* Admin hint */}
-      {isAdmin && !loading && mesas.length > 0 && vista === "grid" && (
-        <p className="text-[10px] text-text-25 mb-4">
-          Click derecho o mantén presionado en una mesa para editar, duplicar o eliminar
-        </p>
-      )}
+        {/* Vista toggle con labels */}
+        <div className="flex items-center gap-0.5 p-1 bg-surface-2 rounded-lg shrink-0 ml-3">
+          <button
+            onClick={() => setVista("grid")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all",
+              vista === "grid"
+                ? "bg-surface-4 text-text-100 shadow-sm"
+                : "text-text-45 hover:text-text-70"
+            )}
+          >
+            <LayoutGrid size={14} />
+            Grid
+          </button>
+          <button
+            onClick={() => setVista("plano")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all",
+              vista === "plano"
+                ? "bg-surface-4 text-text-100 shadow-sm"
+                : "text-text-45 hover:text-text-70"
+            )}
+          >
+            <Map size={14} />
+            Plano
+          </button>
+        </div>
+      </div>
 
       {/* ── Loading ── */}
       {loading && (
@@ -524,6 +569,8 @@ function MesasPageContent() {
           onEditMesa={handleEditMesa}
           onClickMesa={handleClickMesa}
           onContextMenu={handleContextMenu}
+          onResizeMesa={handleResizeMesa}
+          onRotateMesa={handleRotateMesa}
           onAddMesa={handleAddMesa}
         />
       )}

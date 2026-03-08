@@ -3,7 +3,7 @@ import { z } from "zod";
 // ── Enums (alineados 1:1 con schema.sql) ──
 export const RolUsuario = z.enum(["admin", "barista", "camarero", "cocina"]);
 export const EstadoMesa = z.enum(["disponible", "ocupada", "reservada", "preparando"]);
-export const FormaMesa = z.enum(["redonda", "cuadrada", "rectangular"]);
+export const FormaMesa = z.enum(["redonda", "cuadrada"]);
 export const EstadoOrden = z.enum([
   "nueva",
   "confirmada",
@@ -41,6 +41,9 @@ export const MesaSchema = z.object({
   pos_x: z.number().default(0),
   pos_y: z.number().default(0),
   forma: FormaMesa.default("cuadrada"),
+  ancho: z.number().int().min(50).max(300).default(80),
+  alto: z.number().int().min(50).max(300).default(80),
+  rotacion: z.number().int().min(0).max(359).default(0),
 });
 
 export const ItemOrdenSchema = z.object({

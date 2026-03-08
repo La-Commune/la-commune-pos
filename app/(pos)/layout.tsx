@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Sidebar from "@/components/layouts/Sidebar";
 import Navbar from "@/components/layouts/Navbar";
 import ToastContainer from "@/components/ui/Toast";
+import AutoDarkMode from "@/components/providers/AutoDarkMode";
 import { useUIStore } from "@/store/ui.store";
 import { cn } from "@/lib/utils";
 
@@ -12,14 +13,21 @@ export default function POSLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { sidebarCollapsed, sidebarPosition, density, panelWidth } = useUIStore();
+  const sidebarCollapsed = useUIStore((s) => s.sidebarCollapsed);
+  const sidebarPosition = useUIStore((s) => s.sidebarPosition);
+  const density = useUIStore((s) => s.density);
+  const panelWidth = useUIStore((s) => s.panelWidth);
+  const fontScale = useUIStore((s) => s.fontScale);
+  const reducedMotion = useUIStore((s) => s.reducedMotion);
+  const highContrast = useUIStore((s) => s.highContrast);
+  const largeTouchTargets = useUIStore((s) => s.largeTouchTargets);
+
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
   const showSidebar = sidebarPosition === "left" || sidebarPosition === "left-mini";
 
-  /* Margin-left for content area */
   const getMarginClass = () => {
     if (!showSidebar) return "ml-0";
     if (sidebarPosition === "left-mini") return "ml-[76px]";
@@ -31,7 +39,12 @@ export default function POSLayout({
       className="min-h-screen bg-surface-0"
       data-density={density !== "comfortable" ? density : undefined}
       data-panel={panelWidth !== "default" ? panelWidth : undefined}
+      data-font-scale={fontScale !== 100 ? fontScale : undefined}
+      data-reduced-motion={reducedMotion ? "true" : undefined}
+      data-high-contrast={highContrast ? "true" : undefined}
+      data-large-touch={largeTouchTargets ? "true" : undefined}
     >
+      <AutoDarkMode />
       {showSidebar && <Sidebar />}
       <div
         className={cn(

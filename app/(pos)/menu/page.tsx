@@ -19,6 +19,8 @@ import Modal from "@/components/ui/Modal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ProductoForm from "@/components/menu/ProductoForm";
 import { useCategorias, useProductos } from "@/hooks/useSupabase";
+import { useUIStore } from "@/store/ui.store";
+import { Grid3X3, List } from "lucide-react";
 
 const tipoIcon = {
   drink: Coffee,
@@ -39,6 +41,7 @@ export default function MenuPage() {
   /* R2: Estado para confirmación de eliminar */
   const [confirmEliminar, setConfirmEliminar] = useState(false);
   const [productoAEliminar, setProductoAEliminar] = useState<any | null>(null);
+  const { menuViewMode, setMenuViewMode, menuTileSize } = useUIStore();
   const loading = loadingCats || loadingProds;
 
   /* R12: Ref para detectar click fuera del context menu */
@@ -161,16 +164,39 @@ export default function MenuPage() {
               {productosFiltrados.length} producto{productosFiltrados.length !== 1 ? "s" : ""}
             </span>
           </div>
-          <button
-            onClick={() => {
-              setProductoEditando(null);
-              setModalAbierto(true);
-            }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl btn-primary text-[13px] min-h-[44px]"
-          >
-            <Plus size={16} />
-            Nuevo producto
-          </button>
+          <div className="flex items-center gap-2">
+            {/* View mode toggle */}
+            <div className="flex bg-surface-2 rounded-lg p-0.5">
+              <button
+                onClick={() => setMenuViewMode("grid")}
+                className={cn(
+                  "p-2 rounded-md transition-all",
+                  menuViewMode === "grid" ? "bg-surface-4 text-accent shadow-sm" : "text-text-45 hover:text-text-70"
+                )}
+              >
+                <Grid3X3 size={14} />
+              </button>
+              <button
+                onClick={() => setMenuViewMode("list")}
+                className={cn(
+                  "p-2 rounded-md transition-all",
+                  menuViewMode === "list" ? "bg-surface-4 text-accent shadow-sm" : "text-text-45 hover:text-text-70"
+                )}
+              >
+                <List size={14} />
+              </button>
+            </div>
+            <button
+              onClick={() => {
+                setProductoEditando(null);
+                setModalAbierto(true);
+              }}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl btn-primary text-[13px] min-h-[44px]"
+            >
+              <Plus size={16} />
+              Nuevo producto
+            </button>
+          </div>
         </div>
 
         {/* Barra de búsqueda y filtros */}
@@ -208,117 +234,196 @@ export default function MenuPage() {
           </button>
         </div>
 
-        {/* Grid de productos */}
+        {/* Grid/List de productos */}
         <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5">
-            {productosFiltrados.map((producto) => (
-              <div
-                key={producto.id}
-                onClick={() => setProductoDetalle(producto)}
-                className={cn(
-                  "relative p-4 rounded-xl bg-surface-2 border border-border transition-all duration-[400ms] ease-smooth hover:-translate-y-0.5 hover:border-border-hover hover:shadow-lg hover:shadow-black/20 cursor-pointer group",
-                  !producto.disponible && "opacity-50"
-                )}
-              >
-                <div className="flex items-start justify-between mb-1.5">
-                  <h3 className="text-sm font-medium text-text-100 leading-tight pr-2">
-                    {producto.nombre}
-                  </h3>
-                  <span className="text-sm font-semibold text-text-100 tabular-nums flex-shrink-0">
+          {menuViewMode === "grid" ? (
+            <div className={cn(
+              "grid gap-2.5",
+              menuTileSize === "sm" && "grid-cols-2 md:grid-cols-3 xl:grid-cols-4",
+              menuTileSize === "md" && "grid-cols-1 md:grid-cols-2 xl:grid-cols-3",
+              menuTileSize === "lg" && "grid-cols-1 md:grid-cols-2"
+            )}>
+              {productosFiltrados.map((producto) => (
+                <div
+                  key={producto.id}
+                  onClick={() => setProductoDetalle(producto)}
+                  className={cn(
+                    "relative p-4 rounded-xl bg-surface-2 border border-border transition-all duration-[400ms] ease-smooth hover:-translate-y-0.5 hover:border-border-hover hover:shadow-lg hover:shadow-black/20 cursor-pointer group",
+                    !producto.disponible && "opacity-50"
+                  )}
+                >
+                  <div className="flex items-start justify-between mb-1.5">
+                    <h3 className="text-sm font-medium text-text-100 leading-tight pr-2">
+                      {producto.nombre}
+                    </h3>
+                    <span className="text-sm font-semibold text-text-100 tabular-nums flex-shrink-0">
+                      {formatMXN(producto.precio_base)}
+                    </span>
+                  </div>
+
+                  {producto.descripcion && (
+                    <p className="text-[11px] text-text-25 mb-2.5 line-clamp-1">
+                      {producto.descripcion}
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] text-text-25 px-2 py-0.5 rounded-lg bg-surface-3">
+                      {categoriaNombre(producto.categoria_id)}
+                    </span>
+                    {(producto.tamanos ?? []).length > 0 && (
+                      <span className="text-[10px] text-text-25 px-2 py-0.5 rounded-lg bg-surface-3">
+                        {(producto.tamanos ?? []).length} tamaños
+                      </span>
+                    )}
+                    {(producto.etiquetas ?? []).map((tag: string) => (
+                      <span
+                        key={tag}
+                        className={cn(
+                          "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg",
+                          tag === "popular" && "bg-status-ok-bg text-status-ok",
+                          tag === "nuevo" && "bg-status-info-bg text-status-info",
+                          tag === "especial" && "bg-accent-soft text-accent"
+                        )}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                    {!producto.disponible && (
+                      <span className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg bg-status-err-bg text-status-err">
+                        No disponible
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" ref={menuAbierto === producto.id ? menuRef : undefined}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuAbierto(menuAbierto === producto.id ? null : producto.id);
+                      }}
+                      className="p-2.5 rounded-xl text-text-25 hover:text-text-45 hover:bg-surface-3 transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                    >
+                      <MoreHorizontal size={16} />
+                    </button>
+
+                    {menuAbierto === producto.id && (
+                      <div className="absolute right-0 top-12 w-40 py-1 bg-surface-3 border border-border rounded-xl shadow-lg z-10">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setProductoEditando(producto);
+                            setModalAbierto(true);
+                            setMenuAbierto(null);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-text-70 hover:text-text-100 hover:bg-surface-4 transition-all duration-300 min-h-[44px]"
+                        >
+                          <Pencil size={13} />
+                          Editar
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuAbierto(null);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-text-70 hover:text-text-100 hover:bg-surface-4 transition-all duration-300 min-h-[44px]"
+                        >
+                          {producto.disponible ? <EyeOff size={13} /> : <Eye size={13} />}
+                          {producto.disponible ? "Desactivar" : "Activar"}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setProductoAEliminar(producto);
+                            setConfirmEliminar(true);
+                            setMenuAbierto(null);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-status-err hover:bg-status-err-bg transition-all duration-300 min-h-[44px]"
+                        >
+                          <Trash2 size={13} />
+                          Eliminar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* ── List view ── */
+            <div className="space-y-1">
+              {productosFiltrados.map((producto) => (
+                <div
+                  key={producto.id}
+                  onClick={() => setProductoDetalle(producto)}
+                  className={cn(
+                    "flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-2 border border-border transition-all duration-300 hover:border-border-hover hover:shadow-md cursor-pointer group",
+                    !producto.disponible && "opacity-50"
+                  )}
+                >
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium text-text-100 truncate">{producto.nombre}</h3>
+                    {producto.descripcion && (
+                      <p className="text-[11px] text-text-25 truncate">{producto.descripcion}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-[10px] text-text-25 px-2 py-0.5 rounded-lg bg-surface-3">
+                      {categoriaNombre(producto.categoria_id)}
+                    </span>
+                    {(producto.etiquetas ?? []).map((tag: string) => (
+                      <span
+                        key={tag}
+                        className={cn(
+                          "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg",
+                          tag === "popular" && "bg-status-ok-bg text-status-ok",
+                          tag === "nuevo" && "bg-status-info-bg text-status-info",
+                          tag === "especial" && "bg-accent-soft text-accent"
+                        )}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                    {!producto.disponible && (
+                      <span className="text-[10px] font-medium uppercase px-2 py-0.5 rounded-lg bg-status-err-bg text-status-err">
+                        N/D
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-sm font-semibold text-text-100 tabular-nums w-20 text-right flex-shrink-0">
                     {formatMXN(producto.precio_base)}
                   </span>
-                </div>
-
-                {producto.descripcion && (
-                  <p className="text-[11px] text-text-25 mb-2.5 line-clamp-1">
-                    {producto.descripcion}
-                  </p>
-                )}
-
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] text-text-25 px-2 py-0.5 rounded-lg bg-surface-3">
-                    {categoriaNombre(producto.categoria_id)}
-                  </span>
-                  {(producto.tamanos ?? []).length > 0 && (
-                    <span className="text-[10px] text-text-25 px-2 py-0.5 rounded-lg bg-surface-3">
-                      {(producto.tamanos ?? []).length} tamaños
-                    </span>
-                  )}
-                  {(producto.etiquetas ?? []).map((tag: string) => (
-                    <span
-                      key={tag}
-                      className={cn(
-                        "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg",
-                        tag === "popular" && "bg-status-ok-bg text-status-ok",
-                        tag === "nuevo" && "bg-status-info-bg text-status-info",
-                        tag === "especial" && "bg-accent-soft text-accent"
-                      )}
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity" ref={menuAbierto === producto.id ? menuRef : undefined}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuAbierto(menuAbierto === producto.id ? null : producto.id);
+                      }}
+                      className="p-2 rounded-lg text-text-25 hover:text-text-45 hover:bg-surface-3 transition-all min-w-[36px] min-h-[36px] flex items-center justify-center"
                     >
-                      {tag}
-                    </span>
-                  ))}
-                  {!producto.disponible && (
-                    <span className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg bg-status-err-bg text-status-err">
-                      No disponible
-                    </span>
-                  )}
+                      <MoreHorizontal size={14} />
+                    </button>
+                    {menuAbierto === producto.id && (
+                      <div className="absolute right-4 mt-1 w-40 py-1 bg-surface-3 border border-border rounded-xl shadow-lg z-10">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setProductoEditando(producto); setModalAbierto(true); setMenuAbierto(null); }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-text-70 hover:text-text-100 hover:bg-surface-4 min-h-[44px]"
+                        >
+                          <Pencil size={13} /> Editar
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setProductoAEliminar(producto); setConfirmEliminar(true); setMenuAbierto(null); }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-status-err hover:bg-status-err-bg min-h-[44px]"
+                        >
+                          <Trash2 size={13} /> Eliminar
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-
-                {/* R1: Target táctil más grande para MoreHorizontal, R12: ref para cerrar al click fuera */}
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" ref={menuAbierto === producto.id ? menuRef : undefined}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setMenuAbierto(menuAbierto === producto.id ? null : producto.id);
-                    }}
-                    className="p-2.5 rounded-xl text-text-25 hover:text-text-45 hover:bg-surface-3 transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                  >
-                    <MoreHorizontal size={16} />
-                  </button>
-
-                  {menuAbierto === producto.id && (
-                    <div className="absolute right-0 top-12 w-40 py-1 bg-surface-3 border border-border rounded-xl shadow-lg z-10">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setProductoEditando(producto);
-                          setModalAbierto(true);
-                          setMenuAbierto(null);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-text-70 hover:text-text-100 hover:bg-surface-4 transition-all duration-300 min-h-[44px]"
-                      >
-                        <Pencil size={13} />
-                        Editar
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMenuAbierto(null);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-text-70 hover:text-text-100 hover:bg-surface-4 transition-all duration-300 min-h-[44px]"
-                      >
-                        {producto.disponible ? <EyeOff size={13} /> : <Eye size={13} />}
-                        {producto.disponible ? "Desactivar" : "Activar"}
-                      </button>
-                      {/* R2: Eliminar con confirmación */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setProductoAEliminar(producto);
-                          setConfirmEliminar(true);
-                          setMenuAbierto(null);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-status-err hover:bg-status-err-bg transition-all duration-300 min-h-[44px]"
-                      >
-                        <Trash2 size={13} />
-                        Eliminar
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* R13: Empty state mejorado */}
           {productosFiltrados.length === 0 && (

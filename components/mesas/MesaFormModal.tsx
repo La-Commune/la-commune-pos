@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Circle, Square, RectangleHorizontal } from "lucide-react";
+import { Circle, Square } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import { showToast } from "@/components/ui/Toast";
 import { useZonasStore } from "@/store/zonas.store";
@@ -10,7 +10,6 @@ import type { Mesa } from "@/lib/validators";
 const FORMAS = [
   { id: "cuadrada" as const, label: "Cuadrada", Icon: Square },
   { id: "redonda" as const, label: "Redonda", Icon: Circle },
-  { id: "rectangular" as const, label: "Rectangular", Icon: RectangleHorizontal },
 ];
 
 interface MesaFormModalProps {
@@ -36,7 +35,7 @@ export default function MesaFormModal({
   const [numero, setNumero] = useState("");
   const [capacidad, setCapacidad] = useState("4");
   const [zonaId, setZonaId] = useState("");
-  const [forma, setForma] = useState<"redonda" | "cuadrada" | "rectangular">("cuadrada");
+  const [forma, setForma] = useState<"redonda" | "cuadrada">("cuadrada");
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 

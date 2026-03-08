@@ -31,12 +31,28 @@ import {
   Sparkles,
   Moon,
   Hexagon,
+  Grid3X3,
+  List,
+  Accessibility,
+  Volume2,
+  VolumeX,
+  Keyboard,
+  Sun,
+  ChevronRight,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useSyncStore } from "@/store/sync.store";
 import { useAuthStore } from "@/store/auth.store";
-import { useUIStore, type SidebarPosition, type Density, type PanelWidth } from "@/store/ui.store";
+import {
+  useUIStore,
+  type SidebarPosition,
+  type Density,
+  type PanelWidth,
+  type FontScale,
+  type KDSDisplayMode,
+} from "@/store/ui.store";
 import { navItems } from "@/components/layouts/Sidebar";
+import { useKeyboardShortcuts, SHORTCUTS } from "@/hooks/useKeyboardShortcuts";
 import { cn } from "@/lib/utils";
 
 /* ── Theme options ── */
@@ -77,6 +93,24 @@ const panelOptions: { id: PanelWidth; label: string }[] = [
   { id: "wide", label: "Amplio" },
 ];
 
+/* ── Font scale options ── */
+const fontScaleOptions: { id: FontScale; label: string }[] = [
+  { id: 90, label: "90%" },
+  { id: 100, label: "100%" },
+  { id: 110, label: "110%" },
+  { id: 120, label: "120%" },
+];
+
+/* ── KDS Display modes ── */
+const kdsDisplayOptions: { id: KDSDisplayMode; label: string }[] = [
+  { id: "classic", label: "Kanban" },
+  { id: "tiled", label: "Grid" },
+  { id: "split", label: "Dividido" },
+];
+
+/* ── Settings sections ── */
+type SettingsSection = "main" | "apariencia" | "layout" | "accesibilidad" | "kds" | "atajos" | "auto-dark";
+
 /* ════════════════════════════════════
    LiveClock
    ════════════════════════════════════ */
@@ -111,7 +145,7 @@ function LiveClock() {
 /* ════════════════════════════════════
    SegmentedControl — generic
    ════════════════════════════════════ */
-function SegmentedControl<T extends string>({
+function SegmentedControl<T extends string | number>({
   options,
   value,
   onChange,
@@ -124,7 +158,7 @@ function SegmentedControl<T extends string>({
     <div className="flex bg-surface-2 rounded-lg p-0.5">
       {options.map((opt) => (
         <button
-          key={opt.id}
+          key={String(opt.id)}
           onClick={() => onChange(opt.id)}
           className={cn(
             "flex-1 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all duration-200",
@@ -141,14 +175,45 @@ function SegmentedControl<T extends string>({
 }
 
 /* ════════════════════════════════════
+   Toggle — reusable
+   ════════════════════════════════════ */
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <button
+      onClick={() => onChange(!checked)}
+      className="w-full flex items-center justify-between py-2 text-[11px] font-medium text-text-70 hover:text-text-100 transition-colors"
+    >
+      <span>{label}</span>
+      <div className={cn(
+        "w-9 h-5 rounded-full transition-colors duration-200 relative",
+        checked ? "bg-accent" : "bg-surface-4"
+      )}>
+        <div className={cn(
+          "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200",
+          checked ? "translate-x-4" : "translate-x-0.5"
+        )} />
+      </div>
+    </button>
+  );
+}
+
+/* ════════════════════════════════════
    SettingsPanel — all customization
    ════════════════════════════════════ */
 function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef: React.RefObject<HTMLDivElement | null> }) {
   const { theme, setTheme } = useTheme();
-  const { sidebarPosition, density, panelWidth, setSidebarPosition, setDensity, setPanelWidth } =
-    useUIStore();
+  const store = useUIStore();
+
+  /* When user manually picks a theme, disable auto dark mode */
+  const handleSetTheme = (id: string) => {
+    if (store.autoDarkMode) {
+      store.setAutoDarkMode(false);
+    }
+    setTheme(id);
+  };
   const [mounted, setMounted] = useState(false);
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const [section, setSection] = useState<SettingsSection>("main");
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setMounted(true), []);
@@ -166,27 +231,49 @@ function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef:
   // Close on ESC
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (section !== "main") setSection("main");
+        else onClose();
+      }
     };
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
-  }, [onClose]);
+  }, [onClose, section]);
 
   if (!mounted || !pos) return null;
 
+  const menuItems: { id: SettingsSection; label: string; icon: typeof Settings; desc: string }[] = [
+    { id: "apariencia", label: "Apariencia", icon: Flame, desc: "Tema, fuente" },
+    { id: "layout", label: "Layout", icon: PanelLeft, desc: "Sidebar, densidad, paneles" },
+    { id: "accesibilidad", label: "Accesibilidad", icon: Accessibility, desc: "Movimiento, contraste, touch" },
+    { id: "kds", label: "Cocina (KDS)", icon: Grid3X3, desc: "Display, sonidos" },
+    { id: "atajos", label: "Atajos de teclado", icon: Keyboard, desc: "Shortcuts" },
+    { id: "auto-dark", label: "Auto dark mode", icon: Sun, desc: "Cambio por horario" },
+  ];
+
   return createPortal(
     <>
-      {/* Backdrop — full screen, above everything */}
+      {/* Backdrop */}
       <div className="fixed inset-0 z-[9998]" onClick={onClose} />
       {/* Panel */}
       <div
         ref={panelRef}
-        className="fixed w-72 bg-surface-3 border border-border rounded-xl shadow-lg z-[9999] overflow-hidden"
+        className="fixed w-80 max-h-[80vh] bg-surface-3 border border-border rounded-xl shadow-lg z-[9999] overflow-hidden flex flex-col"
         style={{ top: pos.top, right: pos.right }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
-          <span className="text-xs font-semibold text-text-100">Personalizar</span>
+        <div className="flex items-center justify-between px-4 pt-3.5 pb-2 flex-shrink-0">
+          {section !== "main" ? (
+            <button
+              onClick={() => setSection("main")}
+              className="flex items-center gap-1.5 text-xs font-semibold text-text-70 hover:text-text-100 transition-colors"
+            >
+              <ChevronDown size={14} className="rotate-90" />
+              Personalizar
+            </button>
+          ) : (
+            <span className="text-xs font-semibold text-text-100">Personalizar</span>
+          )}
           <button
             onClick={onClose}
             aria-label="Cerrar personalización"
@@ -196,83 +283,315 @@ function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef:
           </button>
         </div>
 
-        <div className="px-4 pb-4 space-y-4">
-          {/* ── Tema ── */}
-          <div>
-            <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">
-              Tema
-            </p>
-            <div className="space-y-0.5">
-              {themeOptions.map((opt) => {
-                const Icon = opt.icon;
-                const isActive = theme === opt.id;
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          {section === "main" && (
+            <div className="space-y-1 pt-1">
+              {menuItems.map((item) => {
+                const Icon = item.icon;
                 return (
                   <button
-                    key={opt.id}
-                    onClick={() => setTheme(opt.id)}
-                    className={cn(
-                      "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all duration-200",
-                      isActive
-                        ? "bg-accent-soft text-accent"
-                        : "text-text-70 hover:text-text-100 hover:bg-surface-4"
-                    )}
+                    key={item.id}
+                    onClick={() => setSection(item.id)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 text-text-70 hover:text-text-100 hover:bg-surface-4"
                   >
-                    <Icon size={14} className={isActive ? "text-accent" : "text-text-45"} />
+                    <Icon size={15} className="text-text-45 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <span className={cn("text-[11px] font-medium block", isActive && "text-accent")}>
-                        {opt.label}
-                      </span>
+                      <span className="text-[12px] font-medium block">{item.label}</span>
+                      <span className="text-[10px] text-text-25">{item.desc}</span>
                     </div>
-                    {isActive && <div className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />}
+                    <ChevronRight size={14} className="text-text-25" />
                   </button>
                 );
               })}
             </div>
-          </div>
+          )}
 
-          {/* ── Sidebar Position ── */}
-          <div>
-            <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">
-              Sidebar
-            </p>
-            <div className="grid grid-cols-4 gap-1">
-              {sidebarOptions.map((opt) => {
-                const Icon = opt.icon;
-                const isActive = sidebarPosition === opt.id;
-                return (
+          {/* ── APARIENCIA ── */}
+          {section === "apariencia" && (
+            <div className="space-y-4 pt-1">
+              <div>
+                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Tema</p>
+                <div className="space-y-0.5 max-h-[300px] overflow-y-auto">
+                  {themeOptions.map((opt) => {
+                    const Icon = opt.icon;
+                    const isActive = theme === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => handleSetTheme(opt.id)}
+                        className={cn(
+                          "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all duration-200",
+                          isActive
+                            ? "bg-accent-soft text-accent"
+                            : "text-text-70 hover:text-text-100 hover:bg-surface-4"
+                        )}
+                      >
+                        <Icon size={14} className={isActive ? "text-accent" : "text-text-45"} />
+                        <div className="flex-1 min-w-0">
+                          <span className={cn("text-[11px] font-medium block", isActive && "text-accent")}>
+                            {opt.label}
+                          </span>
+                        </div>
+                        {isActive && <div className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Tamaño de fuente</p>
+                <SegmentedControl options={fontScaleOptions} value={store.fontScale} onChange={store.setFontScale} />
+              </div>
+            </div>
+          )}
+
+          {/* ── LAYOUT ── */}
+          {section === "layout" && (
+            <div className="space-y-4 pt-1">
+              <div>
+                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Sidebar</p>
+                <div className="grid grid-cols-4 gap-1">
+                  {sidebarOptions.map((opt) => {
+                    const Icon = opt.icon;
+                    const isActive = store.sidebarPosition === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => store.setSidebarPosition(opt.id)}
+                        className={cn(
+                          "flex flex-col items-center gap-1 py-2 rounded-lg transition-all duration-200",
+                          isActive
+                            ? "bg-accent-soft text-accent"
+                            : "text-text-45 hover:text-text-70 hover:bg-surface-4"
+                        )}
+                      >
+                        <Icon size={16} />
+                        <span className="text-[9px] font-medium">{opt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Densidad</p>
+                <SegmentedControl options={densityOptions} value={store.density} onChange={store.setDensity} />
+              </div>
+
+              <div>
+                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Ancho paneles</p>
+                <SegmentedControl options={panelOptions} value={store.panelWidth} onChange={store.setPanelWidth} />
+              </div>
+
+              <div>
+                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Vista productos</p>
+                <div className="flex gap-1">
                   <button
-                    key={opt.id}
-                    onClick={() => setSidebarPosition(opt.id)}
+                    onClick={() => store.setMenuViewMode("grid")}
                     className={cn(
-                      "flex flex-col items-center gap-1 py-2 rounded-lg transition-all duration-200",
-                      isActive
-                        ? "bg-accent-soft text-accent"
-                        : "text-text-45 hover:text-text-70 hover:bg-surface-4"
+                      "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-medium transition-all",
+                      store.menuViewMode === "grid" ? "bg-accent-soft text-accent" : "text-text-45 hover:text-text-70 hover:bg-surface-4"
                     )}
                   >
-                    <Icon size={16} />
-                    <span className="text-[9px] font-medium">{opt.label}</span>
+                    <Grid3X3 size={14} /> Grid
                   </button>
-                );
-              })}
+                  <button
+                    onClick={() => store.setMenuViewMode("list")}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[11px] font-medium transition-all",
+                      store.menuViewMode === "list" ? "bg-accent-soft text-accent" : "text-text-45 hover:text-text-70 hover:bg-surface-4"
+                    )}
+                  >
+                    <List size={14} /> Lista
+                  </button>
+                </div>
+              </div>
+
+              {store.menuViewMode === "grid" && (
+                <div>
+                  <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Tamaño tiles</p>
+                  <SegmentedControl
+                    options={[
+                      { id: "sm" as const, label: "Pequeño" },
+                      { id: "md" as const, label: "Normal" },
+                      { id: "lg" as const, label: "Grande" },
+                    ]}
+                    value={store.menuTileSize}
+                    onChange={store.setMenuTileSize}
+                  />
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
-          {/* ── Densidad ── */}
-          <div>
-            <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">
-              Densidad
-            </p>
-            <SegmentedControl options={densityOptions} value={density} onChange={setDensity} />
-          </div>
+          {/* ── ACCESIBILIDAD ── */}
+          {section === "accesibilidad" && (
+            <div className="space-y-1 pt-1">
+              <Toggle
+                label="Reducir movimiento"
+                checked={store.reducedMotion}
+                onChange={store.setReducedMotion}
+              />
+              <Toggle
+                label="Alto contraste"
+                checked={store.highContrast}
+                onChange={store.setHighContrast}
+              />
+              <Toggle
+                label="Targets táctiles grandes"
+                checked={store.largeTouchTargets}
+                onChange={store.setLargeTouchTargets}
+              />
+              <div className="pt-2 border-t border-border mt-2">
+                <p className="text-[10px] text-text-25 leading-relaxed">
+                  &quot;Reducir movimiento&quot; desactiva animaciones y transiciones.
+                  &quot;Alto contraste&quot; elimina transparencias glass y usa bordes sólidos.
+                  &quot;Targets grandes&quot; agranda botones a mínimo 48px.
+                </p>
+              </div>
+            </div>
+          )}
 
-          {/* ── Panel Width ── */}
-          <div>
-            <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">
-              Ancho paneles
-            </p>
-            <SegmentedControl options={panelOptions} value={panelWidth} onChange={setPanelWidth} />
-          </div>
+          {/* ── KDS ── */}
+          {section === "kds" && (
+            <div className="space-y-4 pt-1">
+              <div>
+                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Modo de display</p>
+                <SegmentedControl options={kdsDisplayOptions} value={store.kdsDisplayMode} onChange={store.setKDSDisplayMode} />
+                <p className="text-[10px] text-text-25 mt-1.5">
+                  {store.kdsDisplayMode === "classic" && "Vista kanban con 3 columnas (nueva, preparando, lista)"}
+                  {store.kdsDisplayMode === "tiled" && "Grid compacto que muestra más tickets a la vez"}
+                  {store.kdsDisplayMode === "split" && "Dividido: mesa arriba, para llevar abajo"}
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <Toggle
+                  label="Sonidos habilitados"
+                  checked={store.kdsSoundEnabled}
+                  onChange={store.setKDSSoundEnabled}
+                />
+                <Toggle
+                  label="Alerta urgente (>10min)"
+                  checked={store.kdsUrgentSound}
+                  onChange={store.setKDSUrgentSound}
+                />
+              </div>
+
+              {store.kdsSoundEnabled && (
+                <div>
+                  <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Volumen</p>
+                  <div className="flex items-center gap-3">
+                    <VolumeX size={14} className="text-text-25 flex-shrink-0" />
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={store.kdsSoundVolume}
+                      onChange={(e) => store.setKDSSoundVolume(Number(e.target.value))}
+                      className="flex-1 h-1.5 bg-surface-2 rounded-full appearance-none cursor-pointer accent-accent"
+                    />
+                    <Volume2 size={14} className="text-text-45 flex-shrink-0" />
+                    <span className="text-[11px] text-text-45 tabular-nums w-8 text-right">{store.kdsSoundVolume}%</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── ATAJOS DE TECLADO ── */}
+          {section === "atajos" && (
+            <div className="space-y-3 pt-1">
+              <Toggle
+                label="Atajos habilitados"
+                checked={store.keyboardShortcutsEnabled}
+                onChange={store.setKeyboardShortcutsEnabled}
+              />
+              <div className="space-y-1 pt-1">
+                {Object.values(SHORTCUTS).map((s) => (
+                  <div key={s.key} className="flex items-center justify-between py-1.5">
+                    <span className="text-[11px] text-text-70">{s.label}</span>
+                    <kbd className="text-[10px] font-mono bg-surface-2 text-text-45 px-2 py-0.5 rounded border border-border">
+                      {s.key}
+                    </kbd>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── AUTO DARK MODE ── */}
+          {section === "auto-dark" && (
+            <div className="space-y-4 pt-1">
+              <Toggle
+                label="Activar cambio automático"
+                checked={store.autoDarkMode}
+                onChange={store.setAutoDarkMode}
+              />
+
+              {store.autoDarkMode && (
+                <>
+                  <div>
+                    <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Horario oscuro</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <label className="text-[10px] text-text-45 block mb-1">Inicia</label>
+                        <select
+                          value={store.autoDarkStart}
+                          onChange={(e) => store.setAutoDarkStart(Number(e.target.value))}
+                          className="w-full bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-[11px] text-text-100 focus:outline-none focus:border-accent"
+                        >
+                          {Array.from({ length: 24 }, (_, i) => (
+                            <option key={i} value={i}>{String(i).padStart(2, "0")}:00</option>
+                          ))}
+                        </select>
+                      </div>
+                      <span className="text-text-25 text-xs mt-4">→</span>
+                      <div className="flex-1">
+                        <label className="text-[10px] text-text-45 block mb-1">Termina</label>
+                        <select
+                          value={store.autoDarkEnd}
+                          onChange={(e) => store.setAutoDarkEnd(Number(e.target.value))}
+                          className="w-full bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-[11px] text-text-100 focus:outline-none focus:border-accent"
+                        >
+                          {Array.from({ length: 24 }, (_, i) => (
+                            <option key={i} value={i}>{String(i).padStart(2, "0")}:00</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Tema de día</p>
+                    <select
+                      value={store.autoDarkLightTheme}
+                      onChange={(e) => store.setAutoDarkLightTheme(e.target.value)}
+                      className="w-full bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-[11px] text-text-100 focus:outline-none focus:border-accent"
+                    >
+                      {themeOptions.map((t) => (
+                        <option key={t.id} value={t.id}>{t.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Tema de noche</p>
+                    <select
+                      value={store.autoDarkDarkTheme}
+                      onChange={(e) => store.setAutoDarkDarkTheme(e.target.value)}
+                      className="w-full bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-[11px] text-text-100 focus:outline-none focus:border-accent"
+                    >
+                      {themeOptions.map((t) => (
+                        <option key={t.id} value={t.id}>{t.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </>,
@@ -371,6 +690,9 @@ export default function Navbar() {
   const [menuUsuario, setMenuUsuario] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
+
+  /* Activate keyboard shortcuts */
+  useKeyboardShortcuts();
 
   const showHamburger = sidebarPosition === "hidden";
   const showTopNav = sidebarPosition === "top";
