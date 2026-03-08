@@ -293,6 +293,40 @@ function MesasPageContent() {
     [user?.negocio_id, mesas, refetchMesas]
   );
 
+  // ── Swap números de mesa (RPC atómico) ──
+  const handleSwapMesas = useCallback(
+    async (mesaAId: string, numA: number, mesaBId: string, numB: number): Promise<boolean> => {
+      // Optimistic: actualizar store inmediatamente
+      useMesasStore.getState().updateMesa(mesaAId, { numero: numA });
+      useMesasStore.getState().updateMesa(mesaBId, { numero: numB });
+
+      // Llamar RPC
+      const { supabase } = await import("@/lib/supabase");
+      if (!supabase) {
+        showToast("Supabase no configurado", "error");
+        return false;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: err } = await (supabase as any).rpc("swap_mesa_numeros", {
+        mesa_a_id: mesaAId,
+        nuevo_numero_a: numA,
+        mesa_b_id: mesaBId,
+        nuevo_numero_b: numB,
+      });
+
+      if (err) {
+        showToast(`Error intercambiando: ${err.message}`, "error");
+        refetchMesas(); // revertir
+        return false;
+      }
+
+      refetchMesas();
+      return true;
+    },
+    [refetchMesas]
+  );
+
   // ── Eliminar mesa (soft delete) con confirmación ──
   const handleRequestDeleteMesa = useCallback((mesa: Mesa) => {
     setConfirmDeleteMesa(mesa);
@@ -415,17 +449,20 @@ function MesasPageContent() {
       <div className="flex items-center justify-between mb-5">
         {/* Zona tabs */}
         <div className="flex items-center gap-1 p-1 bg-surface-2 rounded-xl overflow-x-auto">
-          <button
-            onClick={() => selectZona(null)}
-            className={cn(
-              "px-3.5 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap min-h-[36px]",
-              selectedZonaId === null
-                ? "bg-surface-4 text-text-100 shadow-sm"
-                : "text-text-45 hover:text-text-70"
-            )}
-          >
-            Todas
-          </button>
+          {/* "Todas" solo en Grid — en Plano no tiene sentido mezclar zonas */}
+          {vista === "grid" && (
+            <button
+              onClick={() => selectZona(null)}
+              className={cn(
+                "px-3.5 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap min-h-[36px]",
+                selectedZonaId === null
+                  ? "bg-surface-4 text-text-100 shadow-sm"
+                  : "text-text-45 hover:text-text-70"
+              )}
+            >
+              Todas
+            </button>
+          )}
           {zonas.map((zona) => {
             const isActive = selectedZonaId === zona.id;
             const count = mesas.filter((m) => m.zona_id === zona.id).length;
@@ -467,7 +504,13 @@ function MesasPageContent() {
             Grid
           </button>
           <button
-            onClick={() => setVista("plano")}
+            onClick={() => {
+              // Al cambiar a Plano, forzar una zona si está en "Todas"
+              if (selectedZonaId === null && zonas.length > 0) {
+                selectZona(zonas[0].id ?? null);
+              }
+              setVista("plano");
+            }}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all",
               vista === "plano"
@@ -646,7 +689,9 @@ function MesasPageContent() {
         }}
         mesa={editingMesa}
         negocioId={user?.negocio_id ?? ""}
+        mesas={mesas}
         onSave={handleSaveMesa}
+        onSwap={handleSwapMesas}
         onDelete={handleDeleteMesa}
       />
 
