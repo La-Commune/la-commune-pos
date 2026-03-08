@@ -74,10 +74,22 @@ export default function FloorPlanCanvas({
       const mesa = mesas.find((m) => m.id === String(active.id));
       if (!mesa) return;
 
-      const mesaW = mesa.ancho ?? 80;
-      const mesaH = mesa.alto ?? 80;
-      const newX = Math.max(0, Math.min(canvasW - mesaW, (mesa.pos_x ?? 0) + delta.x / scale));
-      const newY = Math.max(0, Math.min(CANVAS_H - mesaH, (mesa.pos_y ?? 0) + delta.y / scale));
+      const w = mesa.ancho ?? 80;
+      const h = mesa.alto ?? 80;
+      const rot = mesa.rotacion ?? 0;
+
+      // Calcular bounding box considerando rotación
+      // Cuando un rectángulo rota, su bounding box axis-aligned cambia
+      const rad = (rot * Math.PI) / 180;
+      const cos = Math.abs(Math.cos(rad));
+      const sin = Math.abs(Math.sin(rad));
+      const bbW = w * cos + h * sin;
+      const bbH = w * sin + h * cos;
+
+      // pos_x/pos_y representan la esquina top-left del bounding box rotado
+      // Clampear para que el bounding box rotado quede dentro del canvas
+      const newX = Math.max(0, Math.min(canvasW - bbW, (mesa.pos_x ?? 0) + delta.x / scale));
+      const newY = Math.max(0, Math.min(CANVAS_H - bbH, (mesa.pos_y ?? 0) + delta.y / scale));
 
       onMoveMesa(String(active.id), Math.round(newX), Math.round(newY));
     },

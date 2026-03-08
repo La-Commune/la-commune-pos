@@ -32,36 +32,38 @@ export default function DraggableMesaWrapper({
   const ancho = mesa.ancho ?? 80;
   const alto = mesa.alto ?? 80;
 
-  // Posición escalada del elemento en el canvas
+  // Calcular bounding box rotado para posicionar correctamente
+  const rad = (rotacion * Math.PI) / 180;
+  const cosR = Math.abs(Math.cos(rad));
+  const sinR = Math.abs(Math.sin(rad));
+  const bbW = ancho * cosR + alto * sinR;
+  const bbH = ancho * sinR + alto * cosR;
+
+  // pos_x/pos_y = esquina top-left del bounding box rotado
   const posX = (mesa.pos_x ?? 0) * scale;
   const posY = (mesa.pos_y ?? 0) * scale;
 
-  // Tamaño escalado
-  const scaledW = ancho * scale;
-  const scaledH = alto * scale;
+  // Centro del bounding box = centro visual de la mesa rotada
+  const centerX = posX + (bbW * scale) / 2;
+  const centerY = posY + (bbH * scale) / 2;
 
   return (
     <div
       ref={setNodeRef}
       style={{
         position: "absolute",
-        // Posicionar de modo que el centro de la mesa quede donde debe
-        // left/top apuntan al centro, luego translate -50% para centrar
-        left: posX + scaledW / 2,
-        top: posY + scaledH / 2,
+        // left/top apuntan al centro del bounding box,
+        // translate(-50%,-50%) centra el elemento sobre ese punto
+        left: centerX,
+        top: centerY,
         transform: [
-          // 1. Centrar el elemento sobre su posición
           "translate(-50%, -50%)",
-          // 2. Drag offset
           transform ? `translate(${transform.x}px, ${transform.y}px)` : "",
-          // 3. Rotación — ahora gira desde el centro porque transformOrigin es center
           rotacion ? `rotate(${rotacion}deg)` : "",
-          // 4. Escala
           `scale(${scale})`,
         ]
           .filter(Boolean)
           .join(" "),
-        // El origin es el centro del elemento
         transformOrigin: "center center",
         zIndex: isDragging ? 50 : 1,
       }}

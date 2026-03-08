@@ -55,6 +55,9 @@ export default function DraggableMesa({
   const borderRadius =
     forma === "redonda" ? "50%" : "var(--radius-lg)";
 
+  // Counter-rotate para que el texto siempre sea horizontal
+  const counterRotate = rotacion ? `rotate(${-rotacion}deg)` : undefined;
+
   const handleContextMenu = (e: React.MouseEvent) => {
     if (!isAdmin || !onContextMenu) return;
     e.preventDefault();
@@ -75,9 +78,18 @@ export default function DraggableMesa({
       const startW = ancho;
       const startH = alto;
 
+      // Pre-calcular rotación para transformar deltas de pantalla → espacio local
+      const rad = -(rotacion * Math.PI) / 180; // negativo para invertir la rotación
+      const cosR = Math.cos(rad);
+      const sinR = Math.sin(rad);
+
       const onMove = (ev: PointerEvent) => {
-        const dx = (ev.clientX - startX) / scale;
-        const dy = (ev.clientY - startY) / scale;
+        const rawDx = (ev.clientX - startX) / scale;
+        const rawDy = (ev.clientY - startY) / scale;
+
+        // Rotar delta al espacio local de la mesa
+        const dx = rawDx * cosR - rawDy * sinR;
+        const dy = rawDx * sinR + rawDy * cosR;
 
         let newW = startW;
         let newH = startH;
@@ -110,10 +122,13 @@ export default function DraggableMesa({
       document.addEventListener("pointermove", onMove);
       document.addEventListener("pointerup", onUp);
     },
-    [ancho, alto, forma, mesa.id, onResize, scale]
+    [ancho, alto, forma, rotacion, mesa.id, onResize, scale]
   );
 
-  // ── Rotate via top handle ──
+  // ── Rotate via handle ──
+  // Usamos el centro REAL del elemento (ancho/2, alto/2 en espacio local)
+  // convertido a coordenadas de pantalla, en vez de getBoundingClientRect
+  // que para rectángulos rotados da un bbox distorsionado.
   const handleRotateStart = useCallback(
     (e: React.PointerEvent) => {
       e.preventDefault();
@@ -121,9 +136,21 @@ export default function DraggableMesa({
       if (!onRotate || !mesa.id || !containerRef.current) return;
 
       setIsRotating(true);
-      const rect = containerRef.current.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
+
+      // Obtener el centro real del elemento vía getClientRects o DOMRect
+      // Para un elemento rotado, getBoundingClientRect da el AABB (axis-aligned bounding box).
+      // Pero el centro del AABB sí coincide con el centro real del elemento rotado,
+      // porque la rotación es alrededor del centro (transformOrigin: center).
+      // Sin embargo, el padre (wrapper) aplica la rotación, no este div.
+      // Así que el rect de ESTE containerRef ya está en espacio rotado del padre.
+      // El centro del rect del padre es correcto.
+      const el = containerRef.current;
+      // Subir al wrapper que tiene el transform de rotación
+      const wrapper = el.parentElement;
+      if (!wrapper) return;
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const centerX = wrapperRect.left + wrapperRect.width / 2;
+      const centerY = wrapperRect.top + wrapperRect.height / 2;
 
       const onMove = (ev: PointerEvent) => {
         const angle = Math.atan2(ev.clientY - centerY, ev.clientX - centerX);
@@ -192,23 +219,39 @@ export default function DraggableMesa({
         />
       )}
 
-      {/* Número */}
-      <span className="text-base font-semibold text-text-100 leading-none pointer-events-none">
-        {mesa.numero}
-      </span>
+      {/* ── Contenido con counter-rotate para que siempre sea legible ── */}
+      <div
+        className="flex flex-col items-center justify-center pointer-events-none"
+        style={{
+          transform: counterRotate,
+          // Evitar que el texto counter-rotado se desborde visualmente
+          // Tamaño fijo para que no afecte el layout del contenedor
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {/* Número */}
+        <span className="text-base font-semibold text-text-100 leading-none">
+          {mesa.numero}
+        </span>
 
-      {/* Capacidad */}
-      <div className="flex items-center gap-0.5 mt-1 pointer-events-none">
-        <Users size={10} className="text-text-25" />
-        <span className="text-[10px] text-text-25">{mesa.capacidad}</span>
+        {/* Capacidad */}
+        <div className="flex items-center gap-0.5 mt-1">
+          <Users size={10} className="text-text-25" />
+          <span className="text-[10px] text-text-25">{mesa.capacidad}</span>
+        </div>
       </div>
 
-      {/* Status label on hover */}
+      {/* Status label on hover — también counter-rotado */}
       <div
         className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] px-1.5 py-0.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
         style={{
           backgroundColor: `var(${estado.cssVar})`,
           color: "var(--surface-0)",
+          transform: counterRotate,
         }}
       >
         {estado.label}
@@ -241,10 +284,13 @@ export default function DraggableMesa({
       )}
 
       {/* ── Admin: Rotation handle ── */}
+      {/* Distancia fija de 28px del borde para que se sienta consistente
+          independientemente del aspect ratio del rectángulo */}
       {isAdmin && onRotate && forma === "cuadrada" && (
         <div
           onPointerDown={handleRotateStart}
-          className="absolute -top-7 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-surface-2 border border-border flex items-center justify-center cursor-grab opacity-0 group-hover:opacity-100 transition-opacity z-20 hover:bg-accent hover:text-white hover:border-accent"
+          className="absolute left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-surface-2 border border-border flex items-center justify-center cursor-grab opacity-0 group-hover:opacity-100 transition-opacity z-20 hover:bg-accent hover:text-white hover:border-accent"
+          style={{ top: -28 }}
           title="Arrastrar para rotar · Shift = snap 45°"
         >
           <RotateCw size={10} />
@@ -254,8 +300,8 @@ export default function DraggableMesa({
       {/* Rotation indicator line (from center to rotation handle) */}
       {isAdmin && onRotate && forma === "cuadrada" && rotacion !== 0 && (
         <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-3 bg-accent/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-          style={{ top: -12 }}
+          className="absolute left-1/2 -translate-x-1/2 w-px bg-accent/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+          style={{ top: -18, height: 18 }}
         />
       )}
 
