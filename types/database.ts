@@ -150,6 +150,7 @@ export interface Database {
         ancho: number;
         alto: number;
         rotacion: number;
+        ocupada_desde: string | null;
         creado_en: string;
         actualizado_en: string;
         eliminado_en: string | null;

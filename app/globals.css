@@ -973,6 +973,19 @@ body {
   .text-balance { text-wrap: balance; }
 }
 
+/* ── Mesa estancada pulse ── */
+@keyframes mesa-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--err) 40%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--err) 0%, transparent);
+  }
+}
+.mesa-stale-pulse {
+  animation: mesa-pulse 2s ease-in-out infinite;
+}
+
 /* ── Toast animation ── */
 @keyframes slideInRight {
   from {
