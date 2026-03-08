@@ -24,6 +24,13 @@ import {
   EyeOff,
   Menu,
   X,
+  Coffee,
+  Snowflake,
+  Leaf,
+  Sunset,
+  Sparkles,
+  Moon,
+  Hexagon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useSyncStore } from "@/store/sync.store";
@@ -39,6 +46,13 @@ const themeOptions = [
   { id: "soft-neumorphism", label: "Neumorphism", icon: Circle, desc: "Táctil físico" },
   { id: "glass-layered", label: "Glass", icon: Layers, desc: "Cristal elegante" },
   { id: "mono-editorial", label: "Editorial", icon: Type, desc: "B&N alta cocina" },
+  { id: "terracotta-bistro", label: "Terracotta", icon: Coffee, desc: "Café artesanal" },
+  { id: "nordic-frost", label: "Nordic", icon: Snowflake, desc: "Escandinavo frío" },
+  { id: "matcha-zen", label: "Matcha", icon: Leaf, desc: "Zen orgánico" },
+  { id: "sunset-diner", label: "Sunset", icon: Sunset, desc: "Retro neón cálido" },
+  { id: "lavender-dream", label: "Lavender", icon: Sparkles, desc: "Pastel moderno" },
+  { id: "obsidian-amoled", label: "Obsidian", icon: Moon, desc: "OLED nocturno" },
+  { id: "copper-industrial", label: "Copper", icon: Hexagon, desc: "Industrial cobre" },
 ] as const;
 
 /* ── Sidebar position options ── */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -9,8 +9,6 @@ import {
   LayoutGrid,
   Map,
   Settings2,
-  Pencil,
-  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMesas, useZonas, insertRecord, updateRecord, deleteRecord } from "@/hooks/useSupabase";
@@ -23,6 +21,7 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import FloorPlanCanvas from "@/components/mesas/FloorPlanCanvas";
 import ZonaManager from "@/components/mesas/ZonaManager";
 import MesaFormModal from "@/components/mesas/MesaFormModal";
+import MesaContextMenu from "@/components/mesas/MesaContextMenu";
 import { showToast } from "@/components/ui/Toast";
 import type { Mesa, Zona } from "@/lib/validators";
 
@@ -39,7 +38,7 @@ function MesasPageContent() {
   const { data: zonasData, refetch: refetchZonas } = useZonas();
 
   // ── Stores ──
-  const { mesas, setMesas, editMode, setEditMode } = useMesasStore();
+  const { mesas, setMesas } = useMesasStore();
   const { zonas, setZonas, selectedZonaId, selectZona } = useZonasStore();
 
   // ── Local state ──
@@ -49,6 +48,17 @@ function MesasPageContent() {
   const [editingMesa, setEditingMesa] = useState<Mesa | null>(null);
   const [confirmFreeMesaId, setConfirmFreeMesaId] = useState<string | null>(null);
   const [confirmFreeMesaNum, setConfirmFreeMesaNum] = useState<number | null>(null);
+  const [confirmDeleteMesa, setConfirmDeleteMesa] = useState<Mesa | null>(null);
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    mesa: Mesa;
+    position: { x: number; y: number };
+  } | null>(null);
+
+  // Long-press support
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressMesaRef = useRef<Mesa | null>(null);
 
   // ── Sync fetched data → stores ──
   useEffect(() => {
@@ -67,7 +77,7 @@ function MesasPageContent() {
 
   const currentZona = zonas.find((z) => z.id === selectedZonaId) ?? null;
 
-  // ── Handlers ──
+  // ── Click handler: siempre navega a órdenes ──
   const handleClickMesa = useCallback(
     (mesa: Mesa) => {
       if (mesa.estado === "ocupada") {
@@ -88,6 +98,56 @@ function MesasPageContent() {
     setConfirmFreeMesaNum(null);
   };
 
+  // ── Context menu (right-click / long-press) — admin only ──
+  const handleContextMenu = useCallback(
+    (mesa: Mesa, x: number, y: number) => {
+      if (!isAdmin) return;
+      setContextMenu({ mesa, position: { x, y } });
+    },
+    [isAdmin]
+  );
+
+  const handleRightClick = useCallback(
+    (e: React.MouseEvent, mesa: Mesa) => {
+      if (!isAdmin) return;
+      e.preventDefault();
+      e.stopPropagation();
+      handleContextMenu(mesa, e.clientX, e.clientY);
+    },
+    [isAdmin, handleContextMenu]
+  );
+
+  // Long-press: start timer on touch, cancel on move/end
+  const handleTouchStart = useCallback(
+    (mesa: Mesa, e: React.TouchEvent) => {
+      if (!isAdmin) return;
+      longPressMesaRef.current = mesa;
+      const touch = e.touches[0];
+      const x = touch.clientX;
+      const y = touch.clientY;
+      longPressTimerRef.current = setTimeout(() => {
+        handleContextMenu(mesa, x, y);
+        longPressMesaRef.current = null;
+      }, 500);
+    },
+    [isAdmin, handleContextMenu]
+  );
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  const handleTouchMove = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  // ── Edit / Add mesa ──
   const handleEditMesa = useCallback((mesa: Mesa) => {
     setEditingMesa(mesa);
     setMesaFormOpen(true);
@@ -98,12 +158,18 @@ function MesasPageContent() {
     setMesaFormOpen(true);
   }, []);
 
+  // ── Go to orders from context menu ──
+  const handleGoToOrders = useCallback(
+    (mesa: Mesa) => {
+      router.push(`/ordenes?mesa=${mesa.numero}`);
+    },
+    [router]
+  );
+
   // ── Mover mesa (drag & drop) → optimistic + persist ──
   const handleMoveMesa = useCallback(
     async (mesaId: string, pos_x: number, pos_y: number) => {
-      // Optimistic update
       useMesasStore.getState().updateMesa(mesaId, { pos_x, pos_y });
-      // Persist
       const { success, error: err } = await updateRecord("mesas", mesaId, { pos_x, pos_y });
       if (!success) {
         console.warn("[Mesas] Error guardando posición:", err);
@@ -119,7 +185,6 @@ function MesasPageContent() {
       const negocioId = user?.negocio_id ?? "";
 
       if (editingMesa?.id) {
-        // ── EDITAR ──
         const updates = {
           numero: mesa.numero,
           capacidad: mesa.capacidad,
@@ -128,9 +193,7 @@ function MesasPageContent() {
           pos_x: mesa.pos_x,
           pos_y: mesa.pos_y,
         };
-        // Optimistic
         useMesasStore.getState().updateMesa(editingMesa.id, updates);
-        // Persist
         const { success, error: err } = await updateRecord("mesas", editingMesa.id, updates);
         if (!success) {
           showToast(`Error actualizando mesa: ${err}`, "error");
@@ -138,7 +201,6 @@ function MesasPageContent() {
         }
         return true;
       } else {
-        // ── CREAR ──
         const newMesa = {
           negocio_id: negocioId,
           numero: mesa.numero ?? 0,
@@ -154,7 +216,6 @@ function MesasPageContent() {
           showToast(`Error creando mesa: ${err}`, "error");
           return false;
         }
-        // Refetch para obtener el ID real de Supabase
         refetchMesas();
         return true;
       }
@@ -162,16 +223,59 @@ function MesasPageContent() {
     [editingMesa, user?.negocio_id, selectedZonaId, refetchMesas]
   );
 
-  // ── Eliminar mesa (soft delete) ──
+  // ── Duplicar mesa ──
+  const handleDuplicateMesa = useCallback(
+    async (mesa: Mesa) => {
+      const negocioId = user?.negocio_id ?? "";
+      // Encontrar el próximo número disponible
+      const maxNum = Math.max(0, ...mesas.map((m) => m.numero));
+      const newMesa = {
+        negocio_id: negocioId,
+        numero: maxNum + 1,
+        capacidad: mesa.capacidad,
+        estado: "disponible" as const,
+        zona_id: mesa.zona_id,
+        pos_x: (mesa.pos_x ?? 80) + 30,
+        pos_y: (mesa.pos_y ?? 80) + 30,
+        forma: mesa.forma ?? "cuadrada",
+      };
+      const { success, error: err } = await insertRecord("mesas", newMesa);
+      if (!success) {
+        showToast(`Error duplicando mesa: ${err}`, "error");
+        return;
+      }
+      showToast(`Mesa ${newMesa.numero} creada (copia de mesa ${mesa.numero})`, "success");
+      refetchMesas();
+    },
+    [user?.negocio_id, mesas, refetchMesas]
+  );
+
+  // ── Eliminar mesa (soft delete) con confirmación ──
+  const handleRequestDeleteMesa = useCallback((mesa: Mesa) => {
+    setConfirmDeleteMesa(mesa);
+  }, []);
+
+  const handleConfirmDeleteMesa = useCallback(async () => {
+    if (!confirmDeleteMesa?.id) return;
+    useMesasStore.getState().removeMesa(confirmDeleteMesa.id);
+    const { success, error: err } = await deleteRecord("mesas", confirmDeleteMesa.id);
+    if (!success) {
+      showToast(`Error eliminando mesa: ${err}`, "error");
+      refetchMesas();
+    } else {
+      showToast(`Mesa ${confirmDeleteMesa.numero} eliminada`, "success");
+    }
+    setConfirmDeleteMesa(null);
+  }, [confirmDeleteMesa, refetchMesas]);
+
+  // ── Eliminar mesa directa (from MesaFormModal) ──
   const handleDeleteMesa = useCallback(
     async (id: string): Promise<boolean> => {
-      // Optimistic
       useMesasStore.getState().removeMesa(id);
-      // Persist
       const { success, error: err } = await deleteRecord("mesas", id);
       if (!success) {
         showToast(`Error eliminando mesa: ${err}`, "error");
-        refetchMesas(); // revertir
+        refetchMesas();
         return false;
       }
       return true;
@@ -185,7 +289,6 @@ function MesasPageContent() {
       const negocioId = user?.negocio_id ?? "";
 
       if (zona.id) {
-        // ── EDITAR ──
         const updates = { nombre: zona.nombre, color: zona.color, orden: zona.orden };
         useZonasStore.getState().updateZona(zona.id, updates);
         const { success, error: err } = await updateRecord("zonas", zona.id, updates);
@@ -195,7 +298,6 @@ function MesasPageContent() {
         }
         return true;
       } else {
-        // ── CREAR ──
         const newZona = {
           negocio_id: negocioId,
           nombre: zona.nombre,
@@ -271,22 +373,9 @@ function MesasPageContent() {
             </button>
           </div>
 
-          {/* Admin controls */}
+          {/* Admin controls — sin botón "Editar" */}
           {isAdmin && (
             <>
-              <button
-                onClick={() => setEditMode(!editMode)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium transition-all min-h-[40px]",
-                  editMode
-                    ? "bg-accent text-white"
-                    : "bg-surface-2 text-text-70 hover:bg-surface-3"
-                )}
-              >
-                {editMode ? <Check size={14} /> : <Pencil size={14} />}
-                {editMode ? "Listo" : "Editar"}
-              </button>
-
               <button
                 onClick={() => setZonaManagerOpen(true)}
                 className="p-2 rounded-lg bg-surface-2 text-text-70 hover:bg-surface-3 transition-colors min-h-[40px]"
@@ -340,6 +429,13 @@ function MesasPageContent() {
         ))}
       </div>
 
+      {/* Admin hint */}
+      {isAdmin && !loading && mesas.length > 0 && vista === "grid" && (
+        <p className="text-[10px] text-text-25 mb-4">
+          Click derecho o mantén presionado en una mesa para editar, duplicar o eliminar
+        </p>
+      )}
+
       {/* ── Loading ── */}
       {loading && (
         <div className="flex items-center justify-center py-20">
@@ -357,23 +453,16 @@ function MesasPageContent() {
             return (
               <button
                 key={mesa.id}
-                onClick={() =>
-                  editMode && isAdmin ? handleEditMesa(mesa) : handleClickMesa(mesa)
-                }
+                onClick={() => handleClickMesa(mesa)}
+                onContextMenu={(e) => handleRightClick(e, mesa)}
+                onTouchStart={(e) => handleTouchStart(mesa, e)}
+                onTouchEnd={handleTouchEnd}
+                onTouchMove={handleTouchMove}
                 className={cn(
-                  "relative p-5 rounded-xl bg-surface-2 border text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer min-h-[44px]",
-                  editMode && isAdmin
-                    ? "border-accent/40 hover:border-accent"
-                    : "border-border hover:border-border-hover"
+                  "relative p-5 rounded-xl bg-surface-2 border border-border text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer min-h-[44px]",
+                  "hover:border-border-hover"
                 )}
               >
-                {/* Edit indicator */}
-                {editMode && isAdmin && (
-                  <div className="absolute top-2 right-2 p-1 rounded-md bg-accent/10 text-accent">
-                    <Pencil size={12} />
-                  </div>
-                )}
-
                 {/* Top color indicator */}
                 <div
                   className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-b-full"
@@ -430,10 +519,11 @@ function MesasPageContent() {
         <FloorPlanCanvas
           mesas={filteredMesas}
           zona={currentZona}
-          editMode={editMode && isAdmin}
+          isAdmin={isAdmin ?? false}
           onMoveMesa={handleMoveMesa}
           onEditMesa={handleEditMesa}
           onClickMesa={handleClickMesa}
+          onContextMenu={handleContextMenu}
           onAddMesa={handleAddMesa}
         />
       )}
@@ -479,6 +569,19 @@ function MesasPageContent() {
         </div>
       )}
 
+      {/* ── Context Menu ── */}
+      {contextMenu && (
+        <MesaContextMenu
+          mesa={contextMenu.mesa}
+          position={contextMenu.position}
+          onClose={() => setContextMenu(null)}
+          onEdit={handleEditMesa}
+          onDuplicate={handleDuplicateMesa}
+          onDelete={handleRequestDeleteMesa}
+          onGoToOrders={handleGoToOrders}
+        />
+      )}
+
       {/* ── Modals ── */}
       <ZonaManager
         open={zonaManagerOpen}
@@ -500,6 +603,7 @@ function MesasPageContent() {
         onDelete={handleDeleteMesa}
       />
 
+      {/* Confirm: occupied mesa */}
       <ConfirmDialog
         open={confirmFreeMesaId !== null}
         onClose={() => {
@@ -512,6 +616,18 @@ function MesasPageContent() {
         confirmLabel="Continuar"
         cancelLabel="Cancelar"
         variant="warning"
+      />
+
+      {/* Confirm: delete mesa */}
+      <ConfirmDialog
+        open={confirmDeleteMesa !== null}
+        onClose={() => setConfirmDeleteMesa(null)}
+        onConfirm={handleConfirmDeleteMesa}
+        title={`¿Eliminar Mesa ${confirmDeleteMesa?.numero}?`}
+        description="Esta acción no se puede deshacer. La mesa será eliminada permanentemente."
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        variant="danger"
       />
     </div>
   );

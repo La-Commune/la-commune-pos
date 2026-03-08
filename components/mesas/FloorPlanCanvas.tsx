@@ -19,10 +19,11 @@ import type { Mesa, Zona } from "@/lib/validators";
 interface FloorPlanCanvasProps {
   mesas: Mesa[];
   zona: Zona | null;
-  editMode: boolean;
+  isAdmin: boolean;
   onMoveMesa: (mesaId: string, pos_x: number, pos_y: number) => void;
   onEditMesa: (mesa: Mesa) => void;
   onClickMesa: (mesa: Mesa) => void;
+  onContextMenu: (mesa: Mesa, x: number, y: number) => void;
   onAddMesa: () => void;
 }
 
@@ -32,20 +33,22 @@ const CANVAS_H = 500;
 export default function FloorPlanCanvas({
   mesas,
   zona,
-  editMode,
+  isAdmin,
   onMoveMesa,
   onEditMesa,
   onClickMesa,
+  onContextMenu,
   onAddMesa,
 }: FloorPlanCanvasProps) {
   const [activeMesa, setActiveMesa] = useState<Mesa | null>(null);
   const [scale, setScale] = useState(1);
 
+  // Drag & drop siempre activo para admin
   const pointerSensor = useSensor(PointerSensor, {
-    activationConstraint: { distance: 5 },
+    activationConstraint: { distance: 8 },
   });
   const touchSensor = useSensor(TouchSensor, {
-    activationConstraint: { delay: 150, tolerance: 5 },
+    activationConstraint: { delay: 200, tolerance: 5 },
   });
   const sensors = useSensors(pointerSensor, touchSensor);
 
@@ -64,7 +67,6 @@ export default function FloorPlanCanvas({
       const mesa = mesas.find((m) => m.id === String(active.id));
       if (!mesa) return;
 
-      // Calcular nueva posición, clamped al canvas
       const newX = Math.max(0, Math.min(CANVAS_W - 80, (mesa.pos_x ?? 0) + delta.x / scale));
       const newY = Math.max(0, Math.min(CANVAS_H - 60, (mesa.pos_y ?? 0) + delta.y / scale));
 
@@ -114,7 +116,7 @@ export default function FloorPlanCanvas({
             <ZoomIn size={16} />
           </button>
 
-          {editMode && (
+          {isAdmin && (
             <button
               onClick={onAddMesa}
               className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg btn-primary text-[11px]"
@@ -132,9 +134,9 @@ export default function FloorPlanCanvas({
         style={{ maxHeight: "60vh" }}
       >
         <DndContext
-          sensors={editMode ? sensors : undefined}
-          onDragStart={editMode ? handleDragStart : undefined}
-          onDragEnd={editMode ? handleDragEnd : undefined}
+          sensors={isAdmin ? sensors : undefined}
+          onDragStart={isAdmin ? handleDragStart : undefined}
+          onDragEnd={isAdmin ? handleDragEnd : undefined}
         >
           <div
             className="relative"
@@ -152,20 +154,20 @@ export default function FloorPlanCanvas({
                 key={mesa.id}
                 mesa={mesa}
                 scale={scale}
-                editMode={editMode}
+                isAdmin={isAdmin}
                 onEdit={onEditMesa}
                 onClick={onClickMesa}
+                onContextMenu={onContextMenu}
               />
             ))}
           </div>
 
-          {/* Drag overlay — ghost element while dragging */}
           <DragOverlay dropAnimation={null}>
             {activeMesa ? (
               <DraggableMesa
                 mesa={activeMesa}
                 isDragging
-                editMode={editMode}
+                isAdmin={isAdmin}
               />
             ) : null}
           </DragOverlay>
@@ -175,7 +177,7 @@ export default function FloorPlanCanvas({
         {mesas.length === 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-text-25">
             <p className="text-sm">Sin mesas en esta zona</p>
-            {editMode && (
+            {isAdmin && (
               <button
                 onClick={onAddMesa}
                 className="mt-2 text-xs text-accent hover:underline"
@@ -188,9 +190,9 @@ export default function FloorPlanCanvas({
       </div>
 
       {/* Hint */}
-      {editMode && mesas.length > 0 && (
+      {isAdmin && mesas.length > 0 && (
         <p className="text-[10px] text-text-25 mt-2 text-center">
-          Arrastra las mesas para reposicionarlas · Los cambios se guardan automáticamente
+          Arrastra las mesas para reposicionarlas · Click derecho para más opciones · Cambios se guardan automáticamente
         </p>
       )}
     </div>

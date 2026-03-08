@@ -7,20 +7,22 @@ import type { Mesa } from "@/lib/validators";
 interface DraggableMesaWrapperProps {
   mesa: Mesa;
   scale: number;
-  editMode: boolean;
+  isAdmin: boolean;
   onEdit: (mesa: Mesa) => void;
   onClick: (mesa: Mesa) => void;
+  onContextMenu: (mesa: Mesa, x: number, y: number) => void;
 }
 
 export default function DraggableMesaWrapper({
   mesa,
   scale,
-  editMode,
+  isAdmin,
   onEdit,
   onClick,
+  onContextMenu,
 }: DraggableMesaWrapperProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({ id: mesa.id ?? "" });
+    useDraggable({ id: mesa.id ?? "", disabled: !isAdmin });
 
   return (
     <div
@@ -39,11 +41,12 @@ export default function DraggableMesaWrapper({
       <DraggableMesa
         mesa={mesa}
         isDragging={isDragging}
-        editMode={editMode}
+        isAdmin={isAdmin}
         onEdit={onEdit}
         onClick={onClick}
-        dragListeners={listeners}
-        dragAttributes={attributes}
+        onContextMenu={onContextMenu}
+        dragListeners={isAdmin ? listeners : undefined}
+        dragAttributes={isAdmin ? attributes : undefined}
       />
     </div>
   );
