@@ -46,6 +46,7 @@ app/(pos)/               — App principal (protegida)
   usuarios/              — Staff management
   fidelidad/             — Puente Firebase
 app/api/sync/            — Endpoint de sync offline
+app/api/auth/pin/        — Login por PIN → sesión Auth real (service role)
 ```
 
 ## Stores (Zustand)
@@ -55,6 +56,19 @@ app/api/sync/            — Endpoint de sync offline
 - `store/ordenes.store.ts` — Órdenes activas, carrito
 - `store/ui.store.ts` — Sidebar, módulo activo
 - `store/sync.store.ts` — Estado de conexión, acciones pendientes
+
+## Auth
+
+Dos métodos de login, ambos crean sesión Auth real en Supabase:
+
+- **Email/password**: `signInWithPassword()` directo desde el cliente
+- **PIN (4 dígitos)**: Frontend → `POST /api/auth/pin` → service role valida PIN + genera sesión → frontend hace `setSession()` con los tokens
+
+El endpoint PIN usa `SUPABASE_SERVICE_ROLE_KEY` (server-side only) y un password determinístico (`lc_pos_{auth_uid}`) que se sincroniza automáticamente.
+
+Archivos clave: `app/api/auth/pin/route.ts`, `lib/supabase-admin.ts`, `store/auth.store.ts`
+
+Políticas anon con `USING(true)` fueron eliminadas. Solo `authenticated` puede acceder a tablas (filtrado por `negocio_id` via RLS).
 
 ## Cola offline
 
