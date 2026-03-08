@@ -1,0 +1,24 @@
+-- ============================================================
+-- La Commune POS — Setup PIN Auth (documentación)
+-- ============================================================
+-- Este archivo documenta cómo funciona el auth por PIN.
+-- NO se ejecuta directamente — el password se actualiza via
+-- la API admin de Supabase en el endpoint /api/auth/pin.
+--
+-- Flujo:
+-- 1. Empleado ingresa PIN en el POS
+-- 2. Frontend llama POST /api/auth/pin con el PIN
+-- 3. Backend valida PIN con login_por_pin() RPC
+-- 4. Backend construye password: lc_pos_{auth_uid}
+-- 5. Backend hace signInWithPassword con ese password
+-- 6. Retorna tokens al frontend → sesión Auth real
+--
+-- Para crear nuevos empleados:
+-- 1. Crear usuario en Supabase Auth con email + password lc_pos_{auth_uid}
+-- 2. Insertar en tabla usuarios con auth_uid, pin, rol
+-- 3. El empleado puede hacer login con PIN o email/password
+--
+-- IMPORTANTE: El password de email/password para David fue
+-- actualizado al formato determinístico. Si necesitas el
+-- password original, hay que resetearlo en Supabase Dashboard.
+-- ============================================================

@@ -49,35 +49,42 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     try {
-      // ── Login por PIN ──
+      // ── Login por PIN (via API route con service role) ──
       if (email.startsWith("pin:")) {
         const pin = email.replace("pin:", "");
 
-        const { data: result, error: rpcError } = await (supabase as any).rpc(
-          "login_por_pin",
-          { pin_input: pin }
-        );
+        const res = await fetch("/api/auth/pin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pin }),
+        });
 
-        if (rpcError) {
-          set({ error: "Error al verificar PIN", isLoading: false });
+        const data = await res.json();
+
+        if (!res.ok || !data.access_token) {
+          set({ error: data.error ?? "PIN inválido", isLoading: false });
           return false;
         }
 
-        const userData = typeof result === "string" ? JSON.parse(result) : result;
+        // Establecer sesión Auth real en el cliente Supabase
+        const { error: sessionError } = await supabase!.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+        });
 
-        if (!userData?.success) {
-          set({ error: userData?.error ?? "PIN inválido", isLoading: false });
+        if (sessionError) {
+          set({ error: "Error estableciendo sesión", isLoading: false });
           return false;
         }
 
         set({
           user: {
-            id: userData.id,
-            auth_uid: userData.auth_uid,
-            negocio_id: userData.negocio_id,
-            nombre: userData.nombre,
-            email: userData.email,
-            rol: userData.rol as RolUsuario,
+            id: data.user.id,
+            auth_uid: data.user.auth_uid,
+            negocio_id: data.user.negocio_id,
+            nombre: data.user.nombre,
+            email: data.user.email,
+            rol: data.user.rol as RolUsuario,
           },
           isAuthenticated: true,
           isLoading: false,
