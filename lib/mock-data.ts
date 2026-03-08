@@ -278,18 +278,6 @@ export const MOCK_PRODUCTOS: MockProducto[] = [
   },
 ];
 
-// ── MESAS ──
-export const MOCK_MESAS = [
-  { id: "mesa-1", numero: 1, capacidad: 2, estado: "disponible" as const, ubicacion: "Interior", orden_actual_id: null },
-  { id: "mesa-2", numero: 2, capacidad: 4, estado: "ocupada" as const, ubicacion: "Interior", orden_actual_id: "ord-1" },
-  { id: "mesa-3", numero: 3, capacidad: 4, estado: "preparando" as const, ubicacion: "Interior", orden_actual_id: "ord-2" },
-  { id: "mesa-4", numero: 4, capacidad: 6, estado: "disponible" as const, ubicacion: "Terraza", orden_actual_id: null },
-  { id: "mesa-5", numero: 5, capacidad: 2, estado: "reservada" as const, ubicacion: "Terraza", orden_actual_id: null },
-  { id: "mesa-6", numero: 6, capacidad: 4, estado: "ocupada" as const, ubicacion: "Terraza", orden_actual_id: "ord-3" },
-  { id: "mesa-7", numero: 7, capacidad: 8, estado: "disponible" as const, ubicacion: "Interior", orden_actual_id: null },
-  { id: "mesa-8", numero: 8, capacidad: 2, estado: "disponible" as const, ubicacion: "Barra", orden_actual_id: null },
-];
-
 // ── ÓRDENES ──
 export const MOCK_ORDENES: MockOrden[] = [
   {

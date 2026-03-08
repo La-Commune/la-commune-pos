@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -128,14 +129,27 @@ function SegmentedControl<T extends string>({
 /* ════════════════════════════════════
    SettingsPanel — all customization
    ════════════════════════════════════ */
-function SettingsPanel({ onClose }: { onClose: () => void }) {
+function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef: React.RefObject<HTMLDivElement | null> }) {
   const { theme, setTheme } = useTheme();
   const { sidebarPosition, density, panelWidth, setSidebarPosition, setDensity, setPanelWidth } =
     useUIStore();
   const [mounted, setMounted] = useState(false);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setMounted(true), []);
 
+  // Calculate position from anchor
+  useEffect(() => {
+    if (!mounted || !anchorRef.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    setPos({
+      top: rect.bottom + 4,
+      right: window.innerWidth - rect.right,
+    });
+  }, [mounted, anchorRef]);
+
+  // Close on ESC
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -144,12 +158,18 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
 
-  if (!mounted) return null;
+  if (!mounted || !pos) return null;
 
-  return (
+  return createPortal(
     <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-0 top-12 w-72 bg-surface-3 border border-border rounded-xl shadow-lg z-50 overflow-hidden">
+      {/* Backdrop — full screen, above everything */}
+      <div className="fixed inset-0 z-[9998]" onClick={onClose} />
+      {/* Panel */}
+      <div
+        ref={panelRef}
+        className="fixed w-72 bg-surface-3 border border-border rounded-xl shadow-lg z-[9999] overflow-hidden"
+        style={{ top: pos.top, right: pos.right }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
           <span className="text-xs font-semibold text-text-100">Personalizar</span>
@@ -241,7 +261,8 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 
@@ -335,6 +356,7 @@ export default function Navbar() {
   const { sidebarPosition } = useUIStore();
   const [menuUsuario, setMenuUsuario] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
 
   const showHamburger = sidebarPosition === "hidden";
   const showTopNav = sidebarPosition === "top";
@@ -409,9 +431,9 @@ export default function Navbar() {
         <LiveClock />
 
         {/* Settings */}
-        <div className="relative">
+        <div className="relative" ref={settingsRef}>
           <button
-            onClick={() => setSettingsOpen(!settingsOpen)}
+            onClick={(e) => { e.stopPropagation(); setSettingsOpen(!settingsOpen); }}
             aria-label="Personalizar POS"
             aria-expanded={settingsOpen}
             className={cn(
@@ -424,7 +446,7 @@ export default function Navbar() {
           >
             <Settings size={16} />
           </button>
-          {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
+          {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} anchorRef={settingsRef} />}
         </div>
 
         {/* User menu */}
