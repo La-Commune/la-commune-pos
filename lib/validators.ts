@@ -44,6 +44,7 @@ export const MesaSchema = z.object({
   ancho: z.number().int().min(50).max(300).default(80),
   alto: z.number().int().min(50).max(300).default(80),
   rotacion: z.number().int().min(0).max(359).default(0),
+  ocupada_desde: z.string().nullable().default(null),
 });
 
 export const ItemOrdenSchema = z.object({

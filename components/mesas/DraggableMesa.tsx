@@ -2,8 +2,10 @@
 
 import { useCallback, useRef, useState } from "react";
 import { Users, GripVertical, RotateCw } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { ESTADO_MESA_CONFIG } from "@/lib/constants";
 import type { Mesa } from "@/lib/validators";
+import MesaTimer, { getMins, getLevel } from "./MesaTimer";
 
 interface DraggableMesaProps {
   mesa: Mesa;
@@ -54,6 +56,11 @@ export default function DraggableMesa({
 
   const borderRadius =
     forma === "redonda" ? "50%" : "var(--radius-lg)";
+
+  // ¿Mesa estancada? (>60min ocupada)
+  const isStale = mesa.ocupada_desde &&
+    (mesa.estado === "ocupada" || mesa.estado === "reservada") &&
+    getLevel(getMins(mesa.ocupada_desde)) === "err";
 
   // Counter-rotate para que el texto siempre sea horizontal
   const counterRotate = rotacion ? `rotate(${-rotacion}deg)` : undefined;
@@ -193,7 +200,10 @@ export default function DraggableMesa({
         transform: isDragging ? "scale(1.05)" : "scale(1)",
         ...style,
       }}
-      className="relative flex flex-col items-center justify-center border-2 bg-surface-1 shadow-card select-none group"
+      className={cn(
+        "relative flex flex-col items-center justify-center border-2 bg-surface-1 shadow-card select-none group",
+        isStale && "mesa-stale-pulse border-status-err"
+      )}
       onClick={(e) => {
         if (isResizing || isRotating || justFinishedInteractionRef.current) return;
         if (onClick) onClick(mesa);
@@ -243,6 +253,18 @@ export default function DraggableMesa({
           <Users size={10} className="text-text-25" />
           <span className="text-[10px] text-text-25">{mesa.capacidad}</span>
         </div>
+
+        {/* Timer inline — solo cuando ocupada/reservada */}
+        {mesa.ocupada_desde &&
+          (mesa.estado === "ocupada" || mesa.estado === "reservada") && (
+            <div className="mt-0.5">
+              <MesaTimer
+                ocupadaDesde={mesa.ocupada_desde}
+                variant="inline"
+                showIcon={false}
+              />
+            </div>
+          )}
       </div>
 
       {/* Status label on hover — también counter-rotado */}

@@ -9,6 +9,7 @@ import {
   LayoutGrid,
   Map,
   Settings2,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMesas, useZonas, insertRecord, updateRecord, deleteRecord } from "@/hooks/useSupabase";
@@ -18,6 +19,7 @@ import { useZonasStore } from "@/store/zonas.store";
 import { ESTADO_MESA_CONFIG } from "@/lib/constants";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import MesaTimer, { getMins, getLevel, UMBRAL_WARN } from "@/components/mesas/MesaTimer";
 import FloorPlanCanvas from "@/components/mesas/FloorPlanCanvas";
 import ZonaManager from "@/components/mesas/ZonaManager";
 import MesaFormModal from "@/components/mesas/MesaFormModal";
@@ -76,6 +78,14 @@ function MesasPageContent() {
       : mesas.filter((m) => m.zona_id === selectedZonaId);
 
   const currentZona = zonas.find((z) => z.id === selectedZonaId) ?? null;
+
+  // Mesas estancadas (>60min ocupadas/reservadas) en las mesas filtradas
+  const staleMesas = filteredMesas.filter(
+    (m) =>
+      m.ocupada_desde &&
+      (m.estado === "ocupada" || m.estado === "reservada") &&
+      getLevel(getMins(m.ocupada_desde)) === "err"
+  );
 
   // ── Click handler: siempre navega a órdenes ──
   const handleClickMesa = useCallback(
@@ -531,6 +541,26 @@ function MesasPageContent() {
         </div>
       )}
 
+      {/* ── Banner: mesas estancadas ── */}
+      {!loading && staleMesas.length > 0 && (
+        <div
+          className="flex items-center gap-2 px-4 py-2.5 rounded-lg mb-4 text-sm"
+          style={{
+            backgroundColor: "color-mix(in srgb, var(--err) 10%, var(--surface-1))",
+            color: "var(--err)",
+            border: "1px solid color-mix(in srgb, var(--err) 25%, transparent)",
+          }}
+        >
+          <AlertTriangle size={16} className="shrink-0" />
+          <span>
+            <strong>{staleMesas.length}</strong>{" "}
+            {staleMesas.length === 1 ? "mesa lleva" : "mesas llevan"} más de 1 hora
+            ocupada{staleMesas.length > 1 ? "s" : ""} — revisar mesas{" "}
+            <strong>{staleMesas.map((m) => m.numero).join(", ")}</strong>
+          </span>
+        </div>
+      )}
+
       {/* ── Vista: Grid ── */}
       {!loading && vista === "grid" && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -538,6 +568,9 @@ function MesasPageContent() {
             const config =
               ESTADO_MESA_CONFIG[mesa.estado as EstadoMesaKey] ??
               ESTADO_MESA_CONFIG.disponible;
+            const isStale = mesa.ocupada_desde &&
+              (mesa.estado === "ocupada" || mesa.estado === "reservada") &&
+              getLevel(getMins(mesa.ocupada_desde)) === "err";
             return (
               <button
                 key={mesa.id}
@@ -548,7 +581,8 @@ function MesasPageContent() {
                 onTouchMove={handleTouchMove}
                 className={cn(
                   "relative p-5 rounded-xl bg-surface-2 border border-border text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer min-h-[44px]",
-                  "hover:border-border-hover"
+                  "hover:border-border-hover",
+                  isStale && "mesa-stale-pulse border-status-err"
                 )}
               >
                 {/* Top color indicator */}
@@ -572,6 +606,14 @@ function MesasPageContent() {
                   <Users size={12} />
                   <span className="text-[11px]">{mesa.capacidad} personas</span>
                 </div>
+
+                {/* Timer — solo cuando ocupada/reservada */}
+                {mesa.ocupada_desde &&
+                  (mesa.estado === "ocupada" || mesa.estado === "reservada") && (
+                    <div className="mb-2">
+                      <MesaTimer ocupadaDesde={mesa.ocupada_desde} variant="badge" />
+                    </div>
+                  )}
 
                 {/* Zona label */}
                 {selectedZonaId === null && (
