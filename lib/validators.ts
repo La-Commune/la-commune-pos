@@ -222,6 +222,65 @@ export const GastoSchema = z.object({
   notas: z.string().nullable().optional(),
 });
 
+// ── Schemas V3 (migration-v3.sql) ──
+
+export const NivelCliente = z.enum(["bronce", "plata", "oro"]);
+
+export const ClienteSchema = z.object({
+  id: z.string().uuid().optional(),
+  negocio_id: z.string().uuid(),
+  firebase_id: z.string().nullable().optional(),
+  nombre: z.string().min(1, "Nombre requerido"),
+  telefono: z.string().nullable().optional(),
+  email: z.string().email("Email inválido").nullable().optional(),
+  total_visitas: z.number().int().nonnegative().default(0),
+  total_gastado: z.number().nonnegative().default(0),
+  ticket_promedio: z.number().nonnegative().default(0),
+  puntos: z.number().int().nonnegative().default(0),
+  nivel: NivelCliente.default("bronce"),
+  activo: z.boolean().default(true),
+  ultima_visita: z.string().datetime().nullable().optional(),
+});
+
+export const UnidadMedida = z.enum(["kg", "g", "lt", "ml", "pz", "bolsa", "caja"]);
+
+export const InventarioSchema = z.object({
+  id: z.string().uuid().optional(),
+  negocio_id: z.string().uuid(),
+  nombre: z.string().min(1, "Nombre requerido"),
+  descripcion: z.string().nullable().optional(),
+  unidad: UnidadMedida.default("pz"),
+  stock_actual: z.number().nonnegative().default(0),
+  stock_minimo: z.number().nonnegative().default(0),
+  costo_unitario: z.number().nonnegative().default(0),
+  proveedor: z.string().nullable().optional(),
+  activo: z.boolean().default(true),
+});
+
+export const TipoMovimientoInv = z.enum(["entrada", "salida", "ajuste", "devolucion"]);
+
+export const MovimientoInventarioSchema = z.object({
+  id: z.string().uuid().optional(),
+  negocio_id: z.string().uuid(),
+  inventario_id: z.string().uuid(),
+  usuario_id: z.string().uuid(),
+  tipo: TipoMovimientoInv,
+  cantidad: z.number(), // positivo = entra, negativo = sale
+  stock_anterior: z.number(),
+  stock_nuevo: z.number(),
+  costo_total: z.number().nullable().optional(),
+  referencia: z.string().nullable().optional(),
+  orden_id: z.string().uuid().nullable().optional(),
+  notas: z.string().nullable().optional(),
+});
+
+export const RecetaSchema = z.object({
+  id: z.string().uuid().optional(),
+  producto_id: z.string().uuid(),
+  inventario_id: z.string().uuid(),
+  cantidad: z.number().positive("La cantidad debe ser mayor a 0"),
+});
+
 // ── Types inferidos ──
 export type Mesa = z.infer<typeof MesaSchema>;
 export type ItemOrden = z.infer<typeof ItemOrdenSchema>;
@@ -240,3 +299,7 @@ export type Negocio = z.infer<typeof NegocioSchema>;
 export type ItemOrdenDB = z.infer<typeof ItemOrdenDBSchema>;
 export type AuditLog = z.infer<typeof AuditLogSchema>;
 export type Gasto = z.infer<typeof GastoSchema>;
+export type Cliente = z.infer<typeof ClienteSchema>;
+export type Inventario = z.infer<typeof InventarioSchema>;
+export type MovimientoInventario = z.infer<typeof MovimientoInventarioSchema>;
+export type Receta = z.infer<typeof RecetaSchema>;

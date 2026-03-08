@@ -22,61 +22,14 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-
-// ── Mock data para reportes ──
-const MOCK_STATS = {
-  ventasHoy: 8_450.60,
-  ventasAyer: 7_230.40,
-  ordenesHoy: 42,
-  ordenesAyer: 38,
-  ticketPromedio: 201.20,
-  ticketPromedioAyer: 190.27,
-  clientesHoy: 35,
-  clientesAyer: 31,
-  tiempoPromedioPrep: 8.5,
-};
-
-const MOCK_VENTAS_SEMANA = [
-  { dia: "Lun", ventas: 6_200, ordenes: 32 },
-  { dia: "Mar", ventas: 5_800, ordenes: 28 },
-  { dia: "Mié", ventas: 7_100, ordenes: 36 },
-  { dia: "Jue", ventas: 6_900, ordenes: 34 },
-  { dia: "Vie", ventas: 9_200, ordenes: 48 },
-  { dia: "Sáb", ventas: 11_500, ordenes: 58 },
-  { dia: "Dom", ventas: 8_450, ordenes: 42 },
-];
-
-const MOCK_TOP_PRODUCTOS = [
-  { nombre: "Americano", cantidad: 68, ingresos: 3_060 },
-  { nombre: "Latte", cantidad: 54, ingresos: 2_970 },
-  { nombre: "Croissant", cantidad: 42, ingresos: 1_890 },
-  { nombre: "Cold Brew", cantidad: 38, ingresos: 2_280 },
-  { nombre: "Panini Caprese", cantidad: 28, ingresos: 2_660 },
-  { nombre: "Matcha Latte", cantidad: 24, ingresos: 1_560 },
-  { nombre: "Cheesecake", cantidad: 22, ingresos: 1_650 },
-  { nombre: "Cappuccino", cantidad: 20, ingresos: 1_100 },
-];
-
-const MOCK_METODOS_PAGO = [
-  { metodo: "Efectivo", porcentaje: 42, monto: 23_540 },
-  { metodo: "Tarjeta", porcentaje: 45, monto: 25_220 },
-  { metodo: "Transferencia", porcentaje: 13, monto: 7_290 },
-];
-
-const MOCK_VENTAS_HORA = [
-  { hora: "8am", ventas: 420 },
-  { hora: "9am", ventas: 890 },
-  { hora: "10am", ventas: 1_200 },
-  { hora: "11am", ventas: 980 },
-  { hora: "12pm", ventas: 1_450 },
-  { hora: "1pm", ventas: 1_680 },
-  { hora: "2pm", ventas: 1_320 },
-  { hora: "3pm", ventas: 780 },
-  { hora: "4pm", ventas: 650 },
-  { hora: "5pm", ventas: 520 },
-  { hora: "6pm", ventas: 380 },
-  { hora: "7pm", ventas: 180 },
-];
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import {
+  MOCK_STATS_REPORTES,
+  MOCK_VENTAS_SEMANA,
+  MOCK_TOP_PRODUCTOS,
+  MOCK_METODOS_PAGO,
+  MOCK_VENTAS_HORA,
+} from "@/lib/mock-data";
 
 function StatCard({
   title,
@@ -142,7 +95,8 @@ export default function ReportesPage() {
   const [periodo, setPeriodo] = useState<"hoy" | "semana" | "mes">("hoy");
 
   return (
-    <div className="h-[calc(100vh-3.5rem-4rem)] flex flex-col overflow-y-auto">
+    <ErrorBoundary moduleName="Reportes">
+      <div className="h-[calc(100vh-3.5rem-4rem)] flex flex-col overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -170,28 +124,28 @@ export default function ReportesPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <StatCard
           title="Ventas"
-          value={MOCK_STATS.ventasHoy}
-          prevValue={MOCK_STATS.ventasAyer}
+          value={MOCK_STATS_REPORTES.ventasHoy}
+          prevValue={MOCK_STATS_REPORTES.ventasAyer}
           format="currency"
           icon={DollarSign}
         />
         <StatCard
           title="Órdenes"
-          value={MOCK_STATS.ordenesHoy}
-          prevValue={MOCK_STATS.ordenesAyer}
+          value={MOCK_STATS_REPORTES.ordenesHoy}
+          prevValue={MOCK_STATS_REPORTES.ordenesAyer}
           icon={ShoppingCart}
         />
         <StatCard
           title="Ticket promedio"
-          value={MOCK_STATS.ticketPromedio}
-          prevValue={MOCK_STATS.ticketPromedioAyer}
+          value={MOCK_STATS_REPORTES.ticketPromedio}
+          prevValue={MOCK_STATS_REPORTES.ticketPromedioAyer}
           format="currency"
           icon={BarChart3}
         />
         <StatCard
           title="Clientes"
-          value={MOCK_STATS.clientesHoy}
-          prevValue={MOCK_STATS.clientesAyer}
+          value={MOCK_STATS_REPORTES.clientesHoy}
+          prevValue={MOCK_STATS_REPORTES.clientesAyer}
           icon={Users}
         />
       </div>
@@ -348,12 +302,13 @@ export default function ReportesPage() {
               <span className="text-xs text-text-45">Tiempo promedio prep.</span>
               <span className="text-sm font-medium text-text-100 flex items-center gap-1">
                 <Clock size={12} className="text-text-25" />
-                {MOCK_STATS.tiempoPromedioPrep}m
+                {MOCK_STATS_REPORTES.tiempoPromedioPrep}m
               </span>
             </div>
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

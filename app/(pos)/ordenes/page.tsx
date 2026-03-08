@@ -23,7 +23,9 @@ import {
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import { useCategorias, useProductos, useOrdenes, useMesas } from "@/hooks/useSupabase";
+import { calcularIVA } from "@/hooks/useIVA";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 /* P11: Colores migrados al design system */
 const estadoOrdenConfig = {
@@ -130,10 +132,9 @@ export default function OrdenesPage() {
   }, [categoriaActiva, busqueda]);
 
   // Precios ya incluyen IVA — el total es la suma directa
-  const total = carrito.reduce((acc, item) => acc + item.precio_unitario * item.cantidad, 0);
+  const totalCarrito = carrito.reduce((acc, item) => acc + item.precio_unitario * item.cantidad, 0);
   // Desglose fiscal (hacia atrás): base gravable + IVA = total
-  const baseGravable = Math.round((total / 1.16) * 100) / 100;
-  const iva = Math.round((total - baseGravable) * 100) / 100;
+  const { baseGravable, iva } = calcularIVA(totalCarrito);
 
   const agregarAlCarrito = (producto: any) => {
     const existente = carrito.find((i) => i.producto_id === producto.id);
@@ -217,7 +218,8 @@ export default function OrdenesPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem-4rem)]" style={{ gap: "var(--density-gap)" }}>
+    <ErrorBoundary moduleName="Órdenes">
+      <div className="flex h-[calc(100vh-3.5rem-4rem)]" style={{ gap: "var(--density-gap)" }}>
       {/* ── Panel izquierdo ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Tabs */}
@@ -596,7 +598,7 @@ export default function OrdenesPage() {
                 <div className="p-6 border-t border-border/50 space-y-3">
                   <div className="flex justify-between text-sm font-bold text-text-100">
                     <span>Total</span>
-                    <span className="tabular-nums text-accent">{formatMXN(total)}</span>
+                    <span className="tabular-nums text-accent">{formatMXN(totalCarrito)}</span>
                   </div>
                   <div className="flex justify-between text-[11px] text-text-25">
                     <span>IVA incluido</span>
@@ -800,6 +802,7 @@ export default function OrdenesPage() {
         confirmLabel="Cancelar orden"
         variant="danger"
       />
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

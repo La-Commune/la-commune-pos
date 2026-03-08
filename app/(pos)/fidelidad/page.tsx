@@ -15,56 +15,41 @@ import {
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import Modal from "@/components/ui/Modal";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { useSearch } from "@/hooks/useSearch";
+import {
+  MOCK_CLIENTES,
+  MOCK_STATS_FIDELIDAD,
+  MOCK_RECOMPENSAS,
+  type MockCliente,
+} from "@/lib/mock-data";
 
-interface ClienteMock {
-  id: string;
-  nombre: string;
-  telefono: string;
-  puntos: number;
-  nivel: "bronce" | "plata" | "oro";
-  visitas: number;
-  gasto_total: number;
-  ultima_visita: string;
-  miembro_desde: string;
-}
+// TODO: Integración con Firebase - Reemplazar MOCK_CLIENTES con datos en tiempo real desde Firebase
+// Planned flow:
+// 1. Conectar con Firestore collection 'clientes'
+// 2. Usar hook personalizado (useClientesFirebase) para fetch inicial y realtime listeners
+// 3. Migrando MOCK_STATS_FIDELIDAD a Firestore aggregations
+// 4. Mantener interfaz visual igual, solo cambiar fuente de datos
 
-const MOCK_CLIENTES: ClienteMock[] = [
-  { id: "c-1", nombre: "Sofía Ramírez", telefono: "771-123-4567", puntos: 1250, nivel: "oro", visitas: 48, gasto_total: 12_400, ultima_visita: new Date(Date.now() - 1 * 86400000).toISOString(), miembro_desde: "2024-06-15" },
-  { id: "c-2", nombre: "Miguel Torres", telefono: "771-234-5678", puntos: 680, nivel: "plata", visitas: 25, gasto_total: 6_800, ultima_visita: new Date(Date.now() - 3 * 86400000).toISOString(), miembro_desde: "2024-09-01" },
-  { id: "c-3", nombre: "Valentina Cruz", telefono: "771-345-6789", puntos: 320, nivel: "bronce", visitas: 12, gasto_total: 3_200, ultima_visita: new Date(Date.now() - 7 * 86400000).toISOString(), miembro_desde: "2025-01-10" },
-  { id: "c-4", nombre: "Andrés Vega", telefono: "771-456-7890", puntos: 890, nivel: "plata", visitas: 32, gasto_total: 8_900, ultima_visita: new Date(Date.now() - 2 * 86400000).toISOString(), miembro_desde: "2024-08-20" },
-  { id: "c-5", nombre: "Camila Herrera", telefono: "771-567-8901", puntos: 2100, nivel: "oro", visitas: 72, gasto_total: 21_000, ultima_visita: new Date(Date.now() - 0.5 * 86400000).toISOString(), miembro_desde: "2024-03-01" },
-  { id: "c-6", nombre: "Diego Morales", telefono: "771-678-9012", puntos: 150, nivel: "bronce", visitas: 6, gasto_total: 1_500, ultima_visita: new Date(Date.now() - 14 * 86400000).toISOString(), miembro_desde: "2025-02-01" },
-];
-
-/* R6: Colores migrados al design system */
 const nivelConfig = {
   bronce: { label: "Bronce", color: "text-status-warn", bg: "bg-status-warn-bg", min: 0 },
   plata: { label: "Plata", color: "text-text-45", bg: "bg-surface-3", min: 500 },
   oro: { label: "Oro", color: "text-accent", bg: "bg-accent-soft", min: 1000 },
 };
 
-const MOCK_STATS = {
-  totalClientes: 142,
-  clientesActivos: 89,
-  puntosEmitidos: 45_200,
-  canjesEsteMes: 23,
-};
-
 export default function FidelidadPage() {
-  const [busqueda, setBusqueda] = useState("");
-  const [clienteSeleccionado, setClienteSeleccionado] = useState<ClienteMock | null>(null);
-  /* R9: Modal para nuevo cliente */
+  const [clienteSeleccionado, setClienteSeleccionado] = useState<MockCliente | null>(null);
   const [modalNuevoCliente, setModalNuevoCliente] = useState(false);
 
-  const clientesFiltrados = MOCK_CLIENTES.filter((c) => {
-    if (!busqueda.trim()) return true;
-    const q = busqueda.toLowerCase();
-    return c.nombre.toLowerCase().includes(q) || c.telefono.includes(q);
+  // useSearch hook para filtrado eficiente de clientes
+  const { query, setQuery, filtered: clientesFiltrados } = useSearch({
+    items: MOCK_CLIENTES,
+    fields: ["nombre", "telefono"],
   });
 
   return (
-    <div className="h-[calc(100vh-3.5rem-4rem)] flex flex-col">
+    <ErrorBoundary moduleName="Fidelidad">
+      <div className="h-[calc(100vh-3.5rem-4rem)] flex flex-col">
       {/* Header — R9: Botón "Nuevo cliente" */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -89,15 +74,15 @@ export default function FidelidadPage() {
             <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Clientes</span>
             <Users size={14} className="text-text-25 opacity-40" />
           </div>
-          <p className="text-xl font-semibold text-text-100 tabular-nums">{MOCK_STATS.totalClientes}</p>
-          <p className="text-[11px] text-text-25">{MOCK_STATS.clientesActivos} activos este mes</p>
+          <p className="text-xl font-semibold text-text-100 tabular-nums">{MOCK_STATS_FIDELIDAD.totalClientes}</p>
+          <p className="text-[11px] text-text-25">{MOCK_STATS_FIDELIDAD.clientesActivos} activos este mes</p>
         </div>
         <div className="p-4 rounded-xl bg-surface-2 border border-border">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Puntos emitidos</span>
             <Star size={14} className="text-text-25 opacity-40" />
           </div>
-          <p className="text-xl font-semibold text-text-100 tabular-nums">{MOCK_STATS.puntosEmitidos.toLocaleString("es-MX")}</p>
+          <p className="text-xl font-semibold text-text-100 tabular-nums">{MOCK_STATS_FIDELIDAD.puntosEmitidos.toLocaleString("es-MX")}</p>
           <p className="text-[11px] text-text-25">$1 MXN = 1 punto</p>
         </div>
         <div className="p-4 rounded-xl bg-surface-2 border border-border">
@@ -105,7 +90,7 @@ export default function FidelidadPage() {
             <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Canjes este mes</span>
             <Gift size={14} className="text-text-25 opacity-40" />
           </div>
-          <p className="text-xl font-semibold text-text-100 tabular-nums">{MOCK_STATS.canjesEsteMes}</p>
+          <p className="text-xl font-semibold text-text-100 tabular-nums">{MOCK_STATS_FIDELIDAD.canjesEsteMes}</p>
           <p className="text-[11px] text-text-25">Recompensas canjeadas</p>
         </div>
         <div className="p-4 rounded-xl bg-surface-2 border border-border">
@@ -126,8 +111,8 @@ export default function FidelidadPage() {
             <input
               type="text"
               placeholder="Buscar cliente por nombre o teléfono..."
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-surface-2 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 min-h-[44px]"
             />
           </div>
@@ -269,11 +254,7 @@ export default function FidelidadPage() {
             <div>
               <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">Recompensas disponibles</span>
               <div className="space-y-1.5">
-                {[
-                  { nombre: "Café gratis", puntos: 200, icon: "☕" },
-                  { nombre: "Postre gratis", puntos: 400, icon: "🍰" },
-                  { nombre: "10% descuento", puntos: 150, icon: "%" },
-                ].map((r) => (
+                {MOCK_RECOMPENSAS.map((r) => (
                   <div key={r.nombre} className="flex items-center justify-between p-2.5 rounded-xl bg-surface-3">
                     <div className="flex items-center gap-2">
                       <span className="text-sm">{r.icon}</span>
@@ -320,7 +301,8 @@ export default function FidelidadPage() {
           onCancel={() => setModalNuevoCliente(false)}
         />
       </Modal>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }
 

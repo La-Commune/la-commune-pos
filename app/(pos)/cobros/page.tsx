@@ -13,11 +13,20 @@ import {
   Loader2,
   ShieldCheck,
   ArrowLeft,
+  Plus,
+  Zap,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import { useOrdenes } from "@/hooks/useSupabase";
 
 type MetodoPago = "efectivo" | "tarjeta" | "transferencia";
+
+interface PagoSplit {
+  id: string;
+  metodo: MetodoPago;
+  monto: number;
+  montoRecibido?: number;
+}
 
 const metodoPagoConfig: Record<MetodoPago, { label: string; icon: typeof Banknote }> = {
   efectivo: { label: "Efectivo", icon: Banknote },
@@ -41,6 +50,11 @@ export default function CobrosPage() {
   const [verificando, setVerificando] = useState(false);
   /* R3: Loading state */
   const [procesando, setProcesando] = useState(false);
+  /* Split payments */
+  const [dividirPago, setDividirPago] = useState(false);
+  const [splits, setSplits] = useState<PagoSplit[]>([
+    { id: "1", metodo: "efectivo", monto: 0 }
+  ]);
 
   // Órdenes listas para cobrar
   const ordenesCobrables = useMemo(
@@ -68,9 +82,22 @@ export default function CobrosPage() {
   const ivaDesglosado = Math.round((totalConDescuento - baseGravable) * 100) / 100;
   const monto = parseFloat(montoRecibido) || 0;
   const cambio = metodoPago === "efectivo" ? Math.max(0, monto - totalFinal) : 0;
-  const puedeCobar =
-    ordenSeleccionada &&
-    (metodoPago !== "efectivo" || monto >= totalFinal);
+
+  // Split payments calculations
+  const totalSplits = splits.reduce((sum, s) => sum + s.monto, 0);
+  const remainingSplit = Math.max(0, totalFinal - totalSplits);
+  const splitsValid = dividirPago ? totalSplits === totalFinal : true;
+
+  // Get efectivo split for change calculation
+  const efectivoSplit = splits.find(s => s.metodo === "efectivo");
+  const montoRecibidoEfectivo = efectivoSplit?.montoRecibido || 0;
+  const cambioSplit = efectivoSplit ? Math.max(0, montoRecibidoEfectivo - (efectivoSplit.monto)) : 0;
+
+  const puedeCobar = ordenSeleccionada && (
+    dividirPago
+      ? splitsValid
+      : (metodoPago !== "efectivo" || monto >= totalFinal)
+  );
 
   const resetCobro = () => {
     setMontoRecibido("");
@@ -80,11 +107,28 @@ export default function CobrosPage() {
     setCobrado(false);
     setVerificando(false);
     setProcesando(false);
+    setDividirPago(false);
+    setSplits([{ id: "1", metodo: "efectivo", monto: 0 }]);
   };
 
   const handleSeleccionarOrden = (orden: any) => {
     setOrdenSeleccionada(orden);
     resetCobro();
+  };
+
+  const handleAddSplit = () => {
+    if (splits.length >= 3) return;
+    const newId = String(Math.max(...splits.map(s => parseInt(s.id, 10)), 0) + 1);
+    setSplits([...splits, { id: newId, metodo: "tarjeta", monto: 0 }]);
+  };
+
+  const handleRemoveSplit = (id: string) => {
+    if (splits.length === 1) return;
+    setSplits(splits.filter(s => s.id !== id));
+  };
+
+  const handleUpdateSplit = (id: string, updates: Partial<PagoSplit>) => {
+    setSplits(splits.map(s => s.id === id ? { ...s, ...updates } : s));
   };
 
   /* R7: Paso 1 — mostrar verificación */
@@ -185,8 +229,21 @@ export default function CobrosPage() {
                 {formatMXN(totalFinal)}
               </p>
               <p className="text-xs text-text-25 mb-6">
-                {metodoPagoConfig[metodoPago].label}
-                {cambio > 0 && ` · Cambio: ${formatMXN(cambio)}`}
+                {dividirPago ? (
+                  <span>
+                    {splits.map((s, i) => (
+                      <span key={s.id}>
+                        {metodoPagoConfig[s.metodo].label}: {formatMXN(s.monto)}
+                        {i < splits.length - 1 && " · "}
+                      </span>
+                    ))}
+                  </span>
+                ) : (
+                  <>
+                    {metodoPagoConfig[metodoPago].label}
+                    {cambio > 0 && ` · Cambio: ${formatMXN(cambio)}`}
+                  </>
+                )}
               </p>
 
               <div className="flex gap-3 justify-center">
@@ -230,14 +287,36 @@ export default function CobrosPage() {
                       : ordenSeleccionada.origen.replace("_", " ")}
                     {" · "}{(ordenSeleccionada.items ?? []).reduce((a: number, i: any) => a + i.cantidad, 0)} items
                   </p>
-                  <p className="flex items-center justify-center gap-2">
-                    {(() => {
-                      const Icon = metodoPagoConfig[metodoPago].icon;
-                      return <Icon size={16} />;
-                    })()}
-                    {metodoPagoConfig[metodoPago].label}
-                  </p>
-                  {cambio > 0 && (
+
+                  {/* Métodos de pago */}
+                  {dividirPago ? (
+                    <div className="space-y-1.5 mt-3 pt-3 border-t border-border">
+                      {splits.map((split) => (
+                        <p key={split.id} className="flex items-center justify-center gap-2">
+                          {(() => {
+                            const Icon = metodoPagoConfig[split.metodo].icon;
+                            return <Icon size={16} />;
+                          })()}
+                          {metodoPagoConfig[split.metodo].label}: {formatMXN(split.monto)}
+                        </p>
+                      ))}
+                      {efectivoSplit && cambioSplit > 0 && (
+                        <p className="text-status-ok font-medium">
+                          Cambio: {formatMXN(cambioSplit)}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="flex items-center justify-center gap-2">
+                      {(() => {
+                        const Icon = metodoPagoConfig[metodoPago].icon;
+                        return <Icon size={16} />;
+                      })()}
+                      {metodoPagoConfig[metodoPago].label}
+                    </p>
+                  )}
+
+                  {cambio > 0 && !dividirPago && (
                     <p className="text-status-ok font-medium">
                       Cambio: {formatMXN(cambio)}
                     </p>
@@ -358,37 +437,186 @@ export default function CobrosPage() {
 
             {/* Columna derecha: Método de pago y controles */}
             <div className="flex flex-col gap-4">
-              {/* Método de pago — R1: min-h-[44px] */}
+              {/* Dividir pago toggle */}
               <div>
-                <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2.5">
-                  Método de pago
-                </span>
-                <div className="grid grid-cols-3 gap-2">
-                  {(Object.entries(metodoPagoConfig) as [MetodoPago, typeof metodoPagoConfig.efectivo][]).map(
-                    ([key, config]) => {
-                      const Icon = config.icon;
-                      return (
-                        <button
-                          key={key}
-                          onClick={() => setMetodoPago(key)}
-                          className={cn(
-                            "flex flex-col items-center gap-1.5 p-3.5 rounded-xl border transition-all duration-300 min-h-[44px]",
-                            metodoPago === key
-                              ? "border-accent bg-accent-soft text-accent"
-                              : "border-border text-text-45 hover:border-border-hover"
-                          )}
-                        >
-                          <Icon size={20} />
-                          <span className="text-xs font-medium">{config.label}</span>
-                        </button>
-                      );
+                <button
+                  onClick={() => {
+                    setDividirPago(!dividirPago);
+                    if (!dividirPago) {
+                      setSplits([{ id: "1", metodo: "efectivo", monto: 0 }]);
                     }
+                  }}
+                  className={cn(
+                    "w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-300 min-h-[44px]",
+                    dividirPago
+                      ? "border-accent bg-accent-soft text-accent"
+                      : "border-border text-text-45 hover:border-border-hover"
                   )}
-                </div>
+                >
+                  <div className="flex items-center gap-2">
+                    <Zap size={16} />
+                    <span className="text-sm font-medium">Dividir pago</span>
+                  </div>
+                  <div className={cn(
+                    "w-5 h-5 rounded-md border transition-all duration-300",
+                    dividirPago ? "bg-accent border-accent" : "border-border"
+                  )} />
+                </button>
               </div>
 
-              {/* Monto recibido (solo efectivo) */}
-              {metodoPago === "efectivo" && (
+              {/* Método de pago — R1: min-h-[44px] */}
+              {!dividirPago && (
+                <div>
+                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2.5">
+                    Método de pago
+                  </span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(Object.entries(metodoPagoConfig) as [MetodoPago, typeof metodoPagoConfig.efectivo][]).map(
+                      ([key, config]) => {
+                        const Icon = config.icon;
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => setMetodoPago(key)}
+                            className={cn(
+                              "flex flex-col items-center gap-1.5 p-3.5 rounded-xl border transition-all duration-300 min-h-[44px]",
+                              metodoPago === key
+                                ? "border-accent bg-accent-soft text-accent"
+                                : "border-border text-text-45 hover:border-border-hover"
+                            )}
+                          >
+                            <Icon size={20} />
+                            <span className="text-xs font-medium">{config.label}</span>
+                          </button>
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Split payments form */}
+              {dividirPago && (
+                <div>
+                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2.5">
+                    Formas de pago
+                  </span>
+                  <div className="space-y-2.5">
+                    {splits.map((split, idx) => (
+                      <div key={split.id} className="flex items-end gap-2">
+                        {/* Método selector */}
+                        <div className="flex gap-1.5">
+                          {(Object.entries(metodoPagoConfig) as [MetodoPago, typeof metodoPagoConfig.efectivo][]).map(
+                            ([key, config]) => {
+                              const Icon = config.icon;
+                              return (
+                                <button
+                                  key={key}
+                                  onClick={() => handleUpdateSplit(split.id, { metodo: key })}
+                                  className={cn(
+                                    "flex items-center justify-center p-2.5 rounded-lg border transition-all duration-300 min-h-[44px] min-w-[44px]",
+                                    split.metodo === key
+                                      ? "border-accent bg-accent-soft text-accent"
+                                      : "border-border text-text-45 hover:border-border-hover"
+                                  )}
+                                  title={config.label}
+                                >
+                                  <Icon size={16} />
+                                </button>
+                              );
+                            }
+                          )}
+                        </div>
+
+                        {/* Monto input */}
+                        <input
+                          type="number"
+                          value={split.monto || ""}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value) || 0;
+                            if (val >= 0) {
+                              handleUpdateSplit(split.id, { monto: Math.min(val, totalFinal) });
+                            }
+                          }}
+                          min="0"
+                          max={totalFinal}
+                          placeholder="Monto"
+                          className="flex-1 px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-text-100 text-sm font-medium tabular-nums placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 min-h-[44px]"
+                        />
+
+                        {/* Remove button */}
+                        {splits.length > 1 && (
+                          <button
+                            onClick={() => handleRemoveSplit(split.id)}
+                            className="p-2.5 rounded-lg text-text-25 hover:text-text-45 hover:bg-surface-3 transition-colors duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Add split button */}
+                    {splits.length < 3 && (
+                      <button
+                        onClick={handleAddSplit}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-border text-text-45 hover:border-border-hover hover:text-text-70 transition-all duration-300 text-sm min-h-[44px]"
+                      >
+                        <Plus size={16} />
+                        Agregar método
+                      </button>
+                    )}
+
+                    {/* Remaining amount */}
+                    <div className="p-3 rounded-lg bg-surface-3 border border-border">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-text-45">Por cobrar</span>
+                        <span className={cn(
+                          "font-medium tabular-nums",
+                          remainingSplit > 0 ? "text-status-warning" : "text-status-ok"
+                        )}>
+                          {formatMXN(remainingSplit)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Efectivo split monto recibido */}
+                    {efectivoSplit && (
+                      <div>
+                        <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2.5">
+                          Monto recibido (efectivo)
+                        </span>
+                        <input
+                          type="number"
+                          value={efectivoSplit.montoRecibido || ""}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value) || 0;
+                            if (val >= 0) {
+                              handleUpdateSplit(efectivoSplit.id, { montoRecibido: val });
+                            }
+                          }}
+                          min="0"
+                          placeholder="0.00"
+                          className="w-full px-4 py-3 rounded-xl bg-surface-2 border border-border text-text-100 text-lg font-semibold tabular-nums placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 min-h-[44px]"
+                        />
+                        {montoRecibidoEfectivo >= efectivoSplit.monto && efectivoSplit.monto > 0 && (
+                          <div className="mt-3 p-3 rounded-xl bg-status-ok-bg border border-status-ok/20">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-status-ok font-medium">Cambio</span>
+                              <span className="text-lg font-semibold text-status-ok tabular-nums">
+                                {formatMXN(cambioSplit)}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Monto recibido (solo efectivo, sin split) */}
+              {!dividirPago && metodoPago === "efectivo" && (
                 <div>
                   <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2.5">
                     Monto recibido
