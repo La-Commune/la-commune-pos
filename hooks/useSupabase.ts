@@ -162,6 +162,12 @@ export function useTicketsKDS() {
   });
 }
 
+export function useUsuarios() {
+  return useQuery("usuarios", [], {
+    orderBy: { column: "creado_en", ascending: false },
+  });
+}
+
 // ── Negocio (nombre del negocio para sidebar, etc.) ──
 
 interface NegocioInfo {
