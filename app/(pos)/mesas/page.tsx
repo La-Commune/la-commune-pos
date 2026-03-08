@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Plus, Users, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMesas } from "@/hooks/useSupabase";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 /* R6: Colores migrados al design system */
 const estadoConfig = {
@@ -17,10 +19,12 @@ const estadoConfig = {
 type EstadoMesa = keyof typeof estadoConfig;
 type Ubicacion = "Todas" | "Interior" | "Terraza" | "Barra";
 
-export default function MesasPage() {
+function MesasPageContent() {
   const router = useRouter();
   const { data: mesas, loading, error } = useMesas();
   const [filtroUbicacion, setFiltroUbicacion] = useState<Ubicacion>("Todas");
+  const [confirmFreeMesaId, setConfirmFreeMesaId] = useState<string | null>(null);
+  const [confirmFreeMesaNum, setConfirmFreeMesaNum] = useState<number | null>(null);
   const ubicaciones: Ubicacion[] = ["Todas", "Interior", "Terraza", "Barra"];
 
   const mesasFiltradas = filtroUbicacion === "Todas"
@@ -29,7 +33,22 @@ export default function MesasPage() {
 
   /* R11: Deep-link — click en mesa navega a órdenes con mesa pre-seleccionada */
   const handleClickMesa = (mesa: any) => {
-    router.push(`/ordenes?mesa=${mesa.numero}`);
+    // If mesa is occupied with an active order, show confirmation to prevent accidental navigation
+    if (mesa.estado === "ocupada") {
+      setConfirmFreeMesaId(mesa.id);
+      setConfirmFreeMesaNum(mesa.numero);
+    } else {
+      router.push(`/ordenes?mesa=${mesa.numero}`);
+    }
+  };
+
+  const handleConfirmFreeMesa = () => {
+    // TODO: In real implementation, check if there's an active order before allowing state change
+    if (confirmFreeMesaNum) {
+      router.push(`/ordenes?mesa=${confirmFreeMesaNum}`);
+    }
+    setConfirmFreeMesaId(null);
+    setConfirmFreeMesaNum(null);
   };
 
   return (
@@ -146,6 +165,28 @@ export default function MesasPage() {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmFreeMesaId !== null}
+        onClose={() => {
+          setConfirmFreeMesaId(null);
+          setConfirmFreeMesaNum(null);
+        }}
+        onConfirm={handleConfirmFreeMesa}
+        title="¿Continuar con mesa ocupada?"
+        description={`La mesa ${confirmFreeMesaNum} está actualmente ocupada. ¿Deseas continuar?`}
+        confirmLabel="Continuar"
+        cancelLabel="Cancelar"
+        variant="warning"
+      />
     </div>
+  );
+}
+
+export default function MesasPage() {
+  return (
+    <ErrorBoundary moduleName="Mesas">
+      <MesasPageContent />
+    </ErrorBoundary>
   );
 }

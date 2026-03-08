@@ -1,16 +1,16 @@
 -- ============================================================
--- La Commune POS — Seed: Menú completo + Mesas + Modificadores
--- Ejecutar DESPUÉS de schema.sql y DESPUÉS de crear el negocio
+-- La Commune POS — Seed: Negocio + Menú + Mesas + Modificadores
+-- Ejecutar DESPUÉS de schemas/schema.sql
 -- ============================================================
--- INSTRUCCIONES:
--- 1. Ejecuta schema.sql primero
--- 2. Copia el UUID del negocio que se creó automáticamente
--- 3. Reemplaza 'UUID_DEL_NEGOCIO' abajo con ese UUID
--- 4. Ejecuta este archivo en Supabase Dashboard → SQL Editor
+-- Crea el negocio y luego inserta:
+--   8 categorías, 31 productos, tamaños, 10 modificadores, 8 mesas
 -- ============================================================
 
--- Variable temporal para el negocio
--- Reemplaza este UUID con el real de tu negocio
+-- Crear el negocio (si no existe)
+INSERT INTO negocios (nombre, direccion, telefono, divisa, zona_horaria)
+SELECT 'La Commune', 'Mineral de la Reforma, Hidalgo', '', 'MXN', 'America/Mexico_City'
+WHERE NOT EXISTS (SELECT 1 FROM negocios WHERE nombre = 'La Commune');
+
 DO $$
 DECLARE
   v_negocio UUID;

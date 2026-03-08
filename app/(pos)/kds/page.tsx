@@ -16,6 +16,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTicketsKDS } from "@/hooks/useSupabase";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { formatTiempoTranscurrido } from "@/hooks/useTiempoTranscurrido";
 
 const estadoConfig = {
   nueva: {
@@ -39,10 +42,7 @@ const estadoConfig = {
 };
 
 function tiempoTranscurrido(iso: string) {
-  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (mins < 1) return "< 1m";
-  if (mins < 60) return `${mins}m`;
-  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  return formatTiempoTranscurrido(iso);
 }
 
 function tiempoPreparacion(inicio: string | null, fin: string | null) {
@@ -60,7 +60,7 @@ function timerColor(mins: number | null) {
 }
 
 /* R5: Rediseño completo del ticket KDS para legibilidad a distancia */
-function TicketCard({ ticket, onAction }: { ticket: any; onAction?: (action: string) => void }) {
+function TicketCard({ ticket, onAction, onConfirmLista }: { ticket: any; onAction?: (action: string) => void; onConfirmLista?: (ticketId: string) => void }) {
   const config = estadoConfig[ticket.estado as keyof typeof estadoConfig];
   const Icon = config?.icon ?? AlertTriangle;
   const tiempoPrep = tiempoPreparacion(ticket.tiempo_inicio, ticket.tiempo_fin);
@@ -74,6 +74,10 @@ function TicketCard({ ticket, onAction }: { ticket: any; onAction?: (action: str
     await new Promise((r) => setTimeout(r, 800));
     setLoading(false);
     onAction?.(action);
+  };
+
+  const handleMarcarLista = () => {
+    onConfirmLista?.(ticket.id);
   };
 
   return (
@@ -198,7 +202,7 @@ function TicketCard({ ticket, onAction }: { ticket: any; onAction?: (action: str
         )}
         {ticket.estado === "preparando" && (
           <button
-            onClick={() => handleAction("lista")}
+            onClick={handleMarcarLista}
             disabled={loading}
             className={cn(
               "w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-sm font-semibold min-h-[48px] transition-all duration-300",
@@ -243,9 +247,10 @@ function TicketCard({ ticket, onAction }: { ticket: any; onAction?: (action: str
   );
 }
 
-export default function KDSPage() {
+function KDSPageContent() {
   const { data: tickets } = useTicketsKDS();
   const [filtroEstado, setFiltroEstado] = useState<"todas" | "nueva" | "preparando" | "lista">("todas");
+  const [confirmListaId, setConfirmListaId] = useState<string | null>(null);
 
   /* Timer live: forzar re-render cada 10s para actualizar tiempos */
   const [, setTick] = useState(0);
@@ -267,106 +272,136 @@ export default function KDSPage() {
     return mins > 10;
   }).length;
 
+  const handleConfirmLista = (ticketId: string) => {
+    setConfirmListaId(ticketId);
+  };
+
+  const handleConfirmListaAction = () => {
+    // TODO: Actualizar en Supabase
+    setConfirmListaId(null);
+  };
+
   return (
-    <div className="h-[calc(100vh-3.5rem-4rem)] flex flex-col">
-      {/* Header — R5: Muestra conteo de urgentes */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-medium text-text-100 tracking-tight">Cocina (KDS)</h1>
-          <span className="text-xs font-medium px-3.5 py-1 rounded-full border border-border text-text-45">
-            {(tickets as any[]).length} ticket{(tickets as any[]).length !== 1 ? "s" : ""}
-          </span>
-          {urgentes > 0 && (
-            <span className="text-xs font-bold px-3.5 py-1 rounded-full bg-status-err/10 text-status-err border border-status-err/20 animate-pulse">
-              {urgentes} urgente{urgentes > 1 ? "s" : ""}
+    <>
+      <div className="h-[calc(100vh-3.5rem-4rem)] flex flex-col">
+        {/* Header — R5: Muestra conteo de urgentes */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-medium text-text-100 tracking-tight">Cocina (KDS)</h1>
+            <span className="text-xs font-medium px-3.5 py-1 rounded-full border border-border text-text-45">
+              {(tickets as any[]).length} ticket{(tickets as any[]).length !== 1 ? "s" : ""}
             </span>
-          )}
-        </div>
-      </div>
-
-      {/* Filtros — R1: min-h-[44px] */}
-      <div className="flex items-center gap-1 mb-5 bg-surface-2 p-1 rounded-xl w-fit">
-        {(["todas", "nueva", "preparando", "lista"] as const).map((estado) => {
-          const count = estado === "todas" ? (tickets as any[]).length : conteo[estado];
-          const conf = estado !== "todas" ? estadoConfig[estado] : null;
-          return (
-            <button
-              key={estado}
-              onClick={() => setFiltroEstado(estado)}
-              className={cn(
-                "flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-medium transition-all duration-300 min-h-[44px]",
-                filtroEstado === estado
-                  ? "bg-surface-4 text-text-100"
-                  : "text-text-25 hover:text-text-45"
-              )}
-            >
-              <span>{estado === "todas" ? "Todas" : conf?.label}</span>
-              <span className={cn(
-                "text-[10px] px-1.5 py-0.5 rounded-lg tabular-nums",
-                filtroEstado === estado ? "bg-accent-soft text-accent" : "bg-surface-3 text-text-25"
-              )}>
-                {count}
+            {urgentes > 0 && (
+              <span className="text-xs font-bold px-3.5 py-1 rounded-full bg-status-err/10 text-status-err border border-status-err/20 animate-pulse">
+                {urgentes} urgente{urgentes > 1 ? "s" : ""}
               </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Kanban columns */}
-      <div className="flex-1 overflow-hidden">
-        <div className="grid grid-cols-3 gap-4 h-full">
-          {/* Columna: Nuevas */}
-          <div className="flex flex-col min-h-0">
-            <div className="flex items-center gap-2 mb-3 px-1">
-              <div className="w-2.5 h-2.5 rounded-full bg-status-info" />
-              <span className="text-xs font-medium text-text-45 uppercase tracking-widest">Nuevas</span>
-              <span className="text-xs text-text-25 tabular-nums font-medium">{conteo.nueva}</span>
-            </div>
-            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-              {(filtroEstado === "todas" || filtroEstado === "nueva"
-                ? (tickets as any[]).filter((t) => t.estado === "nueva")
-                : []
-              ).map((ticket) => (
-                <TicketCard key={ticket.id} ticket={ticket} />
-              ))}
-            </div>
+            )}
           </div>
+        </div>
 
-          {/* Columna: Preparando */}
-          <div className="flex flex-col min-h-0">
-            <div className="flex items-center gap-2 mb-3 px-1">
-              <div className="w-2.5 h-2.5 rounded-full bg-status-warn" />
-              <span className="text-xs font-medium text-text-45 uppercase tracking-widest">Preparando</span>
-              <span className="text-xs text-text-25 tabular-nums font-medium">{conteo.preparando}</span>
-            </div>
-            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-              {(filtroEstado === "todas" || filtroEstado === "preparando"
-                ? (tickets as any[]).filter((t) => t.estado === "preparando")
-                : []
-              ).map((ticket) => (
-                <TicketCard key={ticket.id} ticket={ticket} />
-              ))}
-            </div>
-          </div>
+        {/* Filtros — R1: min-h-[44px] */}
+        <div className="flex items-center gap-1 mb-5 bg-surface-2 p-1 rounded-xl w-fit">
+          {(["todas", "nueva", "preparando", "lista"] as const).map((estado) => {
+            const count = estado === "todas" ? (tickets as any[]).length : conteo[estado];
+            const conf = estado !== "todas" ? estadoConfig[estado] : null;
+            return (
+              <button
+                key={estado}
+                onClick={() => setFiltroEstado(estado)}
+                className={cn(
+                  "flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-medium transition-all duration-300 min-h-[44px]",
+                  filtroEstado === estado
+                    ? "bg-surface-4 text-text-100"
+                    : "text-text-25 hover:text-text-45"
+                )}
+              >
+                <span>{estado === "todas" ? "Todas" : conf?.label}</span>
+                <span className={cn(
+                  "text-[10px] px-1.5 py-0.5 rounded-lg tabular-nums",
+                  filtroEstado === estado ? "bg-accent-soft text-accent" : "bg-surface-3 text-text-25"
+                )}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
-          {/* Columna: Listas */}
-          <div className="flex flex-col min-h-0">
-            <div className="flex items-center gap-2 mb-3 px-1">
-              <div className="w-2.5 h-2.5 rounded-full bg-status-ok" />
-              <span className="text-xs font-medium text-text-45 uppercase tracking-widest">Listas</span>
-              <span className="text-xs text-text-25 tabular-nums font-medium">{conteo.lista}</span>
+        {/* Kanban columns */}
+        <div className="flex-1 overflow-hidden">
+          <div className="grid grid-cols-3 gap-4 h-full">
+            {/* Columna: Nuevas */}
+            <div className="flex flex-col min-h-0">
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <div className="w-2.5 h-2.5 rounded-full bg-status-info" />
+                <span className="text-xs font-medium text-text-45 uppercase tracking-widest">Nuevas</span>
+                <span className="text-xs text-text-25 tabular-nums font-medium">{conteo.nueva}</span>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                {(filtroEstado === "todas" || filtroEstado === "nueva"
+                  ? (tickets as any[]).filter((t) => t.estado === "nueva")
+                  : []
+                ).map((ticket) => (
+                  <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} />
+                ))}
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-              {(filtroEstado === "todas" || filtroEstado === "lista"
-                ? (tickets as any[]).filter((t) => t.estado === "lista")
-                : []
-              ).map((ticket) => (
-                <TicketCard key={ticket.id} ticket={ticket} />
-              ))}
+
+            {/* Columna: Preparando */}
+            <div className="flex flex-col min-h-0">
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <div className="w-2.5 h-2.5 rounded-full bg-status-warn" />
+                <span className="text-xs font-medium text-text-45 uppercase tracking-widest">Preparando</span>
+                <span className="text-xs text-text-25 tabular-nums font-medium">{conteo.preparando}</span>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                {(filtroEstado === "todas" || filtroEstado === "preparando"
+                  ? (tickets as any[]).filter((t) => t.estado === "preparando")
+                  : []
+                ).map((ticket) => (
+                  <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} />
+                ))}
+              </div>
+            </div>
+
+            {/* Columna: Listas */}
+            <div className="flex flex-col min-h-0">
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <div className="w-2.5 h-2.5 rounded-full bg-status-ok" />
+                <span className="text-xs font-medium text-text-45 uppercase tracking-widest">Listas</span>
+                <span className="text-xs text-text-25 tabular-nums font-medium">{conteo.lista}</span>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                {(filtroEstado === "todas" || filtroEstado === "lista"
+                  ? (tickets as any[]).filter((t) => t.estado === "lista")
+                  : []
+                ).map((ticket) => (
+                  <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} />
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+
+      <ConfirmDialog
+        open={confirmListaId !== null}
+        onClose={() => setConfirmListaId(null)}
+        onConfirm={handleConfirmListaAction}
+        title="¿Marcar como listo?"
+        description="Este ticket será marcado como listo y aparecerá en el área de entrega."
+        confirmLabel="Marcar lista"
+        cancelLabel="Cancelar"
+        variant="info"
+      />
+    </>
+  );
+}
+
+export default function KDSPage() {
+  return (
+    <ErrorBoundary moduleName="Cocina (KDS)">
+      <KDSPageContent />
+    </ErrorBoundary>
   );
 }

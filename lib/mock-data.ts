@@ -384,3 +384,143 @@ export const MOCK_TICKETS_KDS: MockTicketKDS[] = [
     creado_en: new Date(Date.now() - 35 * 60000).toISOString(),
   },
 ];
+
+// ── REPORTES ──
+
+export interface MockStatReporte {
+  ventasHoy: number;
+  ventasAyer: number;
+  ordenesHoy: number;
+  ordenesAyer: number;
+  ticketPromedio: number;
+  ticketPromedioAyer: number;
+  clientesHoy: number;
+  clientesAyer: number;
+  tiempoPromedioPrep: number;
+}
+
+export interface MockVentasDia {
+  dia: string;
+  ventas: number;
+  ordenes: number;
+}
+
+export interface MockVentasHora {
+  hora: string;
+  ventas: number;
+}
+
+export interface MockProductoTop {
+  nombre: string;
+  cantidad: number;
+  ingresos: number;
+}
+
+export interface MockMetodoPago {
+  metodo: string;
+  porcentaje: number;
+  monto: number;
+}
+
+export const MOCK_STATS_REPORTES: MockStatReporte = {
+  ventasHoy: 8_450.60,
+  ventasAyer: 7_230.40,
+  ordenesHoy: 42,
+  ordenesAyer: 38,
+  ticketPromedio: 201.20,
+  ticketPromedioAyer: 190.27,
+  clientesHoy: 35,
+  clientesAyer: 31,
+  tiempoPromedioPrep: 8.5,
+};
+
+export const MOCK_VENTAS_SEMANA: MockVentasDia[] = [
+  { dia: "Lun", ventas: 6_200, ordenes: 32 },
+  { dia: "Mar", ventas: 5_800, ordenes: 28 },
+  { dia: "Mié", ventas: 7_100, ordenes: 36 },
+  { dia: "Jue", ventas: 6_900, ordenes: 34 },
+  { dia: "Vie", ventas: 9_200, ordenes: 48 },
+  { dia: "Sáb", ventas: 11_500, ordenes: 58 },
+  { dia: "Dom", ventas: 8_450, ordenes: 42 },
+];
+
+export const MOCK_VENTAS_HORA: MockVentasHora[] = [
+  { hora: "8am", ventas: 420 },
+  { hora: "9am", ventas: 890 },
+  { hora: "10am", ventas: 1_200 },
+  { hora: "11am", ventas: 980 },
+  { hora: "12pm", ventas: 1_450 },
+  { hora: "1pm", ventas: 1_680 },
+  { hora: "2pm", ventas: 1_320 },
+  { hora: "3pm", ventas: 780 },
+  { hora: "4pm", ventas: 650 },
+  { hora: "5pm", ventas: 520 },
+  { hora: "6pm", ventas: 380 },
+  { hora: "7pm", ventas: 180 },
+];
+
+export const MOCK_TOP_PRODUCTOS: MockProductoTop[] = [
+  { nombre: "Americano", cantidad: 68, ingresos: 3_060 },
+  { nombre: "Latte", cantidad: 54, ingresos: 2_970 },
+  { nombre: "Croissant", cantidad: 42, ingresos: 1_890 },
+  { nombre: "Cold Brew", cantidad: 38, ingresos: 2_280 },
+  { nombre: "Panini Caprese", cantidad: 28, ingresos: 2_660 },
+  { nombre: "Matcha Latte", cantidad: 24, ingresos: 1_560 },
+  { nombre: "Cheesecake", cantidad: 22, ingresos: 1_650 },
+  { nombre: "Cappuccino", cantidad: 20, ingresos: 1_100 },
+];
+
+export const MOCK_METODOS_PAGO: MockMetodoPago[] = [
+  { metodo: "Efectivo", porcentaje: 42, monto: 23_540 },
+  { metodo: "Tarjeta", porcentaje: 45, monto: 25_220 },
+  { metodo: "Transferencia", porcentaje: 13, monto: 7_290 },
+];
+
+// ── FIDELIDAD ──
+
+export interface MockCliente {
+  id: string;
+  nombre: string;
+  telefono: string;
+  puntos: number;
+  nivel: "bronce" | "plata" | "oro";
+  visitas: number;
+  gasto_total: number;
+  ultima_visita: string;
+  miembro_desde: string;
+}
+
+export interface MockRecompensa {
+  nombre: string;
+  puntos: number;
+  icon: string;
+}
+
+export interface MockStatFidelidad {
+  totalClientes: number;
+  clientesActivos: number;
+  puntosEmitidos: number;
+  canjesEsteMes: number;
+}
+
+export const MOCK_CLIENTES: MockCliente[] = [
+  { id: "c-1", nombre: "Sofía Ramírez", telefono: "771-123-4567", puntos: 1250, nivel: "oro", visitas: 48, gasto_total: 12_400, ultima_visita: new Date(Date.now() - 1 * 86400000).toISOString(), miembro_desde: "2024-06-15" },
+  { id: "c-2", nombre: "Miguel Torres", telefono: "771-234-5678", puntos: 680, nivel: "plata", visitas: 25, gasto_total: 6_800, ultima_visita: new Date(Date.now() - 3 * 86400000).toISOString(), miembro_desde: "2024-09-01" },
+  { id: "c-3", nombre: "Valentina Cruz", telefono: "771-345-6789", puntos: 320, nivel: "bronce", visitas: 12, gasto_total: 3_200, ultima_visita: new Date(Date.now() - 7 * 86400000).toISOString(), miembro_desde: "2025-01-10" },
+  { id: "c-4", nombre: "Andrés Vega", telefono: "771-456-7890", puntos: 890, nivel: "plata", visitas: 32, gasto_total: 8_900, ultima_visita: new Date(Date.now() - 2 * 86400000).toISOString(), miembro_desde: "2024-08-20" },
+  { id: "c-5", nombre: "Camila Herrera", telefono: "771-567-8901", puntos: 2100, nivel: "oro", visitas: 72, gasto_total: 21_000, ultima_visita: new Date(Date.now() - 0.5 * 86400000).toISOString(), miembro_desde: "2024-03-01" },
+  { id: "c-6", nombre: "Diego Morales", telefono: "771-678-9012", puntos: 150, nivel: "bronce", visitas: 6, gasto_total: 1_500, ultima_visita: new Date(Date.now() - 14 * 86400000).toISOString(), miembro_desde: "2025-02-01" },
+];
+
+export const MOCK_RECOMPENSAS: MockRecompensa[] = [
+  { nombre: "Café gratis", puntos: 200, icon: "☕" },
+  { nombre: "Postre gratis", puntos: 400, icon: "🍰" },
+  { nombre: "10% descuento", puntos: 150, icon: "%" },
+];
+
+export const MOCK_STATS_FIDELIDAD: MockStatFidelidad = {
+  totalClientes: 142,
+  clientesActivos: 89,
+  puntosEmitidos: 45_200,
+  canjesEsteMes: 23,
+};
