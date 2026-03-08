@@ -4,6 +4,14 @@
 import { ORIGEN_LABEL, NIVEL_CONFIG } from "./constants";
 
 /**
+ * Devuelve el color CSS de una categoría por su índice (orden en el array).
+ * Usa las 8 variables --cat-1 a --cat-8 del tema activo. Cicla si hay más.
+ */
+export function getCatColor(index: number): string {
+  return `var(--cat-${(index % 8) + 1})`;
+}
+
+/**
  * Extrae las iniciales de un nombre completo
  * Ej: "David López" → "DL"
  */

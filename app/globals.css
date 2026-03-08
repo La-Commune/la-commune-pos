@@ -37,15 +37,15 @@
   --accent-soft: rgba(196,154,60, 0.09);
   --accent-mid: rgba(196,154,60, 0.18);
 
-  /* Categories: earthy muted */
-  --cat-bebidas: #7AADBE;
-  --cat-cafe: #B89E73;
-  --cat-postres: #C98EA3;
-  --cat-comida: #7AAD8E;
-  --cat-panaderia: #D4A94D;
-  --cat-ensaladas: #8BC0A6;
-  --cat-desayunos: #D49A5A;
-  --cat-especiales: #A398C4;
+  /* Categories: warm earth tones, low saturation */
+  --cat-1: #C49A3C;  /* ámbar — café caliente */
+  --cat-2: #8B7355;  /* marrón tostado — café frío */
+  --cat-3: #7A9B8A;  /* salvia — té */
+  --cat-4: #9B7A8A;  /* malva — bebidas especiales */
+  --cat-5: #B0896A;  /* terracota — panadería */
+  --cat-6: #7A8A6A;  /* oliva — alimentos */
+  --cat-7: #A8748B;  /* rosa palo — postres */
+  --cat-8: #8A8A7A;  /* piedra — extras */
 
   /* Status: muted, premium */
   --ok: #6BAE7A;
@@ -115,14 +115,15 @@
   --accent-soft: rgba(0,212,245, 0.08);
   --accent-mid: rgba(0,212,245, 0.18);
 
-  --cat-bebidas: #00D4F5;
-  --cat-cafe: #00F5B8;
-  --cat-postres: #F500D4;
-  --cat-comida: #00F560;
-  --cat-panaderia: #F5C400;
-  --cat-ensaladas: #00F5A0;
-  --cat-desayunos: #F58000;
-  --cat-especiales: #A000F5;
+  /* Categories: neon accent variants */
+  --cat-1: #00D4F5;  /* cyan */
+  --cat-2: #00C8A0;  /* teal */
+  --cat-3: #A78BFA;  /* violeta */
+  --cat-4: #F472B6;  /* rosa neón */
+  --cat-5: #FBBF24;  /* ámbar */
+  --cat-6: #34D399;  /* esmeralda */
+  --cat-7: #FB923C;  /* naranja */
+  --cat-8: #818CF8;  /* índigo */
 
   --ok: #00FF7F;
   --warn: #FFB800;
@@ -186,14 +187,15 @@
   --accent-soft: rgba(142,142,170, 0.10);
   --accent-mid: rgba(142,142,170, 0.20);
 
-  --cat-bebidas: #7AADBE;
-  --cat-cafe: #B89E73;
-  --cat-postres: #BE7A9E;
-  --cat-comida: #7AAD8E;
-  --cat-panaderia: #C4A050;
-  --cat-ensaladas: #8BC0A6;
-  --cat-desayunos: #C49A5A;
-  --cat-especiales: #9A8EBE;
+  /* Categories: soft muted, tactile */
+  --cat-1: #8E8EAA;  /* lavanda base */
+  --cat-2: #7A9898;  /* gris azulado */
+  --cat-3: #A08E7A;  /* arena */
+  --cat-4: #988AAA;  /* ciruela suave */
+  --cat-5: #AA9A78;  /* dorado apagado */
+  --cat-6: #7A9A82;  /* menta */
+  --cat-7: #AA7A8E;  /* rosa viejo */
+  --cat-8: #8A8E7A;  /* musgo */
 
   --ok: #6BAE7A;
   --warn: #B5A050;
@@ -270,14 +272,15 @@
   --accent-soft: rgba(59,130,246, 0.09);
   --accent-mid: rgba(59,130,246, 0.18);
 
-  --cat-bebidas: #38BDF8;
-  --cat-cafe: #A78B5E;
-  --cat-postres: #F472B6;
-  --cat-comida: #34D399;
-  --cat-panaderia: #FBBF24;
-  --cat-ensaladas: #2DD4BF;
-  --cat-desayunos: #FB923C;
-  --cat-especiales: #A78BFA;
+  /* Categories: frosted glass tints */
+  --cat-1: #60A5FA;  /* azul cielo */
+  --cat-2: #5EADB5;  /* teal */
+  --cat-3: #A78BFA;  /* violeta */
+  --cat-4: #EC8CA8;  /* rosa */
+  --cat-5: #D4A856;  /* dorado */
+  --cat-6: #5EAD82;  /* jade */
+  --cat-7: #E89058;  /* coral */
+  --cat-8: #8B8FA8;  /* slate */
 
   --ok: #22C55E;
   --warn: #EAB308;
@@ -341,14 +344,15 @@
   --accent-soft: rgba(139,26,26, 0.06);
   --accent-mid: rgba(139,26,26, 0.14);
 
-  --cat-bebidas: #2B5C8A;
-  --cat-cafe: #6B4E28;
-  --cat-postres: #8A2B5C;
-  --cat-comida: #2B6B3E;
-  --cat-panaderia: #8A6B2B;
-  --cat-ensaladas: #2B7A5C;
-  --cat-desayunos: #8A4B2B;
-  --cat-especiales: #5C2B8A;
+  /* Categories: deep ink tones, editorial */
+  --cat-1: #4A6A8A;  /* azul tinta */
+  --cat-2: #6B5A3A;  /* sepia */
+  --cat-3: #5A7A6A;  /* bosque */
+  --cat-4: #7A4A5A;  /* vino */
+  --cat-5: #8A7A3A;  /* mostaza */
+  --cat-6: #4A6A5A;  /* pino */
+  --cat-7: #8A5A3A;  /* cobre */
+  --cat-8: #5A5A6A;  /* grafito */
 
   --ok: #1A6B2E;
   --warn: #8A6B1A;
@@ -414,14 +418,15 @@
   --accent-soft: rgba(194,113,79, 0.10);
   --accent-mid: rgba(194,113,79, 0.20);
 
-  --cat-bebidas: #7AADBE;
-  --cat-cafe: #C2714F;
-  --cat-postres: #C98EA3;
-  --cat-comida: #8BAA6E;
-  --cat-panaderia: #D4A94D;
-  --cat-ensaladas: #6B9E7A;
-  --cat-desayunos: #D49A5A;
-  --cat-especiales: #A67E5A;
+  /* Categories: warm terracotta & mediterranean */
+  --cat-1: #C2714F;  /* terracotta */
+  --cat-2: #8B6B4A;  /* arcilla */
+  --cat-3: #A07858;  /* canela */
+  --cat-4: #7A9468;  /* romero */
+  --cat-5: #C4985A;  /* miel */
+  --cat-6: #6B8A78;  /* albahaca */
+  --cat-7: #B07060;  /* ladrillo */
+  --cat-8: #8A7A6A;  /* piedra caliza */
 
   --ok: #6BAE7A;
   --warn: #BDA55A;
@@ -485,14 +490,15 @@
   --accent-soft: rgba(107,157,173, 0.09);
   --accent-mid: rgba(107,157,173, 0.18);
 
-  --cat-bebidas: #6B9DAD;
-  --cat-cafe: #AD9B6B;
-  --cat-postres: #AD6B8E;
-  --cat-comida: #6BAD82;
-  --cat-panaderia: #ADAD6B;
-  --cat-ensaladas: #6BADA0;
-  --cat-desayunos: #AD826B;
-  --cat-especiales: #8E6BAD;
+  /* Categories: cool nordic, desaturated frost */
+  --cat-1: #6B9DAD;  /* fiordo */
+  --cat-2: #8A9AAA;  /* acero nórdico */
+  --cat-3: #7A8D9A;  /* piedra gris */
+  --cat-4: #6AAA8A;  /* musgo nórdico */
+  --cat-5: #A09A7A;  /* avena */
+  --cat-6: #5A9A8A;  /* pino helado */
+  --cat-7: #9A8A7A;  /* madera clara */
+  --cat-8: #7A8AAA;  /* cielo invernal */
 
   --ok: #5CA87A;
   --warn: #A8A05C;
@@ -556,14 +562,15 @@
   --accent-soft: rgba(127,174,110, 0.09);
   --accent-mid: rgba(127,174,110, 0.18);
 
-  --cat-bebidas: #6BAEAD;
-  --cat-cafe: #AE946B;
-  --cat-postres: #AE6B8E;
-  --cat-comida: #7FAE6E;
-  --cat-panaderia: #AEAE6B;
-  --cat-ensaladas: #6BAE82;
-  --cat-desayunos: #AE826B;
-  --cat-especiales: #826BAE;
+  /* Categories: matcha-inspired, zen garden */
+  --cat-1: #7FAE6E;  /* matcha */
+  --cat-2: #8AAE9A;  /* bambú */
+  --cat-3: #AEA87A;  /* jengibre */
+  --cat-4: #6A9E8E;  /* jade */
+  --cat-5: #A0AE7A;  /* té verde */
+  --cat-6: #7AAE7A;  /* hoja perenne */
+  --cat-7: #AE9A6E;  /* arroz tostado */
+  --cat-8: #8A9E8A;  /* piedra zen */
 
   --ok: #6BAE7A;
   --warn: #AEA46B;
@@ -627,14 +634,15 @@
   --accent-soft: rgba(255,107,53, 0.09);
   --accent-mid: rgba(255,107,53, 0.18);
 
-  --cat-bebidas: #35B8FF;
-  --cat-cafe: #FF9A35;
-  --cat-postres: #FF358E;
-  --cat-comida: #35FF8E;
-  --cat-panaderia: #FFD435;
-  --cat-ensaladas: #35FFB8;
-  --cat-desayunos: #FF6B35;
-  --cat-especiales: #B835FF;
+  /* Categories: retro diner, warm neon */
+  --cat-1: #FF6B35;  /* naranja neón */
+  --cat-2: #FFB347;  /* mostaza diner */
+  --cat-3: #FF8E7A;  /* salmón retro */
+  --cat-4: #5AC4A0;  /* menta vintage */
+  --cat-5: #FFD435;  /* amarillo taxi */
+  --cat-6: #4AB8C4;  /* turquesa 50s */
+  --cat-7: #FF5A6B;  /* rojo cherry */
+  --cat-8: #C49A5A;  /* caramelo */
 
   --ok: #35FF8E;
   --warn: #FFD435;
@@ -698,14 +706,15 @@
   --accent-soft: rgba(124,107,196, 0.08);
   --accent-mid: rgba(124,107,196, 0.16);
 
-  --cat-bebidas: #4A90C4;
-  --cat-cafe: #8B7040;
-  --cat-postres: #C46B90;
-  --cat-comida: #4AA870;
-  --cat-panaderia: #C4A04A;
-  --cat-ensaladas: #4AC4A0;
-  --cat-desayunos: #C4804A;
-  --cat-especiales: #7C6BC4;
+  /* Categories: soft lavender, dreamy pastels */
+  --cat-1: #9B8EC4;  /* lavanda */
+  --cat-2: #8AADBE;  /* cielo pastel */
+  --cat-3: #C48EB0;  /* rosa polvoso */
+  --cat-4: #8AC4A0;  /* menta suave */
+  --cat-5: #C4B88A;  /* vainilla */
+  --cat-6: #7ABEB0;  /* agua pastel */
+  --cat-7: #C4A08A;  /* durazno */
+  --cat-8: #A08AC4;  /* lila */
 
   --ok: #2E8B57;
   --warn: #B8860B;
@@ -770,14 +779,15 @@
   --accent-soft: rgba(255,255,255, 0.06);
   --accent-mid: rgba(255,255,255, 0.12);
 
-  --cat-bebidas: #60A5FA;
-  --cat-cafe: #D4A574;
-  --cat-postres: #F472B6;
-  --cat-comida: #4ADE80;
-  --cat-panaderia: #FBBF24;
-  --cat-ensaladas: #34D399;
-  --cat-desayunos: #FB923C;
-  --cat-especiales: #A78BFA;
+  /* Categories: high contrast on pure black */
+  --cat-1: #60A5FA;  /* azul eléctrico */
+  --cat-2: #A78BFA;  /* violeta */
+  --cat-3: #F472B6;  /* magenta */
+  --cat-4: #4ADE80;  /* verde neón */
+  --cat-5: #FBBF24;  /* ámbar */
+  --cat-6: #22D3EE;  /* cyan */
+  --cat-7: #FB923C;  /* naranja brillante */
+  --cat-8: #94A3B8;  /* slate */
 
   --ok: #4ADE80;
   --warn: #FBBF24;
@@ -842,14 +852,15 @@
   --accent-soft: rgba(184,115,51, 0.09);
   --accent-mid: rgba(184,115,51, 0.18);
 
-  --cat-bebidas: #5A8FA8;
-  --cat-cafe: #B87333;
-  --cat-postres: #A85A7A;
-  --cat-comida: #5AA87A;
-  --cat-panaderia: #A8A05A;
-  --cat-ensaladas: #5AA89A;
-  --cat-desayunos: #A87A5A;
-  --cat-especiales: #7A5AA8;
+  /* Categories: industrial metals & patina */
+  --cat-1: #B87333;  /* cobre */
+  --cat-2: #8A9A7A;  /* bronce patinado */
+  --cat-3: #A0886A;  /* latón */
+  --cat-4: #6A8A7A;  /* verde óxido */
+  --cat-5: #C4A060;  /* oro viejo */
+  --cat-6: #5A8A8A;  /* acero azulado */
+  --cat-7: #A87A5A;  /* cobre quemado */
+  --cat-8: #7A8A8A;  /* hierro */
 
   --ok: #5AA87A;
   --warn: #A89A5A;
