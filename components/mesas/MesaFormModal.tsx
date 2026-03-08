@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Circle, Square } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Circle, Square, ArrowLeftRight } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import { showToast } from "@/components/ui/Toast";
 import { useZonasStore } from "@/store/zonas.store";
@@ -17,7 +17,9 @@ interface MesaFormModalProps {
   onClose: () => void;
   mesa?: Mesa | null; // null = crear, Mesa = editar
   negocioId: string;
+  mesas: Mesa[]; // todas las mesas para detectar duplicados
   onSave: (data: Partial<Mesa>) => Promise<boolean>;
+  onSwap: (mesaAId: string, numA: number, mesaBId: string, numB: number) => Promise<boolean>;
   onDelete?: (id: string) => Promise<boolean>;
 }
 
@@ -26,7 +28,9 @@ export default function MesaFormModal({
   onClose,
   mesa,
   negocioId,
+  mesas,
   onSave,
+  onSwap,
   onDelete,
 }: MesaFormModalProps) {
   const { zonas } = useZonasStore();
@@ -47,13 +51,23 @@ export default function MesaFormModal({
       setZonaId(mesa.zona_id ?? "");
       setForma((mesa.forma as typeof forma) ?? "cuadrada");
     } else {
-      setNumero("");
+      // Para nueva mesa, sugerir el siguiente número disponible
+      const maxNum = mesas.length > 0 ? Math.max(...mesas.map((m) => m.numero)) : 0;
+      setNumero(String(maxNum + 1));
       setCapacidad("4");
       setZonaId(zonas[0]?.id ?? "");
       setForma("cuadrada");
     }
     setConfirmDelete(false);
-  }, [mesa, open, zonas]);
+  }, [mesa, open, zonas, mesas]);
+
+  // Detectar conflicto de número
+  const conflictMesa = useMemo(() => {
+    const num = parseInt(numero);
+    if (!num || !isEditing) return null;
+    // Buscar otra mesa activa con ese número (excluyendo la que se edita)
+    return mesas.find((m) => m.numero === num && m.id !== mesa?.id) ?? null;
+  }, [numero, mesas, mesa?.id, isEditing]);
 
   const handleSave = async () => {
     const num = parseInt(numero);
@@ -72,6 +86,27 @@ export default function MesaFormModal({
       return;
     }
 
+    // Si hay conflicto en edición, hacer swap
+    if (conflictMesa && isEditing && mesa?.id) {
+      setSaving(true);
+      const ok = await onSwap(mesa.id, num, conflictMesa.id!, mesa.numero);
+      setSaving(false);
+      if (ok) {
+        showToast(`Mesas ${num} y ${mesa.numero} intercambiadas`, "success");
+        onClose();
+      }
+      return;
+    }
+
+    // Si hay conflicto en creación, bloquear
+    if (!isEditing) {
+      const exists = mesas.find((m) => m.numero === num);
+      if (exists) {
+        showToast(`Ya existe una mesa con el número ${num}`, "error");
+        return;
+      }
+    }
+
     setSaving(true);
     const data: Partial<Mesa> = {
       ...(mesa?.id ? { id: mesa.id } : {}),
@@ -80,7 +115,6 @@ export default function MesaFormModal({
       capacidad: cap,
       zona_id: zonaId,
       forma,
-      // Mantener posición si es edición
       pos_x: mesa?.pos_x ?? 80,
       pos_y: mesa?.pos_y ?? 80,
     };
@@ -140,6 +174,18 @@ export default function MesaFormModal({
             />
           </div>
         </div>
+
+        {/* Swap hint — aparece cuando hay conflicto */}
+        {conflictMesa && isEditing && (
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-accent/10 border border-accent/20">
+            <ArrowLeftRight size={14} className="text-accent shrink-0" />
+            <p className="text-xs text-text-70">
+              La mesa <strong>{conflictMesa.numero}</strong> ya existe.
+              Al guardar se <strong>intercambiarán</strong> los números:
+              Mesa {mesa?.numero} → {parseInt(numero)}, Mesa {conflictMesa.numero} → {mesa?.numero}
+            </p>
+          </div>
+        )}
 
         {/* Zona */}
         <div>
@@ -234,10 +280,16 @@ export default function MesaFormModal({
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-5 py-2 text-xs rounded-xl text-surface-0 disabled:opacity-50 transition-all"
+              className="px-5 py-2 text-xs rounded-xl text-surface-0 disabled:opacity-50 transition-all flex items-center gap-1.5"
               style={{ background: "var(--accent)" }}
             >
-              {saving ? "Guardando..." : isEditing ? "Actualizar" : "Crear Mesa"}
+              {saving
+                ? "Guardando..."
+                : conflictMesa && isEditing
+                  ? "Intercambiar"
+                  : isEditing
+                    ? "Actualizar"
+                    : "Crear Mesa"}
             </button>
           </div>
         </div>

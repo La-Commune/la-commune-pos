@@ -294,6 +294,15 @@ export interface Database {
         Args: Record<string, never>;
         Returns: RolUsuario;
       };
+      swap_mesa_numeros: {
+        Args: {
+          mesa_a_id: string;
+          nuevo_numero_a: number;
+          mesa_b_id: string;
+          nuevo_numero_b: number;
+        };
+        Returns: undefined;
+      };
       login_por_pin: {
         Args: { pin_input: string };
         Returns: {

@@ -90,13 +90,20 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className={cn(
-        "flex items-center h-16 relative",
-        isCollapsed ? "justify-center px-2" : "px-4"
+        "flex items-center relative",
+        isCollapsed ? "justify-center px-2 h-[72px]" : "px-5 h-[72px]"
       )}>
-        <Link href="/mesas" className="flex items-center gap-3 min-w-0 group relative">
+        <Link href="/mesas" className="flex items-center gap-3.5 min-w-0 group relative">
           {/* Logo mark */}
-          <div className="w-9 h-9 rounded-[10px] bg-accent/90 flex items-center justify-center flex-shrink-0 transition-colors duration-300 hover:bg-accent">
-            <span className="text-white font-semibold text-[13px] tracking-tight leading-none">
+          <div className="relative w-10 h-10 flex-shrink-0">
+            <div
+              className="absolute inset-0 rounded-xl transition-all duration-300 group-hover:scale-105"
+              style={{
+                background: "linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 70%, #000) 100%)",
+                boxShadow: "0 2px 8px color-mix(in srgb, var(--accent) 25%, transparent)",
+              }}
+            />
+            <span className="relative z-10 flex items-center justify-center w-full h-full text-white font-display font-bold text-[14px] tracking-wide leading-none">
               {iniciales}
             </span>
           </div>
@@ -110,13 +117,13 @@ export default function Sidebar() {
                 animate={{ opacity: 1, width: "auto" }}
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                className="min-w-0 overflow-hidden"
+                className="min-w-0 overflow-hidden flex flex-col"
               >
                 <motion.span
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="font-display font-semibold text-text-100 text-[15px] tracking-tight block whitespace-nowrap"
+                  className="font-display font-semibold text-text-100 text-base tracking-tight block whitespace-nowrap leading-tight"
                 >
                   {negocio.nombre}
                 </motion.span>
@@ -124,7 +131,7 @@ export default function Sidebar() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.18 }}
-                  className="text-[10px] text-text-45 uppercase tracking-[0.15em] whitespace-nowrap"
+                  className="text-[10px] text-text-25 uppercase tracking-[0.18em] whitespace-nowrap mt-0.5"
                 >
                   Punto de venta
                 </motion.span>
@@ -143,7 +150,7 @@ export default function Sidebar() {
         </Link>
 
         {/* Separador gradiente */}
-        <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+        <div className="absolute bottom-0 left-5 right-5 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
       </div>
 
       {/* Navigation */}
