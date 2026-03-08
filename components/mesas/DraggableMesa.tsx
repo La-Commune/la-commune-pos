@@ -7,9 +7,10 @@ import type { Mesa } from "@/lib/validators";
 interface DraggableMesaProps {
   mesa: Mesa;
   isDragging?: boolean;
-  editMode?: boolean;
+  isAdmin?: boolean;
   onEdit?: (mesa: Mesa) => void;
   onClick?: (mesa: Mesa) => void;
+  onContextMenu?: (mesa: Mesa, x: number, y: number) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dragListeners?: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,18 +24,13 @@ const FORMA_SIZES = {
   rectangular: { w: 120, h: 70 },
 };
 
-const FormaIcon = {
-  redonda: Circle,
-  cuadrada: Square,
-  rectangular: RectangleHorizontal,
-};
-
 export default function DraggableMesa({
   mesa,
   isDragging = false,
-  editMode = false,
+  isAdmin = false,
   onEdit,
   onClick,
+  onContextMenu,
   dragListeners,
   dragAttributes,
   style,
@@ -44,7 +40,14 @@ export default function DraggableMesa({
   const size = FORMA_SIZES[forma];
 
   const borderRadius =
-    forma === "redonda" ? "50%" : forma === "rectangular" ? "var(--radius-lg)" : "var(--radius-lg)";
+    forma === "redonda" ? "50%" : "var(--radius-lg)";
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    if (!isAdmin || !onContextMenu) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onContextMenu(mesa, e.clientX, e.clientY);
+  };
 
   return (
     <div
@@ -52,7 +55,7 @@ export default function DraggableMesa({
         width: size.w,
         height: size.h,
         borderRadius,
-        cursor: editMode ? "grab" : "pointer",
+        cursor: isAdmin ? "grab" : "pointer",
         opacity: isDragging ? 0.5 : 1,
         transition: isDragging ? "none" : "box-shadow 0.2s, transform 0.2s",
         transform: isDragging ? "scale(1.08)" : "scale(1)",
@@ -60,11 +63,11 @@ export default function DraggableMesa({
       }}
       className="relative flex flex-col items-center justify-center border-2 bg-surface-1 shadow-card select-none group"
       onClick={() => {
-        if (editMode && onEdit) onEdit(mesa);
-        else if (onClick) onClick(mesa);
+        if (onClick) onClick(mesa);
       }}
-      {...(editMode ? dragListeners : {})}
-      {...(editMode ? dragAttributes : {})}
+      onContextMenu={handleContextMenu}
+      {...(dragListeners ?? {})}
+      {...(dragAttributes ?? {})}
     >
       {/* Status indicator — top bar */}
       <div
@@ -75,8 +78,8 @@ export default function DraggableMesa({
         }}
       />
 
-      {/* Grip (edit mode) */}
-      {editMode && (
+      {/* Grip icon (admin) */}
+      {isAdmin && (
         <GripVertical
           size={12}
           className="absolute top-1 right-1 text-text-25 opacity-0 group-hover:opacity-100 transition-opacity"

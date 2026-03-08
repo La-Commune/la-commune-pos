@@ -386,6 +386,555 @@
 }
 
 /* ══════════════════════════════════════════════
+   THEME 6 — Terracotta Bistro
+   Café artesanal, ladrillos, madera oscura.
+   ══════════════════════════════════════════════ */
+[data-theme="terracotta-bistro"] {
+  --surface-0: #1A1210;
+  --surface-1: #221A16;
+  --surface-2: #2C2320;
+  --surface-3: #382E2A;
+  --surface-4: #3D332E;
+
+  --glass: rgba(34, 26, 22, 0.60);
+  --glass-border: rgba(194,113,79, 0.08);
+  --glass-hover: rgba(194,113,79, 0.14);
+  --glass-blur: 14px;
+
+  --border: rgba(194,113,79, 0.10);
+  --border-hover: rgba(194,113,79, 0.18);
+  --border-active: rgba(194,113,79, 0.26);
+
+  --text-100: #F2E8E0;
+  --text-70: #BBA898;
+  --text-45: #8A7468;
+  --text-25: #4D3F38;
+
+  --accent: #C2714F;
+  --accent-soft: rgba(194,113,79, 0.10);
+  --accent-mid: rgba(194,113,79, 0.20);
+
+  --cat-bebidas: #7AADBE;
+  --cat-cafe: #C2714F;
+  --cat-postres: #C98EA3;
+  --cat-comida: #8BAA6E;
+  --cat-panaderia: #D4A94D;
+  --cat-ensaladas: #6B9E7A;
+  --cat-desayunos: #D49A5A;
+  --cat-especiales: #A67E5A;
+
+  --ok: #6BAE7A;
+  --warn: #BDA55A;
+  --err: #B06565;
+  --info: #6C8FAD;
+  --ok-bg: rgba(107,174,122, 0.10);
+  --warn-bg: rgba(189,165,90, 0.10);
+  --err-bg: rgba(176,101,101, 0.10);
+  --info-bg: rgba(108,143,173, 0.10);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 4px rgba(0,0,0, 0.12);
+  --shadow-md: 0 3px 10px rgba(0,0,0, 0.14);
+  --shadow-lg: 0 6px 20px rgba(0,0,0, 0.18);
+  --shadow-card: 0 2px 12px rgba(0,0,0, 0.12);
+  --shadow-btn: 0 2px 8px rgba(194,113,79, 0.15);
+  --shadow-modal: 0 20px 60px rgba(0,0,0, 0.30);
+  --shadow-glow: none;
+
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+
+  --btn-gradient: linear-gradient(135deg, #C2714F 0%, #A0593D 100%);
+  --btn-glow: rgba(194,113,79, 0.20);
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ══════════════════════════════════════════════
+   THEME 7 — Nordic Frost
+   Escandinavo, limpio, funcional, hygge.
+   ══════════════════════════════════════════════ */
+[data-theme="nordic-frost"] {
+  --surface-0: #141820;
+  --surface-1: #1A2028;
+  --surface-2: #212832;
+  --surface-3: #28303C;
+  --surface-4: #2A3040;
+
+  --glass: rgba(26, 32, 40, 0.55);
+  --glass-border: rgba(107,157,173, 0.06);
+  --glass-hover: rgba(107,157,173, 0.12);
+  --glass-blur: 16px;
+
+  --border: rgba(107,157,173, 0.08);
+  --border-hover: rgba(107,157,173, 0.14);
+  --border-active: rgba(107,157,173, 0.20);
+
+  --text-100: #E8EEF2;
+  --text-70: #95A5B0;
+  --text-45: #5E7280;
+  --text-25: #344050;
+
+  --accent: #6B9DAD;
+  --accent-soft: rgba(107,157,173, 0.09);
+  --accent-mid: rgba(107,157,173, 0.18);
+
+  --cat-bebidas: #6B9DAD;
+  --cat-cafe: #AD9B6B;
+  --cat-postres: #AD6B8E;
+  --cat-comida: #6BAD82;
+  --cat-panaderia: #ADAD6B;
+  --cat-ensaladas: #6BADA0;
+  --cat-desayunos: #AD826B;
+  --cat-especiales: #8E6BAD;
+
+  --ok: #5CA87A;
+  --warn: #A8A05C;
+  --err: #A85C5C;
+  --info: #5C8EA8;
+  --ok-bg: rgba(92,168,122, 0.09);
+  --warn-bg: rgba(168,160,92, 0.09);
+  --err-bg: rgba(168,92,92, 0.09);
+  --info-bg: rgba(92,142,168, 0.09);
+
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0, 0.08);
+  --shadow-md: 0 2px 8px rgba(0,0,0, 0.10);
+  --shadow-lg: 0 4px 16px rgba(0,0,0, 0.12);
+  --shadow-card: none;
+  --shadow-btn: none;
+  --shadow-modal: 0 20px 60px rgba(0,0,0, 0.28);
+  --shadow-glow: none;
+
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+
+  --btn-gradient: linear-gradient(135deg, #6B9DAD 0%, #4E8090 100%);
+  --btn-glow: rgba(107,157,173, 0.18);
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ══════════════════════════════════════════════
+   THEME 8 — Matcha Zen
+   Japonés, natural, orgánico, tranquilo.
+   ══════════════════════════════════════════════ */
+[data-theme="matcha-zen"] {
+  --surface-0: #0E1210;
+  --surface-1: #151A17;
+  --surface-2: #1C221E;
+  --surface-3: #242B26;
+  --surface-4: #2A3028;
+
+  --glass: rgba(21, 26, 23, 0.55);
+  --glass-border: rgba(127,174,110, 0.06);
+  --glass-hover: rgba(127,174,110, 0.12);
+  --glass-blur: 12px;
+
+  --border: rgba(127,174,110, 0.08);
+  --border-hover: rgba(127,174,110, 0.14);
+  --border-active: rgba(127,174,110, 0.20);
+
+  --text-100: #E4EDE6;
+  --text-70: #98AE9C;
+  --text-45: #647A68;
+  --text-25: #384840;
+
+  --accent: #7FAE6E;
+  --accent-soft: rgba(127,174,110, 0.09);
+  --accent-mid: rgba(127,174,110, 0.18);
+
+  --cat-bebidas: #6BAEAD;
+  --cat-cafe: #AE946B;
+  --cat-postres: #AE6B8E;
+  --cat-comida: #7FAE6E;
+  --cat-panaderia: #AEAE6B;
+  --cat-ensaladas: #6BAE82;
+  --cat-desayunos: #AE826B;
+  --cat-especiales: #826BAE;
+
+  --ok: #6BAE7A;
+  --warn: #AEA46B;
+  --err: #AE6B6B;
+  --info: #6B8EAE;
+  --ok-bg: rgba(107,174,122, 0.09);
+  --warn-bg: rgba(174,164,107, 0.09);
+  --err-bg: rgba(174,107,107, 0.09);
+  --info-bg: rgba(107,142,174, 0.09);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0, 0.06);
+  --shadow-md: 0 2px 8px rgba(0,0,0, 0.08);
+  --shadow-lg: 0 4px 16px rgba(0,0,0, 0.10);
+  --shadow-card: none;
+  --shadow-btn: none;
+  --shadow-modal: 0 20px 60px rgba(0,0,0, 0.25);
+  --shadow-glow: none;
+
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+
+  --btn-gradient: linear-gradient(135deg, #7FAE6E 0%, #5E8E50 100%);
+  --btn-glow: rgba(127,174,110, 0.15);
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ══════════════════════════════════════════════
+   THEME 9 — Sunset Diner
+   Retro americano, neón cálido, drive-in 50s.
+   ══════════════════════════════════════════════ */
+[data-theme="sunset-diner"] {
+  --surface-0: #12101A;
+  --surface-1: #1A1724;
+  --surface-2: #22202E;
+  --surface-3: #2A2838;
+  --surface-4: #2E2840;
+
+  --glass: rgba(26, 23, 36, 0.70);
+  --glass-border: rgba(255,107,53, 0.08);
+  --glass-hover: rgba(255,107,53, 0.15);
+  --glass-blur: 20px;
+
+  --border: rgba(255,107,53, 0.08);
+  --border-hover: rgba(255,107,53, 0.16);
+  --border-active: rgba(255,107,53, 0.24);
+
+  --text-100: #FFF0E8;
+  --text-70: #C8A898;
+  --text-45: #8A6E60;
+  --text-25: #483830;
+
+  --accent: #FF6B35;
+  --accent-soft: rgba(255,107,53, 0.09);
+  --accent-mid: rgba(255,107,53, 0.18);
+
+  --cat-bebidas: #35B8FF;
+  --cat-cafe: #FF9A35;
+  --cat-postres: #FF358E;
+  --cat-comida: #35FF8E;
+  --cat-panaderia: #FFD435;
+  --cat-ensaladas: #35FFB8;
+  --cat-desayunos: #FF6B35;
+  --cat-especiales: #B835FF;
+
+  --ok: #35FF8E;
+  --warn: #FFD435;
+  --err: #FF3555;
+  --info: #35B8FF;
+  --ok-bg: rgba(53,255,142, 0.10);
+  --warn-bg: rgba(255,212,53, 0.10);
+  --err-bg: rgba(255,53,85, 0.10);
+  --info-bg: rgba(53,184,255, 0.10);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 0 8px rgba(255,107,53, 0.12);
+  --shadow-md: 0 0 16px rgba(255,107,53, 0.16);
+  --shadow-lg: 0 0 32px rgba(255,107,53, 0.20);
+  --shadow-card: 0 0 12px rgba(255,107,53, 0.10), 0 4px 20px rgba(0,0,0, 0.25);
+  --shadow-btn: 0 0 20px rgba(255,107,53, 0.25);
+  --shadow-modal: 0 0 60px rgba(255,107,53, 0.12), 0 20px 60px rgba(0,0,0, 0.45);
+  --shadow-glow: 0 0 24px rgba(255,107,53, 0.35);
+
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+
+  --btn-gradient: linear-gradient(135deg, #FF6B35 0%, #E04A18 100%);
+  --btn-glow: rgba(255,107,53, 0.30);
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ══════════════════════════════════════════════
+   THEME 10 — Lavender Dream
+   Suave, pastel, moderno, light mode.
+   ══════════════════════════════════════════════ */
+[data-theme="lavender-dream"] {
+  --surface-0: #FAF8FF;
+  --surface-1: #F4F0FA;
+  --surface-2: #EDE8F5;
+  --surface-3: #E4DEF0;
+  --surface-4: #D8D0E8;
+
+  --glass: rgba(244, 240, 250, 0.80);
+  --glass-border: rgba(124,107,196, 0.08);
+  --glass-hover: rgba(124,107,196, 0.14);
+  --glass-blur: 16px;
+
+  --border: rgba(124,107,196, 0.12);
+  --border-hover: rgba(124,107,196, 0.20);
+  --border-active: rgba(124,107,196, 0.28);
+
+  --text-100: #2A2440;
+  --text-70: #5C5478;
+  --text-45: #9088A8;
+  --text-25: #C8C2D8;
+
+  --accent: #7C6BC4;
+  --accent-soft: rgba(124,107,196, 0.08);
+  --accent-mid: rgba(124,107,196, 0.16);
+
+  --cat-bebidas: #4A90C4;
+  --cat-cafe: #8B7040;
+  --cat-postres: #C46B90;
+  --cat-comida: #4AA870;
+  --cat-panaderia: #C4A04A;
+  --cat-ensaladas: #4AC4A0;
+  --cat-desayunos: #C4804A;
+  --cat-especiales: #7C6BC4;
+
+  --ok: #2E8B57;
+  --warn: #B8860B;
+  --err: #C0392B;
+  --info: #4A90C4;
+  --ok-bg: rgba(46,139,87, 0.08);
+  --warn-bg: rgba(184,134,11, 0.08);
+  --err-bg: rgba(192,57,43, 0.08);
+  --info-bg: rgba(74,144,196, 0.08);
+
+  --radius-sm: 14px;
+  --radius-md: 18px;
+  --radius-lg: 22px;
+  --radius-xl: 26px;
+  --radius-2xl: 30px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 4px rgba(124,107,196, 0.06);
+  --shadow-md: 0 3px 12px rgba(124,107,196, 0.08);
+  --shadow-lg: 0 6px 24px rgba(124,107,196, 0.10);
+  --shadow-card: 0 2px 12px rgba(124,107,196, 0.08);
+  --shadow-btn: 0 4px 14px rgba(124,107,196, 0.15);
+  --shadow-modal: 0 20px 60px rgba(124,107,196, 0.12);
+  --shadow-glow: none;
+
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+
+  --btn-gradient: linear-gradient(135deg, #7C6BC4 0%, #6050A8 100%);
+  --btn-glow: rgba(124,107,196, 0.20);
+  --btn-text: #ffffff;
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ══════════════════════════════════════════════
+   THEME 11 — Obsidian AMOLED
+   Ultra dark, OLED, máximo contraste, nocturno.
+   ══════════════════════════════════════════════ */
+[data-theme="obsidian-amoled"] {
+  --surface-0: #000000;
+  --surface-1: #0A0A0A;
+  --surface-2: #111111;
+  --surface-3: #181818;
+  --surface-4: #1A1A1A;
+
+  --glass: rgba(10, 10, 10, 0.80);
+  --glass-border: rgba(255,255,255, 0.06);
+  --glass-hover: rgba(255,255,255, 0.10);
+  --glass-blur: 10px;
+
+  --border: rgba(255,255,255, 0.08);
+  --border-hover: rgba(255,255,255, 0.14);
+  --border-active: rgba(255,255,255, 0.20);
+
+  --text-100: #FFFFFF;
+  --text-70: #A0A0A0;
+  --text-45: #666666;
+  --text-25: #333333;
+
+  --accent: #FFFFFF;
+  --accent-soft: rgba(255,255,255, 0.06);
+  --accent-mid: rgba(255,255,255, 0.12);
+
+  --cat-bebidas: #60A5FA;
+  --cat-cafe: #D4A574;
+  --cat-postres: #F472B6;
+  --cat-comida: #4ADE80;
+  --cat-panaderia: #FBBF24;
+  --cat-ensaladas: #34D399;
+  --cat-desayunos: #FB923C;
+  --cat-especiales: #A78BFA;
+
+  --ok: #4ADE80;
+  --warn: #FBBF24;
+  --err: #F87171;
+  --info: #60A5FA;
+  --ok-bg: rgba(74,222,128, 0.08);
+  --warn-bg: rgba(251,191,36, 0.08);
+  --err-bg: rgba(248,113,113, 0.08);
+  --info-bg: rgba(96,165,250, 0.08);
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-2xl: 10px;
+  --radius-full: 9999px;
+
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-card: 0 0 0 1px rgba(255,255,255, 0.06);
+  --shadow-btn: none;
+  --shadow-modal: 0 0 0 1px rgba(255,255,255, 0.10), 0 20px 60px rgba(0,0,0, 0.80);
+  --shadow-glow: none;
+
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+
+  --btn-gradient: #FFFFFF;
+  --btn-glow: none;
+  --btn-text: #000000;
+
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* ══════════════════════════════════════════════
+   THEME 12 — Copper Industrial
+   Industrial, acero, cobre oxidado.
+   ══════════════════════════════════════════════ */
+[data-theme="copper-industrial"] {
+  --surface-0: #18191C;
+  --surface-1: #1E2024;
+  --surface-2: #26282E;
+  --surface-3: #303238;
+  --surface-4: #3A3B40;
+
+  --glass: rgba(30, 32, 36, 0.60);
+  --glass-border: rgba(184,115,51, 0.08);
+  --glass-hover: rgba(184,115,51, 0.14);
+  --glass-blur: 14px;
+
+  --border: rgba(255,255,255, 0.06);
+  --border-hover: rgba(184,115,51, 0.16);
+  --border-active: rgba(184,115,51, 0.24);
+
+  --text-100: #E8E4E0;
+  --text-70: #A8A098;
+  --text-45: #706860;
+  --text-25: #443E3A;
+
+  --accent: #B87333;
+  --accent-soft: rgba(184,115,51, 0.09);
+  --accent-mid: rgba(184,115,51, 0.18);
+
+  --cat-bebidas: #5A8FA8;
+  --cat-cafe: #B87333;
+  --cat-postres: #A85A7A;
+  --cat-comida: #5AA87A;
+  --cat-panaderia: #A8A05A;
+  --cat-ensaladas: #5AA89A;
+  --cat-desayunos: #A87A5A;
+  --cat-especiales: #7A5AA8;
+
+  --ok: #5AA87A;
+  --warn: #A89A5A;
+  --err: #A85A5A;
+  --info: #5A7AA8;
+  --ok-bg: rgba(90,168,122, 0.09);
+  --warn-bg: rgba(168,154,90, 0.09);
+  --err-bg: rgba(168,90,90, 0.09);
+  --info-bg: rgba(90,122,168, 0.09);
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-2xl: 18px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0, 0.10);
+  --shadow-md: 0 3px 10px rgba(0,0,0, 0.14);
+  --shadow-lg: 0 6px 20px rgba(0,0,0, 0.18);
+  --shadow-card: 0 2px 10px rgba(0,0,0, 0.12);
+  --shadow-btn: 0 2px 8px rgba(184,115,51, 0.12);
+  --shadow-modal: 0 20px 60px rgba(0,0,0, 0.35);
+  --shadow-glow: none;
+
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-ui: 'Inter', system-ui, sans-serif;
+
+  --btn-gradient: linear-gradient(135deg, #B87333 0%, #8A5522 100%);
+  --btn-glow: rgba(184,115,51, 0.20);
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ══════════════════════════════════════════════
+   THEME-SPECIFIC OVERRIDES — New themes
+   ══════════════════════════════════════════════ */
+
+/* ── Sunset Diner: glow pulse like Sci-Fi ── */
+[data-theme="sunset-diner"] .btn-primary:hover {
+  box-shadow: 0 0 28px var(--btn-glow), 0 4px 16px rgba(0,0,0, 0.30);
+}
+
+/* ── Obsidian AMOLED: inverted solid buttons ── */
+[data-theme="obsidian-amoled"] .btn-primary {
+  background: var(--text-100);
+  color: var(--surface-0);
+  border: none;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+[data-theme="obsidian-amoled"] .btn-primary:hover {
+  opacity: 0.85;
+  transform: none;
+  box-shadow: none;
+}
+[data-theme="obsidian-amoled"] .btn-secondary {
+  background: transparent;
+  border: 1px solid rgba(255,255,255, 0.14);
+}
+[data-theme="obsidian-amoled"] .btn-secondary:hover {
+  border-color: rgba(255,255,255, 0.30);
+  background: rgba(255,255,255, 0.04);
+  transform: none;
+}
+[data-theme="obsidian-amoled"] .btn-ghost {
+  border: 1px solid rgba(255,255,255, 0.08);
+}
+[data-theme="obsidian-amoled"] .btn-ghost:hover {
+  border-color: rgba(255,255,255, 0.20);
+  transform: none;
+}
+
+/* ── Lavender Dream: light mode heading emphasis ── */
+[data-theme="lavender-dream"] .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(124,107,196, 0.22);
+}
+
+/* ── Copper Industrial: metallic gradient buttons ── */
+[data-theme="copper-industrial"] .btn-primary:hover {
+  box-shadow: 0 4px 16px rgba(184,115,51, 0.25);
+}
+
+/* ══════════════════════════════════════════════
    GLOBAL STYLES (all themes)
    ══════════════════════════════════════════════ */
 
