@@ -146,7 +146,10 @@ export interface Database {
         zona_id: string | null;
         pos_x: number;
         pos_y: number;
-        forma: "redonda" | "cuadrada" | "rectangular";
+        forma: "redonda" | "cuadrada";
+        ancho: number;
+        alto: number;
+        rotacion: number;
         creado_en: string;
         actualizado_en: string;
         eliminado_en: string | null;

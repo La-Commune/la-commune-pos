@@ -160,6 +160,36 @@ export function useTicketsKDS() {
   });
 }
 
+// ── Negocio (nombre del negocio para sidebar, etc.) ──
+
+interface NegocioInfo {
+  id: string;
+  nombre: string;
+}
+
+const MOCK_NEGOCIO: NegocioInfo = { id: "dev-negocio-1", nombre: "La Commune" };
+
+export function useNegocio() {
+  const [negocio, setNegocio] = useState<NegocioInfo>(MOCK_NEGOCIO);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const negocioId = useAuthStore((s) => s.user?.negocio_id);
+
+  useEffect(() => {
+    if (USE_MOCK || !supabase || !isAuthenticated || !negocioId) return;
+
+    supabase
+      .from("negocios")
+      .select("id, nombre")
+      .eq("id", negocioId)
+      .single<NegocioInfo>()
+      .then(({ data }) => {
+        if (data) setNegocio(data);
+      });
+  }, [isAuthenticated, negocioId]);
+
+  return negocio;
+}
+
 // ── Mutation helpers ──
 
 export async function insertRecord(

@@ -19,6 +19,7 @@ import { useTicketsKDS } from "@/hooks/useSupabase";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { formatTiempoTranscurrido } from "@/hooks/useTiempoTranscurrido";
+import { useUIStore } from "@/store/ui.store";
 
 const estadoConfig = {
   nueva: {
@@ -249,6 +250,7 @@ function TicketCard({ ticket, onAction, onConfirmLista }: { ticket: any; onActio
 
 function KDSPageContent() {
   const { data: tickets } = useTicketsKDS();
+  const { kdsDisplayMode } = useUIStore();
   const [filtroEstado, setFiltroEstado] = useState<"todas" | "nueva" | "preparando" | "lista">("todas");
   const [confirmListaId, setConfirmListaId] = useState<string | null>(null);
 
@@ -327,60 +329,79 @@ function KDSPageContent() {
           })}
         </div>
 
-        {/* Kanban columns */}
+        {/* Display area — switches between classic/tiled/split */}
         <div className="flex-1 overflow-hidden">
-          <div className="grid grid-cols-3 gap-4 h-full">
-            {/* Columna: Nuevas */}
-            <div className="flex flex-col min-h-0">
-              <div className="flex items-center gap-2 mb-3 px-1">
-                <div className="w-2.5 h-2.5 rounded-full bg-status-info" />
-                <span className="text-xs font-medium text-text-45 uppercase tracking-widest">Nuevas</span>
-                <span className="text-xs text-text-25 tabular-nums font-medium">{conteo.nueva}</span>
-              </div>
-              <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                {(filtroEstado === "todas" || filtroEstado === "nueva"
-                  ? (tickets as any[]).filter((t) => t.estado === "nueva")
-                  : []
-                ).map((ticket) => (
-                  <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} />
-                ))}
+          {kdsDisplayMode === "classic" ? (
+            /* ── Classic: Kanban 3 columns ── */
+            <div className="grid grid-cols-3 gap-4 h-full">
+              {(["nueva", "preparando", "lista"] as const).map((estado) => {
+                const conf = estadoConfig[estado];
+                const statusColor = estado === "nueva" ? "bg-status-info" : estado === "preparando" ? "bg-status-warn" : "bg-status-ok";
+                const filtered = filtroEstado === "todas" || filtroEstado === estado
+                  ? (tickets as any[]).filter((t) => t.estado === estado)
+                  : [];
+                return (
+                  <div key={estado} className="flex flex-col min-h-0">
+                    <div className="flex items-center gap-2 mb-3 px-1">
+                      <div className={cn("w-2.5 h-2.5 rounded-full", statusColor)} />
+                      <span className="text-xs font-medium text-text-45 uppercase tracking-widest">{conf.label}</span>
+                      <span className="text-xs text-text-25 tabular-nums font-medium">{conteo[estado]}</span>
+                    </div>
+                    <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                      {filtered.map((ticket) => (
+                        <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : kdsDisplayMode === "tiled" ? (
+            /* ── Tiled: Grid compact ── */
+            <div className="h-full overflow-y-auto">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {(tickets as any[])
+                  .filter((t) => filtroEstado === "todas" || t.estado === filtroEstado)
+                  .map((ticket) => (
+                    <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} />
+                  ))}
               </div>
             </div>
-
-            {/* Columna: Preparando */}
-            <div className="flex flex-col min-h-0">
-              <div className="flex items-center gap-2 mb-3 px-1">
-                <div className="w-2.5 h-2.5 rounded-full bg-status-warn" />
-                <span className="text-xs font-medium text-text-45 uppercase tracking-widest">Preparando</span>
-                <span className="text-xs text-text-25 tabular-nums font-medium">{conteo.preparando}</span>
+          ) : (
+            /* ── Split: mesa arriba, para llevar abajo ── */
+            <div className="grid grid-rows-2 gap-4 h-full">
+              <div className="flex flex-col min-h-0">
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <div className="w-2.5 h-2.5 rounded-full bg-status-info" />
+                  <span className="text-xs font-medium text-text-45 uppercase tracking-widest">Mesa</span>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  <div className="grid grid-cols-3 gap-3">
+                    {(tickets as any[])
+                      .filter((t) => (filtroEstado === "todas" || t.estado === filtroEstado) && t.mesa_numero)
+                      .map((ticket) => (
+                        <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} />
+                      ))}
+                  </div>
+                </div>
               </div>
-              <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                {(filtroEstado === "todas" || filtroEstado === "preparando"
-                  ? (tickets as any[]).filter((t) => t.estado === "preparando")
-                  : []
-                ).map((ticket) => (
-                  <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} />
-                ))}
+              <div className="flex flex-col min-h-0">
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <div className="w-2.5 h-2.5 rounded-full bg-status-warn" />
+                  <span className="text-xs font-medium text-text-45 uppercase tracking-widest">Para llevar / Delivery</span>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  <div className="grid grid-cols-3 gap-3">
+                    {(tickets as any[])
+                      .filter((t) => (filtroEstado === "todas" || t.estado === filtroEstado) && !t.mesa_numero)
+                      .map((ticket) => (
+                        <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} />
+                      ))}
+                  </div>
+                </div>
               </div>
             </div>
-
-            {/* Columna: Listas */}
-            <div className="flex flex-col min-h-0">
-              <div className="flex items-center gap-2 mb-3 px-1">
-                <div className="w-2.5 h-2.5 rounded-full bg-status-ok" />
-                <span className="text-xs font-medium text-text-45 uppercase tracking-widest">Listas</span>
-                <span className="text-xs text-text-25 tabular-nums font-medium">{conteo.lista}</span>
-              </div>
-              <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                {(filtroEstado === "todas" || filtroEstado === "lista"
-                  ? (tickets as any[]).filter((t) => t.estado === "lista")
-                  : []
-                ).map((ticket) => (
-                  <TicketCard key={ticket.id} ticket={ticket} onConfirmLista={handleConfirmLista} />
-                ))}
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 

@@ -46,6 +46,13 @@ export default function RootLayout({
             "soft-neumorphism",
             "glass-layered",
             "mono-editorial",
+            "terracotta-bistro",
+            "nordic-frost",
+            "matcha-zen",
+            "sunset-diner",
+            "lavender-dream",
+            "obsidian-amoled",
+            "copper-industrial",
           ]}
           enableSystem={false}
         >

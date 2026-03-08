@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutGrid,
   ClipboardList,
@@ -17,7 +17,31 @@ import {
   Vault,
 } from "lucide-react";
 import { useUIStore } from "@/store/ui.store";
+import { useAuthStore } from "@/store/auth.store";
+import { useNegocio } from "@/hooks/useSupabase";
 import { cn } from "@/lib/utils";
+import type { RolUsuario } from "@/types/database";
+
+/* Role-based access: which roles can see which routes */
+const ROLE_ACCESS: Record<string, RolUsuario[]> = {
+  "/mesas": ["admin", "camarero", "barista"],
+  "/ordenes": ["admin", "camarero", "barista"],
+  "/menu": ["admin"],
+  "/kds": ["admin", "cocina"],
+  "/cobros": ["admin", "camarero", "barista"],
+  "/caja": ["admin"],
+  "/reportes": ["admin"],
+  "/usuarios": ["admin"],
+  "/fidelidad": ["admin", "camarero"],
+};
+
+/* Default landing page per role */
+export const ROLE_HOME: Record<RolUsuario, string> = {
+  admin: "/mesas",
+  camarero: "/mesas",
+  barista: "/ordenes",
+  cocina: "/kds",
+};
 
 export const navItems = [
   { href: "/mesas", label: "Mesas", icon: LayoutGrid, color: "#7EC8E3" },
@@ -34,10 +58,28 @@ export const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const { sidebarCollapsed, collapseSidebar, sidebarPosition } = useUIStore();
+  const user = useAuthStore((s) => s.user);
+  const negocio = useNegocio();
+
+  /* Filter nav items by role */
+  const filteredItems = navItems.filter((item) => {
+    if (!user) return true; // dev mode: show all
+    const allowed = ROLE_ACCESS[item.href];
+    if (!allowed) return true;
+    return allowed.includes(user.rol);
+  });
 
   /* left-mini: always collapsed, no toggle */
   const isMini = sidebarPosition === "left-mini";
   const isCollapsed = isMini || sidebarCollapsed;
+
+  // Generar iniciales del nombre del negocio (máx 2 letras)
+  const iniciales = negocio.nombre
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <motion.aside
@@ -47,32 +89,66 @@ export default function Sidebar() {
       className="fixed left-0 top-0 bottom-0 z-40 flex flex-col bg-surface-1 border-r border-border"
     >
       {/* Logo */}
-      <div className="flex items-center h-16 px-4 border-b border-border">
-        <Link href="/mesas" className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-accent to-[#7B6CE0] flex items-center justify-center flex-shrink-0 shadow-glow">
-            <span className="text-white font-bold text-sm tracking-tight">LC</span>
+      <div className={cn(
+        "flex items-center h-16 relative",
+        isCollapsed ? "justify-center px-2" : "px-4"
+      )}>
+        <Link href="/mesas" className="flex items-center gap-3 min-w-0 group relative">
+          {/* Logo mark */}
+          <div className="w-9 h-9 rounded-[10px] bg-accent/90 flex items-center justify-center flex-shrink-0 transition-colors duration-300 hover:bg-accent">
+            <span className="text-white font-semibold text-[13px] tracking-tight leading-none">
+              {iniciales}
+            </span>
           </div>
-          {!isCollapsed && (
-            <motion.div
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.05 }}
-              className="min-w-0"
-            >
-              <span className="font-semibold text-text-100 text-[15px] tracking-tight block">
-                La Commune
-              </span>
-              <span className="text-[10px] text-text-45 uppercase tracking-widest">
-                Punto de venta
-              </span>
-            </motion.div>
+
+          {/* Texto con AnimatePresence */}
+          <AnimatePresence mode="wait">
+            {!isCollapsed && (
+              <motion.div
+                key="brand-text"
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="min-w-0 overflow-hidden"
+              >
+                <motion.span
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="font-display font-semibold text-text-100 text-[15px] tracking-tight block whitespace-nowrap"
+                >
+                  {negocio.nombre}
+                </motion.span>
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.18 }}
+                  className="text-[10px] text-text-45 uppercase tracking-[0.15em] whitespace-nowrap"
+                >
+                  Punto de venta
+                </motion.span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Tooltip en modo colapsado */}
+          {isCollapsed && (
+            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 translate-x-1 group-hover:translate-x-0 z-50">
+              <div className="bg-surface-3 text-text-100 text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap border border-border">
+                {negocio.nombre}
+              </div>
+            </div>
           )}
         </Link>
+
+        {/* Separador gradiente */}
+        <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
       </div>
 
       {/* Navigation */}
       <nav className={cn("flex-1 py-4 space-y-1 overflow-y-auto", isCollapsed ? "px-2" : "px-3")}>
-        {navItems.map((item) => {
+        {filteredItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const Icon = item.icon;
 

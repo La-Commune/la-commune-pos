@@ -1419,3 +1419,74 @@ body {
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .login-forgot-link:hover::after { width: 100%; }
+
+/* ══════════════════════════════════════════════
+   FONT SCALE — user adjustable
+   ══════════════════════════════════════════════ */
+[data-font-scale="90"] { font-size: 90%; }
+[data-font-scale="100"] { font-size: 100%; }
+[data-font-scale="110"] { font-size: 110%; }
+[data-font-scale="120"] { font-size: 120%; }
+
+/* ══════════════════════════════════════════════
+   REDUCED MOTION — disable animations
+   ══════════════════════════════════════════════ */
+[data-reduced-motion="true"] *,
+[data-reduced-motion="true"] *::before,
+[data-reduced-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-reduced-motion="false"]) *,
+  :root:not([data-reduced-motion="false"]) *::before,
+  :root:not([data-reduced-motion="false"]) *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   HIGH CONTRAST — solid borders, no glass
+   ══════════════════════════════════════════════ */
+[data-high-contrast="true"] {
+  --glass: var(--surface-2);
+  --glass-border: var(--text-45);
+  --glass-hover: var(--text-70);
+  --glass-blur: 0px;
+  --border: var(--text-45);
+  --border-hover: var(--text-70);
+  --border-active: var(--text-100);
+  --shadow-card: 0 0 0 2px var(--text-45);
+  --shadow-glow: none;
+}
+
+[data-high-contrast="true"] .glass-card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* ══════════════════════════════════════════════
+   LARGE TOUCH TARGETS — bigger buttons
+   ══════════════════════════════════════════════ */
+[data-large-touch="true"] button,
+[data-large-touch="true"] a,
+[data-large-touch="true"] input,
+[data-large-touch="true"] select,
+[data-large-touch="true"] textarea {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+[data-large-touch="true"] .btn-primary,
+[data-large-touch="true"] .btn-secondary,
+[data-large-touch="true"] .btn-ghost {
+  padding-top: 0.875rem;
+  padding-bottom: 0.875rem;
+  font-size: 0.9375rem;
+}

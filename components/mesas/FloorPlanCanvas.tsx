@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -8,12 +8,9 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
-  DragOverlay,
 } from "@dnd-kit/core";
-import { useState } from "react";
-import { Plus, ZoomIn, ZoomOut } from "lucide-react";
+import { Plus, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import DraggableMesaWrapper from "./DraggableMesaWrapper";
-import DraggableMesa from "./DraggableMesa";
 import type { Mesa, Zona } from "@/lib/validators";
 
 interface FloorPlanCanvasProps {
@@ -24,10 +21,12 @@ interface FloorPlanCanvasProps {
   onEditMesa: (mesa: Mesa) => void;
   onClickMesa: (mesa: Mesa) => void;
   onContextMenu: (mesa: Mesa, x: number, y: number) => void;
+  onResizeMesa: (mesaId: string, ancho: number, alto: number) => void;
+  onRotateMesa: (mesaId: string, rotacion: number) => void;
   onAddMesa: () => void;
 }
 
-const CANVAS_W = 800;
+const CANVAS_MIN_W = 600;
 const CANVAS_H = 500;
 
 export default function FloorPlanCanvas({
@@ -38,10 +37,27 @@ export default function FloorPlanCanvas({
   onEditMesa,
   onClickMesa,
   onContextMenu,
+  onResizeMesa,
+  onRotateMesa,
   onAddMesa,
 }: FloorPlanCanvasProps) {
-  const [activeMesa, setActiveMesa] = useState<Mesa | null>(null);
   const [scale, setScale] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [canvasW, setCanvasW] = useState(CANVAS_MIN_W);
+
+  // ── Responsive: medir el contenedor ──
+  useEffect(() => {
+    const measure = () => {
+      if (containerRef.current) {
+        const w = containerRef.current.clientWidth;
+        setCanvasW(Math.max(CANVAS_MIN_W, w));
+      }
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // Drag & drop siempre activo para admin
   const pointerSensor = useSensor(PointerSensor, {
@@ -52,34 +68,28 @@ export default function FloorPlanCanvas({
   });
   const sensors = useSensors(pointerSensor, touchSensor);
 
-  const handleDragStart = useCallback(
-    (event: { active: { id: string | number } }) => {
-      const mesa = mesas.find((m) => m.id === String(event.active.id));
-      if (mesa) setActiveMesa(mesa);
-    },
-    [mesas]
-  );
-
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
-      setActiveMesa(null);
       const { active, delta } = event;
       const mesa = mesas.find((m) => m.id === String(active.id));
       if (!mesa) return;
 
-      const newX = Math.max(0, Math.min(CANVAS_W - 80, (mesa.pos_x ?? 0) + delta.x / scale));
-      const newY = Math.max(0, Math.min(CANVAS_H - 60, (mesa.pos_y ?? 0) + delta.y / scale));
+      const mesaW = mesa.ancho ?? 80;
+      const mesaH = mesa.alto ?? 80;
+      const newX = Math.max(0, Math.min(canvasW - mesaW, (mesa.pos_x ?? 0) + delta.x / scale));
+      const newY = Math.max(0, Math.min(CANVAS_H - mesaH, (mesa.pos_y ?? 0) + delta.y / scale));
 
       onMoveMesa(String(active.id), Math.round(newX), Math.round(newY));
     },
-    [mesas, onMoveMesa, scale]
+    [mesas, onMoveMesa, scale, canvasW]
   );
 
   const zoomIn = () => setScale((s) => Math.min(s + 0.15, 1.8));
   const zoomOut = () => setScale((s) => Math.max(s - 0.15, 0.5));
+  const zoomFit = () => setScale(1);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1">
@@ -115,6 +125,13 @@ export default function FloorPlanCanvas({
           >
             <ZoomIn size={16} />
           </button>
+          <button
+            onClick={zoomFit}
+            className="p-1.5 rounded-lg hover:bg-surface-3 text-text-45 transition-colors"
+            title="Ajustar"
+          >
+            <Maximize2 size={16} />
+          </button>
 
           {isAdmin && (
             <button
@@ -128,25 +145,24 @@ export default function FloorPlanCanvas({
         </div>
       </div>
 
-      {/* Canvas */}
+      {/* Canvas — full width */}
       <div
         className="relative overflow-auto rounded-xl border border-border bg-surface-1"
-        style={{ maxHeight: "60vh" }}
+        style={{ maxHeight: "65vh" }}
       >
         <DndContext
           sensors={isAdmin ? sensors : undefined}
-          onDragStart={isAdmin ? handleDragStart : undefined}
           onDragEnd={isAdmin ? handleDragEnd : undefined}
         >
           <div
             className="relative"
             style={{
-              width: CANVAS_W * scale,
+              width: canvasW * scale,
               height: CANVAS_H * scale,
               backgroundImage:
                 "radial-gradient(circle, var(--border) 1px, transparent 1px)",
               backgroundSize: `${20 * scale}px ${20 * scale}px`,
-              transition: "width 0.2s, height 0.2s",
+              transition: "height 0.2s",
             }}
           >
             {mesas.map((mesa) => (
@@ -158,19 +174,13 @@ export default function FloorPlanCanvas({
                 onEdit={onEditMesa}
                 onClick={onClickMesa}
                 onContextMenu={onContextMenu}
+                onResize={onResizeMesa}
+                onRotate={onRotateMesa}
               />
             ))}
           </div>
 
-          <DragOverlay dropAnimation={null}>
-            {activeMesa ? (
-              <DraggableMesa
-                mesa={activeMesa}
-                isDragging
-                isAdmin={isAdmin}
-              />
-            ) : null}
-          </DragOverlay>
+          {/* Sin DragOverlay — el elemento original ya se mueve con el transform de dnd-kit */}
         </DndContext>
 
         {/* Empty state */}
@@ -192,7 +202,7 @@ export default function FloorPlanCanvas({
       {/* Hint */}
       {isAdmin && mesas.length > 0 && (
         <p className="text-[10px] text-text-25 mt-2 text-center">
-          Arrastra las mesas para reposicionarlas · Click derecho para más opciones · Cambios se guardan automáticamente
+          Arrastra para mover · Handles para redimensionar · Icono superior para rotar (Shift = snap 45°) · Click derecho para más opciones
         </p>
       )}
     </div>

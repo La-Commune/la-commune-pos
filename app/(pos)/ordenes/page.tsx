@@ -26,6 +26,8 @@ import { useCategorias, useProductos, useOrdenes, useMesas } from "@/hooks/useSu
 import { calcularIVA } from "@/hooks/useIVA";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { useUIStore } from "@/store/ui.store";
+import { Star } from "lucide-react";
 
 /* P11: Colores migrados al design system */
 const estadoOrdenConfig = {
@@ -62,7 +64,8 @@ export default function OrdenesPage() {
   const { data: ordenes } = useOrdenes();
   const { data: mesas } = useMesas();
   const mesasDisponibles = (mesas as any[]).filter((m: any) => m.estado === "disponible");
-  const [vista, setVista] = useState<"nueva" | "activas">("activas");
+  const { favoriteProductIds, toggleFavoriteProduct, lastActiveTabs, setLastActiveTab } = useUIStore();
+  const [vista, setVista] = useState<"nueva" | "activas">((lastActiveTabs.ordenes as "nueva" | "activas") || "activas");
   const [categoriaActiva, setCategoriaActiva] = useState<string | "todas">("todas");
   const [busqueda, setBusqueda] = useState("");
   const [carrito, setCarrito] = useState<any[]>([]);
@@ -225,7 +228,7 @@ export default function OrdenesPage() {
         {/* Tabs */}
         <div className="flex items-center gap-0 mb-8 bg-surface-2 p-1 rounded-xl w-fit">
           <button
-            onClick={() => setVista("activas")}
+            onClick={() => { setVista("activas"); setLastActiveTab("ordenes", "activas"); }}
             className={cn(
               "px-4 py-2.5 rounded-lg text-[13px] font-medium transition-colors duration-200 min-h-[44px]",
               vista === "activas"
@@ -241,6 +244,7 @@ export default function OrdenesPage() {
           <button
             onClick={() => {
               setVista("nueva");
+              setLastActiveTab("ordenes", "nueva");
               if (!origenSeleccionado) setPasoOrden("origen");
             }}
             className={cn(
@@ -461,6 +465,36 @@ export default function OrdenesPage() {
               )}
             </div>
 
+            {/* Favoritos */}
+            {favoriteProductIds.length > 0 && (
+              <div className="mb-4">
+                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Favoritos</p>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {favoriteProductIds.map((fid) => {
+                    const prod = (productos as any[]).find((p) => p.id === fid);
+                    if (!prod) return null;
+                    const enCarrito = carrito.find((i) => i.producto_id === prod.id);
+                    return (
+                      <button
+                        key={fid}
+                        onClick={() => agregarAlCarrito(prod)}
+                        className={cn(
+                          "flex-shrink-0 px-3 py-2 rounded-lg border text-left transition-all duration-200 min-w-[100px]",
+                          enCarrito ? "border-accent bg-accent-soft" : "border-border bg-surface-2 hover:border-border-hover"
+                        )}
+                      >
+                        <span className="text-[11px] font-medium text-text-100 block truncate">{prod.nombre}</span>
+                        <span className="text-[10px] text-accent tabular-nums">{formatMXN(prod.precio_base)}</span>
+                        {enCarrito && (
+                          <span className="text-[10px] text-accent font-bold ml-1">x{enCarrito.cantidad}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Búsqueda */}
             <div className="relative mb-6">
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-45" />
@@ -483,7 +517,7 @@ export default function OrdenesPage() {
                       key={producto.id}
                       onClick={() => agregarAlCarrito(producto)}
                       className={cn(
-                        "relative p-4 rounded-xl bg-surface-2 border text-left transition-all duration-300 hover:shadow-lg hover:shadow-accent/5 min-h-[44px]",
+                        "relative p-4 rounded-xl bg-surface-2 border text-left transition-all duration-300 hover:shadow-lg hover:shadow-accent/5 min-h-[44px] group",
                         enCarrito
                           ? "border-accent shadow-md shadow-accent/10"
                           : "border-border hover:border-border-hover"
@@ -500,6 +534,16 @@ export default function OrdenesPage() {
                           {enCarrito.cantidad}
                         </span>
                       )}
+                      {/* Favorite toggle */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleFavoriteProduct(producto.id); }}
+                        className={cn(
+                          "absolute bottom-2 right-2 p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100",
+                          favoriteProductIds.includes(producto.id) ? "text-accent opacity-100" : "text-text-25 hover:text-accent"
+                        )}
+                      >
+                        <Star size={12} fill={favoriteProductIds.includes(producto.id) ? "currentColor" : "none"} />
+                      </button>
                     </button>
                   );
                 })}

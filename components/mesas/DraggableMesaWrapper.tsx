@@ -11,6 +11,8 @@ interface DraggableMesaWrapperProps {
   onEdit: (mesa: Mesa) => void;
   onClick: (mesa: Mesa) => void;
   onContextMenu: (mesa: Mesa, x: number, y: number) => void;
+  onResize: (mesaId: string, ancho: number, alto: number) => void;
+  onRotate: (mesaId: string, rotacion: number) => void;
 }
 
 export default function DraggableMesaWrapper({
@@ -20,21 +22,47 @@ export default function DraggableMesaWrapper({
   onEdit,
   onClick,
   onContextMenu,
+  onResize,
+  onRotate,
 }: DraggableMesaWrapperProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: mesa.id ?? "", disabled: !isAdmin });
+
+  const rotacion = mesa.rotacion ?? 0;
+  const ancho = mesa.ancho ?? 80;
+  const alto = mesa.alto ?? 80;
+
+  // Posición escalada del elemento en el canvas
+  const posX = (mesa.pos_x ?? 0) * scale;
+  const posY = (mesa.pos_y ?? 0) * scale;
+
+  // Tamaño escalado
+  const scaledW = ancho * scale;
+  const scaledH = alto * scale;
 
   return (
     <div
       ref={setNodeRef}
       style={{
         position: "absolute",
-        left: (mesa.pos_x ?? 0) * scale,
-        top: (mesa.pos_y ?? 0) * scale,
-        transform: transform
-          ? `translate(${transform.x}px, ${transform.y}px) scale(${scale})`
-          : `scale(${scale})`,
-        transformOrigin: "top left",
+        // Posicionar de modo que el centro de la mesa quede donde debe
+        // left/top apuntan al centro, luego translate -50% para centrar
+        left: posX + scaledW / 2,
+        top: posY + scaledH / 2,
+        transform: [
+          // 1. Centrar el elemento sobre su posición
+          "translate(-50%, -50%)",
+          // 2. Drag offset
+          transform ? `translate(${transform.x}px, ${transform.y}px)` : "",
+          // 3. Rotación — ahora gira desde el centro porque transformOrigin es center
+          rotacion ? `rotate(${rotacion}deg)` : "",
+          // 4. Escala
+          `scale(${scale})`,
+        ]
+          .filter(Boolean)
+          .join(" "),
+        // El origin es el centro del elemento
+        transformOrigin: "center center",
         zIndex: isDragging ? 50 : 1,
       }}
     >
@@ -45,6 +73,9 @@ export default function DraggableMesaWrapper({
         onEdit={onEdit}
         onClick={onClick}
         onContextMenu={onContextMenu}
+        onResize={onResize}
+        onRotate={onRotate}
+        scale={scale}
         dragListeners={isAdmin ? listeners : undefined}
         dragAttributes={isAdmin ? attributes : undefined}
       />
