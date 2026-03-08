@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
+import { getCatColor } from "@/lib/helpers";
 import Modal from "@/components/ui/Modal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ProductoForm from "@/components/menu/ProductoForm";
@@ -22,12 +23,6 @@ import { useAuthStore } from "@/store/auth.store";
 import { useUIStore } from "@/store/ui.store";
 import { showToast } from "@/components/ui/Toast";
 import { Grid3X3, List } from "lucide-react";
-
-const tipoIcon = {
-  drink: Coffee,
-  food: UtensilsCrossed,
-  other: Package,
-};
 
 export default function MenuPage() {
   const { data: categorias, loading: loadingCats, refetch: refetchCategorias } = useCategorias();
@@ -51,7 +46,7 @@ export default function MenuPage() {
   const [categoriaEditando, setCategoriaEditando] = useState<any | null>(null);
   const [catNombre, setCatNombre] = useState("");
   const [catTipo, setCatTipo] = useState<"drink" | "food" | "other">("drink");
-  const { menuViewMode, setMenuViewMode, menuTileSize } = useUIStore();
+  const { menuViewMode, setMenuViewMode, menuTileSize, setMenuTileSize } = useUIStore();
   const loading = loadingCats || loadingProds;
 
   /* ── Handlers context menu producto ── */
@@ -129,6 +124,15 @@ export default function MenuPage() {
   const categoriaNombre = (id: string) =>
     (categorias as any[]).find((c) => c.id === id)?.nombre ?? "";
 
+  // Mapa categoria_id → índice para asignar colores cíclicamente
+  const catIndexMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    (categorias as any[]).forEach((c, i) => { map[c.id] = i; });
+    return map;
+  }, [categorias]);
+
+  const getCatBg = (catId: string) => getCatColor(catIndexMap[catId] ?? 0);
+
   return (
     <div className="flex h-[calc(100vh-3.5rem-4rem)]" style={{ gap: "var(--density-gap)" }}>
       {/* ── Sidebar de Categorías ── */}
@@ -167,8 +171,7 @@ export default function MenuPage() {
             </span>
           </button>
 
-          {(categorias as any[]).map((cat) => {
-            const Icon = tipoIcon[cat.tipo as keyof typeof tipoIcon] ?? Package;
+          {(categorias as any[]).map((cat, idx) => {
             return (
               <button
                 key={cat.id}
@@ -188,12 +191,9 @@ export default function MenuPage() {
                 )}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <Icon
-                    size={14}
-                    className={cn(
-                      "flex-shrink-0",
-                      categoriaActiva === cat.id ? "opacity-60" : "opacity-30"
-                    )}
+                  <span
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: getCatColor(idx) }}
                   />
                   <span className="truncate">{cat.nombre}</span>
                 </div>
@@ -217,25 +217,44 @@ export default function MenuPage() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {/* Tile size toggle (solo en grid) */}
+            {menuViewMode === "grid" && (
+              <div className="flex items-center bg-surface-2 rounded-xl p-0.5 min-h-[44px]">
+                {(["sm", "md", "lg"] as const).map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => setMenuTileSize(size)}
+                    className={cn(
+                      "min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg text-[11px] font-semibold uppercase transition-all",
+                      menuTileSize === size
+                        ? "bg-surface-4 text-accent shadow-sm"
+                        : "text-text-25 hover:text-text-45"
+                    )}
+                  >
+                    {size === "sm" ? "S" : size === "md" ? "M" : "L"}
+                  </button>
+                ))}
+              </div>
+            )}
             {/* View mode toggle */}
-            <div className="flex bg-surface-2 rounded-lg p-0.5">
+            <div className="flex items-center bg-surface-2 rounded-xl p-0.5 min-h-[44px]">
               <button
                 onClick={() => setMenuViewMode("grid")}
                 className={cn(
-                  "p-2 rounded-md transition-all",
+                  "min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-all",
                   menuViewMode === "grid" ? "bg-surface-4 text-accent shadow-sm" : "text-text-45 hover:text-text-70"
                 )}
               >
-                <Grid3X3 size={14} />
+                <Grid3X3 size={15} />
               </button>
               <button
                 onClick={() => setMenuViewMode("list")}
                 className={cn(
-                  "p-2 rounded-md transition-all",
+                  "min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-all",
                   menuViewMode === "list" ? "bg-surface-4 text-accent shadow-sm" : "text-text-45 hover:text-text-70"
                 )}
               >
-                <List size={14} />
+                <List size={15} />
               </button>
             </div>
             <button
@@ -287,76 +306,138 @@ export default function MenuPage() {
         </div>
 
         {/* Grid/List de productos */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto -mx-1 px-1">
           {menuViewMode === "grid" ? (
             <div className={cn(
-              "grid gap-2.5",
-              menuTileSize === "sm" && "grid-cols-2 md:grid-cols-3 xl:grid-cols-4",
-              menuTileSize === "md" && "grid-cols-1 md:grid-cols-2 xl:grid-cols-3",
-              menuTileSize === "lg" && "grid-cols-1 md:grid-cols-2"
+              "grid pt-1 pb-2",
+              menuTileSize === "sm" && "grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 auto-rows-fr",
+              menuTileSize === "md" && "grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5",
+              menuTileSize === "lg" && "grid-cols-2 md:grid-cols-3 gap-3"
             )}>
-              {productosFiltrados.map((producto) => (
-                <div
-                  key={producto.id}
-                  onClick={() => setProductoDetalle(producto)}
-                  onContextMenu={(e) => handleProductoContextMenu(e, producto)}
-                  onTouchStart={(e) => handleProductoTouchStart(e, producto)}
-                  onTouchEnd={handleProductoTouchEnd}
-                  onTouchMove={handleProductoTouchEnd}
-                  className={cn(
-                    "relative p-4 rounded-xl bg-surface-2 border border-border transition-all duration-[400ms] ease-smooth hover:-translate-y-0.5 hover:border-border-hover hover:shadow-lg hover:shadow-black/20 cursor-pointer select-none",
-                    !producto.disponible && "opacity-50"
-                  )}
-                >
-                  <div className="flex items-start justify-between mb-1.5">
-                    <h3 className="text-sm font-medium text-text-100 leading-tight pr-2">
-                      {producto.nombre}
-                    </h3>
-                    <span className="text-sm font-semibold text-text-100 tabular-nums flex-shrink-0">
-                      {formatMXN(producto.precio_base)}
-                    </span>
-                  </div>
+              {productosFiltrados.map((producto) => {
+                const catColor = getCatBg(producto.categoria_id);
+                const catNombre = categoriaNombre(producto.categoria_id);
+                const tags = producto.etiquetas ?? [];
+                const sizes = producto.tamanos ?? [];
+                const isLg = menuTileSize === "lg";
+                const isMd = menuTileSize === "md";
+                const isSm = menuTileSize === "sm";
 
-                  {producto.descripcion && (
-                    <p className="text-[11px] text-text-25 mb-2.5 line-clamp-1">
-                      {producto.descripcion}
-                    </p>
-                  )}
-
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[10px] text-text-25 px-2 py-0.5 rounded-lg bg-surface-3">
-                      {categoriaNombre(producto.categoria_id)}
-                    </span>
-                    {(producto.tamanos ?? []).length > 0 && (
-                      <span className="text-[10px] text-text-25 px-2 py-0.5 rounded-lg bg-surface-3">
-                        {(producto.tamanos ?? []).length} tamaños
-                      </span>
+                return (
+                  <div
+                    key={producto.id}
+                    onClick={() => setProductoDetalle(producto)}
+                    onContextMenu={(e) => handleProductoContextMenu(e, producto)}
+                    onTouchStart={(e) => handleProductoTouchStart(e, producto)}
+                    onTouchEnd={handleProductoTouchEnd}
+                    onTouchMove={handleProductoTouchEnd}
+                    className={cn(
+                      "relative rounded-2xl bg-surface-2 transition-all duration-200 cursor-pointer select-none overflow-hidden",
+                      "border-l-[4px] border border-border",
+                      "hover:scale-[1.03] active:scale-[0.97]",
+                      isSm && "aspect-square flex flex-col items-center justify-center text-center p-3",
+                      isMd && "flex flex-col justify-between p-3.5",
+                      isLg && "flex flex-col justify-between p-4",
+                      !producto.disponible && "opacity-40 grayscale"
                     )}
-                    {(producto.etiquetas ?? []).map((tag: string) => (
-                      <span
-                        key={tag}
-                        className={cn(
-                          "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg",
-                          tag === "popular" && "bg-status-ok-bg text-status-ok",
-                          tag === "nuevo" && "bg-status-info-bg text-status-info",
-                          tag === "especial" && "bg-accent-soft text-accent"
-                        )}
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                    style={{ borderLeftColor: catColor }}
+                  >
+                    {/* ── SM: solo nombre + precio centrado ── */}
+                    {isSm && (
+                      <>
+                        <span className="font-semibold text-text-100 leading-tight text-xs">
+                          {producto.nombre}
+                        </span>
+                        <span className="font-medium tabular-nums mt-1.5 text-[10px] text-text-45">
+                          {formatMXN(producto.precio_base)}
+                        </span>
+                      </>
+                    )}
+
+                    {/* ── MD: nombre, descripción, precio + categoría ── */}
+                    {isMd && (
+                      <>
+                        <div className="flex-1 min-h-0">
+                          <span className="font-semibold text-text-100 leading-tight text-sm line-clamp-2">
+                            {producto.nombre}
+                          </span>
+                          {producto.descripcion && (
+                            <p className="text-[11px] text-text-25 line-clamp-2 mt-1 leading-relaxed">
+                              {producto.descripcion}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-end justify-between mt-2 gap-2">
+                          <span className="text-xs font-semibold tabular-nums text-text-100">
+                            {formatMXN(producto.precio_base)}
+                          </span>
+                          <span className="text-[10px] text-text-25 truncate">
+                            {catNombre}
+                          </span>
+                        </div>
+                      </>
+                    )}
+
+                    {/* ── LG: nombre, descripción, tamaños/tags, precio + categoría ── */}
+                    {isLg && (
+                      <>
+                        <div className="flex-1 min-h-0">
+                          <span className="font-semibold text-text-100 leading-tight text-base line-clamp-2">
+                            {producto.nombre}
+                          </span>
+                          {producto.descripcion && (
+                            <p className="text-xs text-text-25 line-clamp-3 mt-1.5 leading-relaxed">
+                              {producto.descripcion}
+                            </p>
+                          )}
+                          {/* Tamaños disponibles */}
+                          {sizes.length > 0 && (
+                            <div className="flex gap-1 mt-2 flex-wrap">
+                              {sizes.map((s: any) => (
+                                <span key={s.nombre ?? s} className="text-[10px] px-1.5 py-0.5 rounded-md bg-surface-3 text-text-45 font-medium">
+                                  {s.nombre ?? s}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {/* Etiquetas */}
+                          {sizes.length === 0 && tags.length > 0 && (
+                            <div className="flex gap-1 mt-2 flex-wrap">
+                              {tags.slice(0, 3).map((tag: string) => (
+                                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-md bg-surface-3 text-text-45">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-end justify-between mt-3 gap-2">
+                          <span className="text-sm font-semibold tabular-nums text-text-100">
+                            {formatMXN(producto.precio_base)}
+                          </span>
+                          <span className="text-[11px] text-text-25 truncate">
+                            {catNombre}
+                          </span>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Indicador no disponible */}
                     {!producto.disponible && (
-                      <span className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg bg-status-err-bg text-status-err">
+                      <span className={cn(
+                        "absolute text-[9px] font-bold uppercase tracking-wider text-status-err bg-status-err-bg px-2 py-0.5 rounded-md",
+                        isSm ? "bottom-2 left-1/2 -translate-x-1/2" : "bottom-2 right-2"
+                      )}>
                         No disponible
                       </span>
                     )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             /* ── List view ── */
-            <div className="space-y-1">
+            <div className="space-y-1 pt-1 pb-2">
               {productosFiltrados.map((producto) => (
                 <div
                   key={producto.id}
@@ -366,9 +447,10 @@ export default function MenuPage() {
                   onTouchEnd={handleProductoTouchEnd}
                   onTouchMove={handleProductoTouchEnd}
                   className={cn(
-                    "flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-2 border border-border transition-all duration-300 hover:border-border-hover hover:shadow-md cursor-pointer select-none",
+                    "flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-2 border border-border border-l-[4px] transition-all duration-200 hover:border-border-hover hover:shadow-card cursor-pointer select-none",
                     !producto.disponible && "opacity-50"
                   )}
+                  style={{ borderLeftColor: getCatBg(producto.categoria_id) }}
                 >
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-medium text-text-100 truncate">{producto.nombre}</h3>
@@ -422,131 +504,133 @@ export default function MenuPage() {
 
       {/* ── Panel de Detalle ── */}
       {productoDetalle && (
-        <div className="flex-shrink-0 bg-surface-2 border-l border-border p-5 overflow-y-auto" style={{ width: "var(--panel-xl)" }}>
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-[11px] font-medium text-text-25 uppercase tracking-widest">
-              Detalle
-            </h2>
-            <button
-              onClick={() => setProductoDetalle(null)}
-              className="p-2.5 rounded-xl text-text-25 hover:text-text-45 hover:bg-surface-3 transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center"
+        <div className="flex-shrink-0 flex flex-col py-2 pr-1" style={{ width: "var(--panel-xl)" }}>
+          <div className="flex-1 flex flex-col rounded-2xl bg-surface-2 border border-border overflow-hidden">
+            {/* Header con color de categoría */}
+            <div
+              className="relative px-5 pt-5 pb-4"
+              style={{
+                borderBottom: `3px solid ${getCatBg(productoDetalle.categoria_id)}`,
+              }}
             >
-              <X size={14} />
-            </button>
-          </div>
-
-          <h3 className="text-base font-medium text-text-100 mb-1">
-            {productoDetalle.nombre}
-          </h3>
-          <p className="text-lg font-semibold text-text-100 tabular-nums mb-3">
-            {formatMXN(productoDetalle.precio_base)}
-          </p>
-
-          {productoDetalle.descripcion && (
-            <p className="text-xs text-text-45 mb-4 leading-relaxed">
-              {productoDetalle.descripcion}
-            </p>
-          )}
-
-          <div className="mb-4">
-            <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-1.5">
-              Categoría
-            </span>
-            <span className="text-xs text-text-70">
-              {categoriaNombre(productoDetalle.categoria_id)}
-            </span>
-          </div>
-
-          {(productoDetalle.tamanos ?? []).length > 0 && (
-            <div className="mb-4">
-              <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">
-                Tamaños
-              </span>
-              <div className="space-y-1">
-                {(productoDetalle.tamanos ?? []).map((t: any) => (
-                  <div
-                    key={t.id}
-                    className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-surface-3"
-                  >
-                    <span className="text-xs text-text-70">{t.nombre}</span>
-                    <span className="text-xs text-text-45 tabular-nums">
-                      {t.precio_adicional > 0 ? `+${formatMXN(t.precio_adicional)}` : "Base"}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className={cn(
+                        "text-[10px] font-medium px-2 py-0.5 rounded-lg",
+                        productoDetalle.disponible
+                          ? "bg-status-ok-bg text-status-ok"
+                          : "bg-status-err-bg text-status-err"
+                      )}
+                    >
+                      {productoDetalle.disponible ? "Disponible" : "No disponible"}
+                    </span>
+                    <span className="text-[10px] text-text-25 px-2 py-0.5 rounded-lg bg-surface-3">
+                      {categoriaNombre(productoDetalle.categoria_id)}
                     </span>
                   </div>
-                ))}
+                  <h3 className="text-base font-semibold text-text-100 leading-tight">
+                    {productoDetalle.nombre}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setProductoDetalle(null)}
+                  className="p-2 rounded-xl text-text-25 hover:text-text-45 hover:bg-surface-3 transition-all duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center flex-shrink-0 -mt-1 -mr-1"
+                >
+                  <X size={14} />
+                </button>
               </div>
+              <p className="text-xl font-bold text-text-100 tabular-nums mt-2">
+                {formatMXN(productoDetalle.precio_base)}
+              </p>
             </div>
-          )}
 
-          {(productoDetalle.ingredientes ?? []).length > 0 && (
-            <div className="mb-4">
-              <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">
-                Ingredientes
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {(productoDetalle.ingredientes ?? []).map((ing: string) => (
-                  <span key={ing} className="text-[10px] text-text-45 px-2 py-0.5 rounded-lg bg-surface-3">
-                    {ing}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {(productoDetalle.etiquetas ?? []).length > 0 && (
-            <div className="mb-4">
-              <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">
-                Etiquetas
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {(productoDetalle.etiquetas ?? []).map((tag: string) => (
-                  <span
-                    key={tag}
-                    className={cn(
-                      "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg",
-                      tag === "popular" && "bg-status-ok-bg text-status-ok",
-                      tag === "nuevo" && "bg-status-info-bg text-status-info",
-                      tag === "especial" && "bg-accent-soft text-accent"
-                    )}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mb-6">
-            <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-1.5">
-              Estado
-            </span>
-            <span
-              className={cn(
-                "text-xs font-medium px-2.5 py-1 rounded-lg",
-                productoDetalle.disponible
-                  ? "bg-status-ok-bg text-status-ok"
-                  : "bg-status-err-bg text-status-err"
+            {/* Contenido scrolleable */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4" style={{ gap: "var(--density-gap)" }}>
+              {productoDetalle.descripcion && (
+                <p className="text-xs text-text-45 leading-relaxed">
+                  {productoDetalle.descripcion}
+                </p>
               )}
-            >
-              {productoDetalle.disponible ? "Disponible" : "No disponible"}
-            </span>
-          </div>
 
-          <div className="space-y-2">
-            <button
-              onClick={() => handleCtxEdit(productoDetalle)}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl btn-secondary text-[13px] min-h-[44px]"
-            >
-              <Pencil size={14} />
-              Editar producto
-            </button>
-            <button
-              onClick={() => handleCtxToggle(productoDetalle)}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl btn-ghost text-[13px] min-h-[44px]"
-            >
-              {productoDetalle.disponible ? <EyeOff size={14} /> : <Eye size={14} />}
-              {productoDetalle.disponible ? "Marcar no disponible" : "Marcar disponible"}
-            </button>
+              {(productoDetalle.tamanos ?? []).length > 0 && (
+                <div>
+                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">
+                    Tamaños
+                  </span>
+                  <div className="space-y-1">
+                    {(productoDetalle.tamanos ?? []).map((t: any) => (
+                      <div
+                        key={t.id}
+                        className="flex items-center justify-between py-2 px-3 rounded-xl bg-surface-3 border border-border"
+                      >
+                        <span className="text-xs text-text-70 font-medium">{t.nombre}</span>
+                        <span className="text-xs text-text-45 tabular-nums font-medium">
+                          {t.precio_adicional > 0 ? `+${formatMXN(t.precio_adicional)}` : "Incluido"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(productoDetalle.ingredientes ?? []).length > 0 && (
+                <div>
+                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">
+                    Ingredientes
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(productoDetalle.ingredientes ?? []).map((ing: string) => (
+                      <span key={ing} className="text-[10px] text-text-45 px-2.5 py-1 rounded-lg bg-surface-3 border border-border">
+                        {ing}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(productoDetalle.etiquetas ?? []).length > 0 && (
+                <div>
+                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">
+                    Etiquetas
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(productoDetalle.etiquetas ?? []).map((tag: string) => (
+                      <span
+                        key={tag}
+                        className={cn(
+                          "text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg",
+                          tag === "popular" && "bg-status-ok-bg text-status-ok",
+                          tag === "nuevo" && "bg-status-info-bg text-status-info",
+                          tag === "especial" && "bg-accent-soft text-accent"
+                        )}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Acciones fijas abajo */}
+            <div className="px-5 py-4 border-t border-border space-y-2 flex-shrink-0">
+              <button
+                onClick={() => handleCtxEdit(productoDetalle)}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl btn-secondary text-[13px] min-h-[44px]"
+              >
+                <Pencil size={14} />
+                Editar producto
+              </button>
+              <button
+                onClick={() => handleCtxToggle(productoDetalle)}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl btn-ghost text-[13px] min-h-[44px]"
+              >
+                {productoDetalle.disponible ? <EyeOff size={14} /> : <Eye size={14} />}
+                {productoDetalle.disponible ? "Marcar no disponible" : "Marcar disponible"}
+              </button>
+            </div>
           </div>
         </div>
       )}
