@@ -176,6 +176,32 @@ function MesasPageContent() {
     [router]
   );
 
+  // ── Liberar mesa manualmente (context menu) ──
+  const handleFreeMesa = useCallback(
+    async (mesa: Mesa) => {
+      if (!mesa.id) return;
+      // Optimistic update
+      useMesasStore.getState().updateMesa(mesa.id, {
+        estado: "disponible",
+        orden_actual_id: null,
+        ocupada_desde: null,
+      } as any);
+      const { success, error: err } = await updateRecord("mesas", mesa.id, {
+        estado: "disponible",
+        orden_actual_id: null,
+        ocupada_desde: null,
+      });
+      if (success) {
+        showToast(`Mesa ${mesa.numero} liberada`, "success");
+      } else {
+        console.warn("[Mesas] Error liberando mesa:", err);
+        showToast("Error liberando mesa", "error");
+        refetchMesas();
+      }
+    },
+    [refetchMesas]
+  );
+
   // ── Mover mesa (drag & drop) → optimistic + persist ──
   const handleMoveMesa = useCallback(
     async (mesaId: string, pos_x: number, pos_y: number) => {
@@ -711,6 +737,7 @@ function MesasPageContent() {
           onDuplicate={handleDuplicateMesa}
           onDelete={handleRequestDeleteMesa}
           onGoToOrders={handleGoToOrders}
+          onFreeMesa={handleFreeMesa}
         />
       )}
 

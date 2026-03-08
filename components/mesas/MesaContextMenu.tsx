@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { Pencil, Copy, Trash2, ArrowRight } from "lucide-react";
+import { Pencil, Copy, Trash2, ArrowRight, Unlock } from "lucide-react";
 import type { Mesa } from "@/lib/validators";
 
 interface MesaContextMenuProps {
@@ -12,6 +12,7 @@ interface MesaContextMenuProps {
   onDuplicate: (mesa: Mesa) => void;
   onDelete: (mesa: Mesa) => void;
   onGoToOrders: (mesa: Mesa) => void;
+  onFreeMesa?: (mesa: Mesa) => void;
 }
 
 export default function MesaContextMenu({
@@ -22,6 +23,7 @@ export default function MesaContextMenu({
   onDuplicate,
   onDelete,
   onGoToOrders,
+  onFreeMesa,
 }: MesaContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -113,6 +115,13 @@ export default function MesaContextMenu({
         label="Ir a órdenes"
         onClick={() => onGoToOrders(mesa)}
       />
+      {(mesa.estado === "ocupada" || mesa.estado === "reservada") && onFreeMesa && (
+        <MenuItem
+          icon={Unlock}
+          label="Liberar mesa"
+          onClick={() => onFreeMesa(mesa)}
+        />
+      )}
       <MenuItem
         icon={Pencil}
         label="Editar mesa"
