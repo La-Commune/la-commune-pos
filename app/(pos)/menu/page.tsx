@@ -1,12 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
   Plus,
   Search,
-  MoreHorizontal,
   Pencil,
-  Trash2,
   Eye,
   EyeOff,
   Coffee,
@@ -18,8 +16,11 @@ import { cn, formatMXN } from "@/lib/utils";
 import Modal from "@/components/ui/Modal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ProductoForm from "@/components/menu/ProductoForm";
-import { useCategorias, useProductos } from "@/hooks/useSupabase";
+import ProductoContextMenu from "@/components/menu/ProductoContextMenu";
+import { useCategorias, useProductos, insertRecord, updateRecord, deleteRecord } from "@/hooks/useSupabase";
+import { useAuthStore } from "@/store/auth.store";
 import { useUIStore } from "@/store/ui.store";
+import { showToast } from "@/components/ui/Toast";
 import { Grid3X3, List } from "lucide-react";
 
 const tipoIcon = {
@@ -29,41 +30,77 @@ const tipoIcon = {
 };
 
 export default function MenuPage() {
-  const { data: categorias, loading: loadingCats } = useCategorias();
-  const { data: productos, loading: loadingProds } = useProductos();
+  const { data: categorias, loading: loadingCats, refetch: refetchCategorias } = useCategorias();
+  const { data: productos, loading: loadingProds, refetch: refetchProductos } = useProductos();
+  const user = useAuthStore((s) => s.user);
   const [categoriaActiva, setCategoriaActiva] = useState<string | "todas">("todas");
   const [busqueda, setBusqueda] = useState("");
   const [soloDisponibles, setSoloDisponibles] = useState(false);
   const [productoDetalle, setProductoDetalle] = useState<any | null>(null);
-  const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [productoEditando, setProductoEditando] = useState<any | null>(null);
   /* R2: Estado para confirmación de eliminar */
   const [confirmEliminar, setConfirmEliminar] = useState(false);
   const [productoAEliminar, setProductoAEliminar] = useState<any | null>(null);
+  const [saving, setSaving] = useState(false);
+  /* Context menu producto (right-click / long-press) */
+  const [ctxMenu, setCtxMenu] = useState<{ producto: any; position: { x: number; y: number } } | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /* Categoría CRUD */
+  const [modalCategoria, setModalCategoria] = useState(false);
+  const [categoriaEditando, setCategoriaEditando] = useState<any | null>(null);
+  const [catNombre, setCatNombre] = useState("");
+  const [catTipo, setCatTipo] = useState<"drink" | "food" | "other">("drink");
   const { menuViewMode, setMenuViewMode, menuTileSize } = useUIStore();
   const loading = loadingCats || loadingProds;
 
-  /* R12: Ref para detectar click fuera del context menu */
-  const menuRef = useRef<HTMLDivElement>(null);
+  /* ── Handlers context menu producto ── */
+  const handleProductoContextMenu = useCallback((e: React.MouseEvent, producto: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCtxMenu({ producto, position: { x: e.clientX, y: e.clientY } });
+  }, []);
 
-  /* R12: Cerrar context menu al hacer click fuera */
-  useEffect(() => {
-    if (!menuAbierto) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuAbierto(null);
+  const handleProductoTouchStart = useCallback((e: React.TouchEvent, producto: any) => {
+    const touch = e.touches[0];
+    const pos = { x: touch.clientX, y: touch.clientY };
+    longPressTimer.current = setTimeout(() => {
+      setCtxMenu({ producto, position: pos });
+    }, 500);
+  }, []);
+
+  const handleProductoTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handleCtxEdit = useCallback((producto: any) => {
+    setProductoEditando(producto);
+    setModalAbierto(true);
+  }, []);
+
+  const handleCtxDelete = useCallback((producto: any) => {
+    setProductoAEliminar(producto);
+    setConfirmEliminar(true);
+  }, []);
+
+  const handleCtxToggle = useCallback(async (producto: any) => {
+    const { success, error } = await updateRecord("productos", producto.id, {
+      disponible: !producto.disponible,
+    });
+    if (success) {
+      showToast(producto.disponible ? "Producto desactivado" : "Producto activado");
+      // Si el panel detalle mostraba este producto, actualizarlo
+      if (productoDetalle?.id === producto.id) {
+        setProductoDetalle({ ...productoDetalle, disponible: !producto.disponible });
       }
-    };
-    // Delay to avoid closing immediately on the same click
-    const timer = setTimeout(() => {
-      document.addEventListener("click", handleClickOutside);
-    }, 0);
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, [menuAbierto]);
+      await refetchProductos();
+    } else {
+      showToast(`Error: ${error}`, "error");
+    }
+  }, [productoDetalle, refetchProductos]);
 
   const productosFiltrados = useMemo(() => {
     let lista = productos as any[];
@@ -101,7 +138,15 @@ export default function MenuPage() {
             Categorías
           </h2>
           {/* R1: Target táctil */}
-          <button className="p-2.5 rounded-xl text-text-25 hover:text-text-45 hover:bg-surface-2 transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center">
+          <button
+            onClick={() => {
+              setCategoriaEditando(null);
+              setCatNombre("");
+              setCatTipo("drink");
+              setModalCategoria(true);
+            }}
+            className="p-2.5 rounded-xl text-text-25 hover:text-text-45 hover:bg-surface-2 transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          >
             <Plus size={16} />
           </button>
         </div>
@@ -128,6 +173,13 @@ export default function MenuPage() {
               <button
                 key={cat.id}
                 onClick={() => setCategoriaActiva(cat.id)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setCategoriaEditando(cat);
+                  setCatNombre(cat.nombre);
+                  setCatTipo(cat.tipo ?? "drink");
+                  setModalCategoria(true);
+                }}
                 className={cn(
                   "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-[13px] transition-all duration-300 min-h-[44px]",
                   categoriaActiva === cat.id
@@ -247,8 +299,12 @@ export default function MenuPage() {
                 <div
                   key={producto.id}
                   onClick={() => setProductoDetalle(producto)}
+                  onContextMenu={(e) => handleProductoContextMenu(e, producto)}
+                  onTouchStart={(e) => handleProductoTouchStart(e, producto)}
+                  onTouchEnd={handleProductoTouchEnd}
+                  onTouchMove={handleProductoTouchEnd}
                   className={cn(
-                    "relative p-4 rounded-xl bg-surface-2 border border-border transition-all duration-[400ms] ease-smooth hover:-translate-y-0.5 hover:border-border-hover hover:shadow-lg hover:shadow-black/20 cursor-pointer group",
+                    "relative p-4 rounded-xl bg-surface-2 border border-border transition-all duration-[400ms] ease-smooth hover:-translate-y-0.5 hover:border-border-hover hover:shadow-lg hover:shadow-black/20 cursor-pointer select-none",
                     !producto.disponible && "opacity-50"
                   )}
                 >
@@ -295,57 +351,6 @@ export default function MenuPage() {
                       </span>
                     )}
                   </div>
-
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" ref={menuAbierto === producto.id ? menuRef : undefined}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMenuAbierto(menuAbierto === producto.id ? null : producto.id);
-                      }}
-                      className="p-2.5 rounded-xl text-text-25 hover:text-text-45 hover:bg-surface-3 transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                    >
-                      <MoreHorizontal size={16} />
-                    </button>
-
-                    {menuAbierto === producto.id && (
-                      <div className="absolute right-0 top-12 w-40 py-1 bg-surface-3 border border-border rounded-xl shadow-lg z-10">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setProductoEditando(producto);
-                            setModalAbierto(true);
-                            setMenuAbierto(null);
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-text-70 hover:text-text-100 hover:bg-surface-4 transition-all duration-300 min-h-[44px]"
-                        >
-                          <Pencil size={13} />
-                          Editar
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMenuAbierto(null);
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-text-70 hover:text-text-100 hover:bg-surface-4 transition-all duration-300 min-h-[44px]"
-                        >
-                          {producto.disponible ? <EyeOff size={13} /> : <Eye size={13} />}
-                          {producto.disponible ? "Desactivar" : "Activar"}
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setProductoAEliminar(producto);
-                            setConfirmEliminar(true);
-                            setMenuAbierto(null);
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-status-err hover:bg-status-err-bg transition-all duration-300 min-h-[44px]"
-                        >
-                          <Trash2 size={13} />
-                          Eliminar
-                        </button>
-                      </div>
-                    )}
-                  </div>
                 </div>
               ))}
             </div>
@@ -356,8 +361,12 @@ export default function MenuPage() {
                 <div
                   key={producto.id}
                   onClick={() => setProductoDetalle(producto)}
+                  onContextMenu={(e) => handleProductoContextMenu(e, producto)}
+                  onTouchStart={(e) => handleProductoTouchStart(e, producto)}
+                  onTouchEnd={handleProductoTouchEnd}
+                  onTouchMove={handleProductoTouchEnd}
                   className={cn(
-                    "flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-2 border border-border transition-all duration-300 hover:border-border-hover hover:shadow-md cursor-pointer group",
+                    "flex items-center gap-4 px-4 py-3 rounded-xl bg-surface-2 border border-border transition-all duration-300 hover:border-border-hover hover:shadow-md cursor-pointer select-none",
                     !producto.disponible && "opacity-50"
                   )}
                 >
@@ -393,33 +402,6 @@ export default function MenuPage() {
                   <span className="text-sm font-semibold text-text-100 tabular-nums w-20 text-right flex-shrink-0">
                     {formatMXN(producto.precio_base)}
                   </span>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity" ref={menuAbierto === producto.id ? menuRef : undefined}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMenuAbierto(menuAbierto === producto.id ? null : producto.id);
-                      }}
-                      className="p-2 rounded-lg text-text-25 hover:text-text-45 hover:bg-surface-3 transition-all min-w-[36px] min-h-[36px] flex items-center justify-center"
-                    >
-                      <MoreHorizontal size={14} />
-                    </button>
-                    {menuAbierto === producto.id && (
-                      <div className="absolute right-4 mt-1 w-40 py-1 bg-surface-3 border border-border rounded-xl shadow-lg z-10">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setProductoEditando(producto); setModalAbierto(true); setMenuAbierto(null); }}
-                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-text-70 hover:text-text-100 hover:bg-surface-4 min-h-[44px]"
-                        >
-                          <Pencil size={13} /> Editar
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setProductoAEliminar(producto); setConfirmEliminar(true); setMenuAbierto(null); }}
-                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-status-err hover:bg-status-err-bg min-h-[44px]"
-                        >
-                          <Trash2 size={13} /> Eliminar
-                        </button>
-                      </div>
-                    )}
-                  </div>
                 </div>
               ))}
             </div>
@@ -552,21 +534,33 @@ export default function MenuPage() {
 
           <div className="space-y-2">
             <button
-              onClick={() => {
-                setProductoEditando(productoDetalle);
-                setModalAbierto(true);
-              }}
+              onClick={() => handleCtxEdit(productoDetalle)}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl btn-secondary text-[13px] min-h-[44px]"
             >
               <Pencil size={14} />
               Editar producto
             </button>
-            <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl btn-ghost text-[13px] min-h-[44px]">
+            <button
+              onClick={() => handleCtxToggle(productoDetalle)}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl btn-ghost text-[13px] min-h-[44px]"
+            >
               {productoDetalle.disponible ? <EyeOff size={14} /> : <Eye size={14} />}
               {productoDetalle.disponible ? "Marcar no disponible" : "Marcar disponible"}
             </button>
           </div>
         </div>
+      )}
+
+      {/* Context menu producto (right-click / long-press) */}
+      {ctxMenu && (
+        <ProductoContextMenu
+          producto={ctxMenu.producto}
+          position={ctxMenu.position}
+          onClose={() => setCtxMenu(null)}
+          onEdit={handleCtxEdit}
+          onDelete={handleCtxDelete}
+          onToggleDisponible={handleCtxToggle}
+        />
       )}
 
       {/* Modal crear/editar producto */}
@@ -578,10 +572,51 @@ export default function MenuPage() {
       >
         <ProductoForm
           producto={productoEditando}
-          onSave={(data) => {
-            // TODO: Guardar en Supabase
-            console.log("Guardar producto:", data);
-            setModalAbierto(false);
+          onSave={async (data) => {
+            if (saving) return;
+            setSaving(true);
+            try {
+              const negocioId = user?.negocio_id;
+              if (!negocioId) {
+                showToast("Error: no se encontró el negocio", "error");
+                return;
+              }
+
+              // Separar tamaños del payload principal
+              const { tamanos, ...productoData } = data;
+
+              if (productoEditando) {
+                // ── Editar producto existente ──
+                const { success, error } = await updateRecord("productos", productoEditando.id, productoData);
+                if (!success) {
+                  showToast(`Error al actualizar: ${error}`, "error");
+                  return;
+                }
+                showToast("Producto actualizado");
+              } else {
+                // ── Crear producto nuevo ──
+                const maxOrden = (productos as any[])
+                  .filter((p: any) => p.categoria_id === data.categoria_id)
+                  .reduce((max: number, p: any) => Math.max(max, p.orden ?? 0), 0);
+
+                const { success, error } = await insertRecord("productos", {
+                  ...productoData,
+                  negocio_id: negocioId,
+                  orden: maxOrden + 1,
+                });
+                if (!success) {
+                  showToast(`Error al crear: ${error}`, "error");
+                  return;
+                }
+                showToast("Producto creado");
+              }
+
+              setModalAbierto(false);
+              setProductoEditando(null);
+              await refetchProductos();
+            } finally {
+              setSaving(false);
+            }
           }}
           onCancel={() => setModalAbierto(false)}
         />
@@ -591,9 +626,19 @@ export default function MenuPage() {
       <ConfirmDialog
         open={confirmEliminar}
         onClose={() => { setConfirmEliminar(false); setProductoAEliminar(null); }}
-        onConfirm={() => {
-          // TODO: Eliminar en Supabase
-          console.log("Eliminar producto:", productoAEliminar?.id);
+        onConfirm={async () => {
+          if (!productoAEliminar?.id) return;
+          const { success, error } = await deleteRecord("productos", productoAEliminar.id);
+          if (success) {
+            showToast("Producto eliminado");
+            // Si el detalle mostraba este producto, cerrarlo
+            if (productoDetalle?.id === productoAEliminar.id) {
+              setProductoDetalle(null);
+            }
+            await refetchProductos();
+          } else {
+            showToast(`Error al eliminar: ${error}`, "error");
+          }
           setProductoAEliminar(null);
         }}
         title="Eliminar producto"
@@ -601,6 +646,121 @@ export default function MenuPage() {
         confirmLabel="Eliminar"
         variant="danger"
       />
+
+      {/* Modal crear/editar categoría */}
+      <Modal
+        open={modalCategoria}
+        onClose={() => setModalCategoria(false)}
+        title={categoriaEditando ? "Editar categoría" : "Nueva categoría"}
+        size="sm"
+      >
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (saving || !catNombre.trim()) return;
+            setSaving(true);
+            try {
+              const negocioId = user?.negocio_id;
+              if (!negocioId) {
+                showToast("Error: no se encontró el negocio", "error");
+                return;
+              }
+
+              if (categoriaEditando) {
+                const { success, error } = await updateRecord("categorias_menu", categoriaEditando.id, {
+                  nombre: catNombre.trim(),
+                  tipo: catTipo,
+                });
+                if (!success) {
+                  showToast(`Error: ${error}`, "error");
+                  return;
+                }
+                showToast("Categoría actualizada");
+              } else {
+                const maxOrden = (categorias as any[]).reduce(
+                  (max: number, c: any) => Math.max(max, c.orden ?? 0), 0
+                );
+                const { success, error } = await insertRecord("categorias_menu", {
+                  nombre: catNombre.trim(),
+                  tipo: catTipo,
+                  negocio_id: negocioId,
+                  orden: maxOrden + 1,
+                });
+                if (!success) {
+                  showToast(`Error: ${error}`, "error");
+                  return;
+                }
+                showToast("Categoría creada");
+              }
+
+              setModalCategoria(false);
+              setCategoriaEditando(null);
+              await refetchCategorias();
+            } finally {
+              setSaving(false);
+            }
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+              Nombre *
+            </label>
+            <input
+              type="text"
+              value={catNombre}
+              onChange={(e) => setCatNombre(e.target.value)}
+              placeholder="Ej: Postres"
+              required
+              maxLength={50}
+              className="w-full px-3 py-2.5 rounded-lg bg-surface-3 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-border-hover transition-all duration-300"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+              Tipo
+            </label>
+            <div className="flex gap-2">
+              {([
+                { id: "drink" as const, label: "Bebida", Icon: Coffee },
+                { id: "food" as const, label: "Comida", Icon: UtensilsCrossed },
+                { id: "other" as const, label: "Otro", Icon: Package },
+              ]).map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setCatTipo(id)}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-medium border transition-all",
+                    catTipo === id
+                      ? "border-accent text-accent bg-accent-soft"
+                      : "border-border text-text-45 hover:border-border-hover"
+                  )}
+                >
+                  <Icon size={14} />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-3 pt-2 border-t border-border">
+            <button
+              type="submit"
+              disabled={saving || !catNombre.trim()}
+              className="flex-1 py-2.5 rounded-lg btn-primary text-[13px] disabled:opacity-50"
+            >
+              {categoriaEditando ? "Guardar" : "Crear"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setModalCategoria(false)}
+              className="flex-1 py-2.5 rounded-lg btn-ghost text-[13px]"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
