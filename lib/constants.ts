@@ -50,8 +50,15 @@ export const NIVEL_CONFIG = {
   oro: { label: "Oro", color: "text-accent", bg: "bg-accent-soft", minPuntos: 1000, maxPuntos: Infinity },
 } as const;
 
-// ── Ubicaciones de Mesa ──
+// ── Ubicaciones de Mesa (deprecated: usar tabla zonas) ──
 export const UBICACIONES_MESA = ["Interior", "Terraza", "Barra"] as const;
+
+// ── Formas de Mesa (para el floor plan) ──
+export const FORMAS_MESA_CONFIG = {
+  redonda: { label: "Redonda", icon: "circle" },
+  cuadrada: { label: "Cuadrada", icon: "square" },
+  rectangular: { label: "Rectangular", icon: "rectangle-horizontal" },
+} as const;
 
 // ── Columnas del Kanban KDS ──
 export const COLUMNAS_KDS = ["nueva", "preparando", "lista"] as const;

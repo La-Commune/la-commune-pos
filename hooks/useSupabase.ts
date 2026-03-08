@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase, USE_MOCK } from "@/lib/supabase";
+import { useAuthStore } from "@/store/auth.store";
 import type { Database } from "@/types/database";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import {
   MOCK_CATEGORIAS,
   MOCK_PRODUCTOS,
   MOCK_ORDENES,
-  MOCK_MESAS,
   MOCK_TICKETS_KDS,
   type MockCategoria,
   type MockProducto,
@@ -35,8 +35,19 @@ function useQuery<T>(
   const [error, setError] = useState<string | null>(null);
   const filtersKey = JSON.stringify(options?.filters);
 
-  const fetch = useCallback(async () => {
-    if (USE_MOCK) {
+  // Escuchar el estado de autenticación del store
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const hasFetched = useRef(false);
+
+  const fetchData = useCallback(async () => {
+    if (USE_MOCK || !supabase) {
+      setData(mockData);
+      setLoading(false);
+      return;
+    }
+
+    // No hacer queries hasta que el usuario esté autenticado
+    if (!isAuthenticated) {
       setData(mockData);
       setLoading(false);
       return;
@@ -46,12 +57,12 @@ function useQuery<T>(
     setError(null);
 
     try {
-      let query = supabase!.from(table).select(options?.select ?? "*");
+      let query = supabase.from(table).select(options?.select ?? "*");
 
       // Filtrar registros no eliminados (soft delete) — solo en tablas que tienen ese campo
       const tablasConSoftDelete: TableName[] = [
         "negocios", "usuarios", "categorias_menu", "productos",
-        "mesas", "ordenes", "promociones",
+        "mesas", "ordenes", "promociones", "zonas",
       ];
       if (tablasConSoftDelete.includes(table)) {
         query = query.is("eliminado_en", null);
@@ -73,12 +84,19 @@ function useQuery<T>(
 
       if (err) {
         console.warn(`[Supabase] Error en ${table}:`, err.message);
+        // Fallback a mock data si hay error de permisos
+        if (err.message.includes("permission denied") || err.code === "42501") {
+          console.warn(`[Supabase] Fallback a mock data para ${table}`);
+          setData(mockData);
+        }
         setError(err.message);
       } else {
+        hasFetched.current = true;
         setData(result ?? []);
       }
     } catch {
       setError("Error de conexión");
+      setData(mockData); // fallback
     } finally {
       setLoading(false);
     }
@@ -86,16 +104,18 @@ function useQuery<T>(
   }, [
     table,
     USE_MOCK,
+    isAuthenticated,
     options?.select,
     options?.orderBy?.column,
     filtersKey,
   ]);
 
+  // Disparar fetch cuando cambia la autenticación o los filtros
   useEffect(() => {
-    fetch();
-  }, [fetch]);
+    fetchData();
+  }, [fetchData]);
 
-  return { data, loading, error, refetch: fetch };
+  return { data, loading, error, refetch: fetchData };
 }
 
 // ── Specific hooks ──
@@ -123,8 +143,14 @@ export function useOrdenes(estado?: string) {
 }
 
 export function useMesas() {
-  return useQuery("mesas", MOCK_MESAS, {
+  return useQuery("mesas", [], {
     orderBy: { column: "numero", ascending: true },
+  });
+}
+
+export function useZonas() {
+  return useQuery("zonas", [], {
+    orderBy: { column: "orden", ascending: true },
   });
 }
 

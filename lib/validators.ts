@@ -3,6 +3,7 @@ import { z } from "zod";
 // ── Enums (alineados 1:1 con schema.sql) ──
 export const RolUsuario = z.enum(["admin", "barista", "camarero", "cocina"]);
 export const EstadoMesa = z.enum(["disponible", "ocupada", "reservada", "preparando"]);
+export const FormaMesa = z.enum(["redonda", "cuadrada", "rectangular"]);
 export const EstadoOrden = z.enum([
   "nueva",
   "confirmada",
@@ -19,6 +20,15 @@ export const TipoCategoria = z.enum(["drink", "food", "other"]);
 
 // ── Schemas ──
 
+export const ZonaSchema = z.object({
+  id: z.string().uuid().optional(),
+  negocio_id: z.string().uuid(),
+  nombre: z.string().min(1, "Nombre requerido").max(30),
+  orden: z.number().int().nonnegative().default(0),
+  color: z.string().default("#94a3b8"),
+  activa: z.boolean().default(true),
+});
+
 export const MesaSchema = z.object({
   id: z.string().uuid().optional(),
   negocio_id: z.string().uuid(),
@@ -27,6 +37,10 @@ export const MesaSchema = z.object({
   ubicacion: z.string().optional(),
   estado: EstadoMesa.default("disponible"),
   orden_actual_id: z.string().uuid().nullable().default(null),
+  zona_id: z.string().uuid().nullable().default(null),
+  pos_x: z.number().default(0),
+  pos_y: z.number().default(0),
+  forma: FormaMesa.default("cuadrada"),
 });
 
 export const ItemOrdenSchema = z.object({
@@ -282,6 +296,7 @@ export const RecetaSchema = z.object({
 });
 
 // ── Types inferidos ──
+export type Zona = z.infer<typeof ZonaSchema>;
 export type Mesa = z.infer<typeof MesaSchema>;
 export type ItemOrden = z.infer<typeof ItemOrdenSchema>;
 export type Orden = z.infer<typeof OrdenSchema>;

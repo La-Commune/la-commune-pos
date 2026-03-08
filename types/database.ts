@@ -124,6 +124,17 @@ export interface Database {
         producto_id: string;
         modificador_id: string;
       }>;
+      zonas: TableDef<{
+        id: string;
+        negocio_id: string;
+        nombre: string;
+        orden: number;
+        color: string;
+        activa: boolean;
+        creado_en: string;
+        actualizado_en: string;
+        eliminado_en: string | null;
+      }>;
       mesas: TableDef<{
         id: string;
         negocio_id: string;
@@ -132,6 +143,10 @@ export interface Database {
         ubicacion: string | null;
         estado: EstadoMesa;
         orden_actual_id: string | null;
+        zona_id: string | null;
+        pos_x: number;
+        pos_y: number;
+        forma: "redonda" | "cuadrada" | "rectangular";
         creado_en: string;
         actualizado_en: string;
         eliminado_en: string | null;
