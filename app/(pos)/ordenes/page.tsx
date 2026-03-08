@@ -107,19 +107,33 @@ export default function OrdenesPage() {
     const mesaParam = searchParams.get("mesa");
     if (mesaParam) {
       const mesaNum = parseInt(mesaParam);
-      const mesaExiste = mesasDisponibles.some((m) => m.numero === mesaNum);
-      if (mesaExiste) {
-        setVista("nueva");
-        setPasoOrden("productos");
-        setOrigenSeleccionado("mesa");
-        setMesaSeleccionada(mesaNum);
-      } else {
-        // Mesa no existe, ir a selección de origen
+      const mesaObj = (mesas as any[]).find((m: any) => m.numero === mesaNum);
+      if (!mesaObj) {
+        // Mesa no existe
         setVista("nueva");
         setPasoOrden("origen");
+        return;
       }
+
+      // Si la mesa está ocupada y tiene orden activa → mostrarla
+      if (mesaObj.estado === "ocupada" && mesaObj.orden_actual_id) {
+        const ordenActiva = ordenesNormalizadas.find(
+          (o: any) => o.id === mesaObj.orden_actual_id
+        );
+        if (ordenActiva) {
+          setVista("activas");
+          setOrdenSeleccionada(ordenActiva);
+          return;
+        }
+      }
+
+      // Mesa disponible → crear nueva orden para esa mesa
+      setVista("nueva");
+      setPasoOrden("productos");
+      setOrigenSeleccionado("mesa");
+      setMesaSeleccionada(mesaNum);
     }
-  }, [searchParams]);
+  }, [searchParams, mesas, ordenesNormalizadas]);
 
   /* P17: Detectar scroll overflow */
   useEffect(() => {
