@@ -21,6 +21,7 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { formatTiempoTranscurrido } from "@/hooks/useTiempoTranscurrido";
 import { useUIStore } from "@/store/ui.store";
 import { showToast } from "@/components/ui/Toast";
+import { useKDSNotifications } from "@/hooks/useKDSNotifications";
 
 const estadoConfig = {
   nueva: {
@@ -310,6 +311,9 @@ function KDSPageContent() {
       }),
     [tickets],
   );
+
+  // ── Notificaciones sonoras ──
+  useKDSNotifications(ticketsActivos);
 
   const conteo = {
     nueva: ticketsActivos.filter((t) => t.estado === "nueva").length,
