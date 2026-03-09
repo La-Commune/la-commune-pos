@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  Home,
   LayoutGrid,
   ClipboardList,
   UtensilsCrossed,
@@ -24,6 +25,7 @@ import type { RolUsuario } from "@/types/database";
 
 /* Role-based access: which roles can see which routes */
 const ROLE_ACCESS: Record<string, RolUsuario[]> = {
+  "/": ["admin", "camarero", "barista", "cocina"],
   "/mesas": ["admin", "camarero", "barista"],
   "/ordenes": ["admin", "camarero", "barista"],
   "/menu": ["admin"],
@@ -37,13 +39,14 @@ const ROLE_ACCESS: Record<string, RolUsuario[]> = {
 
 /* Default landing page per role */
 export const ROLE_HOME: Record<RolUsuario, string> = {
-  admin: "/mesas",
-  camarero: "/mesas",
-  barista: "/ordenes",
+  admin: "/",
+  camarero: "/",
+  barista: "/",
   cocina: "/kds",
 };
 
 export const navItems = [
+  { href: "/", label: "Inicio", icon: Home, color: "#A89680" },
   { href: "/mesas", label: "Mesas", icon: LayoutGrid, color: "#7EC8E3" },
   { href: "/ordenes", label: "Órdenes", icon: ClipboardList, color: "#9B8AFB" },
   { href: "/menu", label: "Menú", icon: UtensilsCrossed, color: "#81D4A8" },
@@ -156,7 +159,7 @@ export default function Sidebar() {
       {/* Navigation */}
       <nav className={cn("flex-1 py-4 space-y-1 overflow-y-auto", isCollapsed ? "px-2" : "px-3")}>
         {filteredItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           const Icon = item.icon;
 
           return (

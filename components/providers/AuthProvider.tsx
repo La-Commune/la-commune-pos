@@ -67,7 +67,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     }
 
     if (isAuthenticated && isPublic) {
-      router.replace("/mesas");
+      router.replace("/");
     }
   }, [ready, isAuthenticated, pathname, router]);
 

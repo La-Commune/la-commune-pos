@@ -168,6 +168,12 @@ export function useUsuarios() {
   });
 }
 
+export function useClientes() {
+  return useQuery("clientes", [], {
+    orderBy: { column: "puntos", ascending: false },
+  });
+}
+
 // ── Negocio (nombre del negocio para sidebar, etc.) ──
 
 interface NegocioInfo {

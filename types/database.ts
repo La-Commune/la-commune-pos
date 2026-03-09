@@ -287,6 +287,20 @@ export interface Database {
         completada_en: string;
         creado_en: string;
       }, "id" | "creado_en">>;
+      clientes: TableDef<{
+        id: string;
+        negocio_id: string;
+        nombre: string;
+        telefono: string | null;
+        email: string | null;
+        puntos: number;
+        visitas: number;
+        gasto_total: number;
+        ultima_visita: string | null;
+        creado_en: string;
+        actualizado_en: string;
+        eliminado_en: string | null;
+      }>;
       configuracion_sync: TableDef<{
         id: string;
         negocio_id: string;

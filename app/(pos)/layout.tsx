@@ -5,6 +5,7 @@ import Sidebar from "@/components/layouts/Sidebar";
 import Navbar from "@/components/layouts/Navbar";
 import ToastContainer from "@/components/ui/Toast";
 import AutoDarkMode from "@/components/providers/AutoDarkMode";
+import RouteGuard from "@/components/providers/RouteGuard";
 import { useUIStore } from "@/store/ui.store";
 import { cn } from "@/lib/utils";
 
@@ -57,7 +58,7 @@ export default function POSLayout({
           className="bg-surface-1 min-h-[calc(100vh-3.5rem)]"
           style={{ padding: "var(--density-page-padding)" }}
         >
-          {children}
+          <RouteGuard>{children}</RouteGuard>
         </main>
       </div>
       <ToastContainer />
