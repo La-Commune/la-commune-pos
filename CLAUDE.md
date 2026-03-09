@@ -7,7 +7,7 @@ Proyecto separado de `la-commune-frontend` (app de fidelidad), pero comparten da
 
 - **Next.js 14** — App Router, `"use client"` explícito requerido
 - **Supabase** (PostgreSQL) — BD principal del POS, Auth, Realtime, RLS
-- **Firebase SDK** — Solo lectura, datos de fidelidad (customers, cards, promotions)
+- **Firebase SDK** — Solo lectura, datos de fidelidad (legacy, migración a Supabase en progreso)
 - **Zustand** — Estado por módulo (auth, mesas, ordenes, kds, ui, sync)
 - **Dexie** (IndexedDB) — Cola offline para acciones pendientes
 - **Zod** — Validación compartida client + server
@@ -78,6 +78,46 @@ Acciones se encolan cuando no hay conexión y se sincronizan vía `/api/sync`.
 ## Convenciones
 
 - **Divisa**: MXN — usar `formatMXN()` de `lib/utils.ts`
+- **IVA incluido en precios**: `precio_base` ya incluye 16% IVA. Desglose: `base = total / 1.16`, `iva = total - base`
 - **Idioma**: UI en español
 - **Enums**: definidos en `lib/validators.ts` como Zod enums
 - **CSS vars**: en `globals.css`, mapeadas a Tailwind en `tailwind.config.ts`
+
+## Supabase — Datos Compartidos con Frontend
+
+Ambos proyectos (POS y frontend de fidelidad) comparten la misma instancia de Supabase:
+- **URL**: ver `NEXT_PUBLIC_SUPABASE_URL` en `.env.local`
+- **Negocio ID**: ver `NEXT_PUBLIC_NEGOCIO_ID` en `.env.local`
+- **Connection string**: ver Supabase Dashboard → Settings → Database (NO commitear credenciales)
+
+### Tablas compartidas (fuente de verdad única):
+- `productos` — menú completo (precio_base, disponible, visible_menu, ingredientes, etiquetas, etc.)
+- `categorias_menu` — categorías del menú (nombre, descripcion, tipo, activo)
+- `opciones_tamano` — tamaños por producto (nombre, precio_adicional, orden)
+- `clientes` — clientes de fidelidad
+- `usuarios` — staff (POS usa Auth, frontend usa login_por_pin() via service_role)
+- `tarjetas`, `eventos_sello`, `recompensas` — sistema de sellos de fidelidad
+- `promociones` — promos activas
+
+### Columnas clave en `productos`:
+- `disponible BOOLEAN` — disponibilidad temporal ("se acabó hoy")
+- `visible_menu BOOLEAN DEFAULT TRUE` — visibilidad permanente en menú público
+- `eliminado_en TIMESTAMPTZ` — soft delete
+- `precio_base NUMERIC NOT NULL` — precio incluye IVA
+- Tamaños en tabla separada `opciones_tamano` con `precio_adicional`
+
+### Auth compartido:
+- POS: Auth directo (email/password + PIN → sesión Auth real)
+- Frontend: anon key + login_por_pin() via service_role para admin panel
+- Roles: admin, barista, camarero, cocina — definidos en enum `rol_usuario`
+
+## Estado del Proyecto (Marzo 2026)
+
+### Módulos conectados a Supabase:
+Dashboard, Login, Mesas, Menú/CRUD, Órdenes, KDS, Cobros, Reportes, Usuarios, Fidelidad, Caja
+
+### Pendiente:
+1. Generar tipos: `npx supabase gen types typescript --project-id=ntfmubmmykpzbltbeujv > types/database.ts`
+2. Reemplazar `as any` en stores y hooks por tipos generados
+3. Crear iconos PWA reales (192x192 y 512x512) en `/public/icons/`
+4. Tests end-to-end
