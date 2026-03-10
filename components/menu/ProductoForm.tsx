@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Trash2, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCategorias } from "@/hooks/useSupabase";
+import type { CategoriaMenu } from "@/types/database";
 
 interface ProductoFormProps {
   producto?: any | null;
@@ -18,7 +19,7 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
   const [nombre, setNombre] = useState(producto?.nombre ?? "");
   const [descripcion, setDescripcion] = useState(producto?.descripcion ?? "");
   const [precioBase, setPrecioBase] = useState(producto?.precio_base?.toString() ?? "");
-  const [categoriaId, setCategoriaId] = useState(producto?.categoria_id ?? (categorias as any[])[0]?.id ?? "");
+  const [categoriaId, setCategoriaId] = useState(producto?.categoria_id ?? (categorias as CategoriaMenu[])[0]?.id ?? "");
   const [disponible, setDisponible] = useState(producto?.disponible ?? true);
   const [ingredientes, setIngredientes] = useState(producto?.ingredientes?.join(", ") ?? "");
   const [etiquetas, setEtiquetas] = useState(producto?.etiquetas?.join(", ") ?? "");
@@ -124,7 +125,7 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
             onChange={(e) => setCategoriaId(e.target.value)}
             className="w-full px-3 py-2.5 rounded-lg bg-surface-3 border border-border text-text-100 text-sm focus:outline-none focus:border-border-hover transition-all duration-300"
           >
-            {(categorias as any[]).map((cat) => (
+            {(categorias as CategoriaMenu[]).map((cat) => (
               <option key={cat.id} value={cat.id}>
                 {cat.nombre}
               </option>

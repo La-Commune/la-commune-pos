@@ -2,7 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import DraggableMesa from "./DraggableMesa";
-import type { Mesa } from "@/lib/validators";
+import type { Mesa } from "@/types/database";
 
 interface DraggableMesaWrapperProps {
   mesa: Mesa;

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { Pencil, Copy, Trash2, ArrowRight, Unlock } from "lucide-react";
-import type { Mesa } from "@/lib/validators";
+import type { Mesa } from "@/types/database";
 
 interface MesaContextMenuProps {
   mesa: Mesa;

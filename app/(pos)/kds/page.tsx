@@ -22,6 +22,7 @@ import { formatTiempoTranscurrido } from "@/hooks/useTiempoTranscurrido";
 import { useUIStore } from "@/store/ui.store";
 import { showToast } from "@/components/ui/Toast";
 import { useKDSNotifications } from "@/hooks/useKDSNotifications";
+import type { TicketKDSWithJoin } from "@/types/database";
 
 const estadoConfig = {
   nueva: {
@@ -302,8 +303,8 @@ function KDSPageContent() {
   // En POS profesionales, una vez cobrada la orden el ticket desaparece del KDS
   const ticketsActivos = useMemo(
     () =>
-      (tickets as any[]).filter((t) => {
-        const estadoOrden = t.ordenes?.estado;
+      (tickets as unknown as TicketKDSWithJoin[]).filter((t) => {
+        const estadoOrden = (t as any).ordenes?.estado;
         // Si no hay join data, mostrar (mock mode)
         if (!estadoOrden) return true;
         // Ocultar si la orden ya está completada o cancelada

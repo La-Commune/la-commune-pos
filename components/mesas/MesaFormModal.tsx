@@ -5,7 +5,7 @@ import { Circle, Square, ArrowLeftRight } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import { showToast } from "@/components/ui/Toast";
 import { useZonasStore } from "@/store/zonas.store";
-import type { Mesa } from "@/lib/validators";
+import type { Mesa } from "@/types/database";
 
 const FORMAS = [
   { id: "cuadrada" as const, label: "Cuadrada", Icon: Square },

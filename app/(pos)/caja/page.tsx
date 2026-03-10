@@ -21,6 +21,7 @@ import { supabase, USE_MOCK } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth.store";
 import { insertRecordReturning, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
 import { showToast } from "@/components/ui/Toast";
+import type { Pago } from "@/types/database";
 
 // ── TIPOS ──
 
@@ -202,7 +203,7 @@ export default function CajaPage() {
     [pagosTurno],
   );
   const descuentosTotal = useMemo(
-    () => pagosTurno.reduce((acc, p) => acc + Number((p.ordenes as any)?.descuento || 0), 0),
+    () => pagosTurno.reduce((acc, p) => acc + Number(((p as any).ordenes)?.descuento || 0), 0),
     [pagosTurno],
   );
   const fondoInicialNum = turnoActivo ? Number(turnoActivo.fondo_inicial) : (parseFloat(fondoInicial) || 0);

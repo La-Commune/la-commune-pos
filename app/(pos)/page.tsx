@@ -20,6 +20,7 @@ import { supabase, USE_MOCK } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth.store";
 import { useMesas, useOrdenes, subscribeToTable } from "@/hooks/useSupabase";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import type { Mesa, Orden } from "@/types/database";
 
 interface DashboardKPIs {
   ventasHoy: number;
@@ -183,8 +184,8 @@ function DashboardContent() {
   }, [refetchOrdenes]);
 
   // KPIs derivados
-  const mesasList = mesas as any[];
-  const ordenesList = ordenes as any[];
+  const mesasList = mesas as unknown as Mesa[];
+  const ordenesList = ordenes as unknown as Orden[];
 
   const mesasOcupadas = mesasList.filter((m) => m.estado === "ocupada").length;
   const ordenesPendientes = ordenesList.filter((o) =>
