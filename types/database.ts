@@ -967,41 +967,83 @@ export type Database = {
       negocios: {
         Row: {
           actualizado_en: string
+          codigo_postal_fiscal: string | null
+          color_primario: string | null
           creado_en: string
           direccion: string | null
           divisa: string
           eliminado_en: string | null
+          email: string | null
           firebase_project_id: string | null
+          footer_ticket: string | null
+          horario: Json | null
           id: string
+          iva_incluido: boolean | null
+          logo_url: string | null
           nombre: string
+          propina_sugerida: number[] | null
+          razon_social: string | null
+          redes_sociales: Json | null
+          regimen_fiscal: string | null
           rfc: string | null
+          sitio_web: string | null
+          slogan: string | null
           telefono: string | null
+          whatsapp: string | null
           zona_horaria: string
         }
         Insert: {
           actualizado_en?: string
+          codigo_postal_fiscal?: string | null
+          color_primario?: string | null
           creado_en?: string
           direccion?: string | null
           divisa?: string
           eliminado_en?: string | null
+          email?: string | null
           firebase_project_id?: string | null
+          footer_ticket?: string | null
+          horario?: Json | null
           id?: string
+          iva_incluido?: boolean | null
+          logo_url?: string | null
           nombre: string
+          propina_sugerida?: number[] | null
+          razon_social?: string | null
+          redes_sociales?: Json | null
+          regimen_fiscal?: string | null
           rfc?: string | null
+          sitio_web?: string | null
+          slogan?: string | null
           telefono?: string | null
+          whatsapp?: string | null
           zona_horaria?: string
         }
         Update: {
           actualizado_en?: string
+          codigo_postal_fiscal?: string | null
+          color_primario?: string | null
           creado_en?: string
           direccion?: string | null
           divisa?: string
           eliminado_en?: string | null
+          email?: string | null
           firebase_project_id?: string | null
+          footer_ticket?: string | null
+          horario?: Json | null
           id?: string
+          iva_incluido?: boolean | null
+          logo_url?: string | null
           nombre?: string
+          propina_sugerida?: number[] | null
+          razon_social?: string | null
+          redes_sociales?: Json | null
+          regimen_fiscal?: string | null
           rfc?: string | null
+          sitio_web?: string | null
+          slogan?: string | null
           telefono?: string | null
+          whatsapp?: string | null
           zona_horaria?: string
         }
         Relationships: []
@@ -2049,6 +2091,22 @@ export interface ItemKDSJSON {
   nombre: string
   cantidad: number
   notas?: string
+}
+
+// ── Horario del negocio ──
+export interface HorarioDia {
+  abierto: boolean
+  apertura: string  // "08:00"
+  cierre: string    // "20:00"
+}
+export type HorarioSemanal = Record<"lunes" | "martes" | "miercoles" | "jueves" | "viernes" | "sabado" | "domingo", HorarioDia>
+
+// ── Redes sociales ──
+export interface RedesSociales {
+  instagram?: string
+  facebook?: string
+  tiktok?: string
+  google_maps?: string
 }
 
 // ── Joined types (for queries with select joins) ──
