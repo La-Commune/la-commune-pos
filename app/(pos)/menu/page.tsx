@@ -23,6 +23,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { useUIStore } from "@/store/ui.store";
 import { showToast } from "@/components/ui/Toast";
 import { Grid3X3, List } from "lucide-react";
+import type { Producto, CategoriaMenu } from "@/types/database";
 
 export default function MenuPage() {
   const { data: categorias, loading: loadingCats, refetch: refetchCategorias } = useCategorias();
@@ -98,7 +99,7 @@ export default function MenuPage() {
   }, [productoDetalle, refetchProductos]);
 
   const productosFiltrados = useMemo(() => {
-    let lista = productos as any[];
+    let lista = productos as Producto[];
 
     if (categoriaActiva !== "todas") {
       lista = lista.filter((p) => p.categoria_id === categoriaActiva);
@@ -107,27 +108,27 @@ export default function MenuPage() {
     if (busqueda.trim()) {
       const q = busqueda.toLowerCase();
       lista = lista.filter(
-        (p: any) =>
+        (p) =>
           p.nombre.toLowerCase().includes(q) ||
-          p.descripcion?.toLowerCase().includes(q) ||
-          (p.etiquetas ?? []).some((e: string) => e.toLowerCase().includes(q))
+          (p as any).descripcion?.toLowerCase().includes(q) ||
+          ((p as any).etiquetas ?? []).some((e: string) => e.toLowerCase().includes(q))
       );
     }
 
     if (soloDisponibles) {
-      lista = lista.filter((p: any) => p.disponible);
+      lista = lista.filter((p) => p.disponible);
     }
 
     return lista;
   }, [categoriaActiva, busqueda, soloDisponibles, productos]);
 
   const categoriaNombre = (id: string) =>
-    (categorias as any[]).find((c) => c.id === id)?.nombre ?? "";
+    (categorias as CategoriaMenu[]).find((c) => c.id === id)?.nombre ?? "";
 
   // Mapa categoria_id → índice para asignar colores cíclicamente
   const catIndexMap = useMemo(() => {
     const map: Record<string, number> = {};
-    (categorias as any[]).forEach((c, i) => { map[c.id] = i; });
+    (categorias as CategoriaMenu[]).forEach((c, i) => { map[c.id] = i; });
     return map;
   }, [categorias]);
 
@@ -171,7 +172,7 @@ export default function MenuPage() {
             </span>
           </button>
 
-          {(categorias as any[]).map((cat, idx) => {
+          {(categorias as CategoriaMenu[]).map((cat, idx) => {
             return (
               <button
                 key={cat.id}
@@ -180,7 +181,7 @@ export default function MenuPage() {
                   e.preventDefault();
                   setCategoriaEditando(cat);
                   setCatNombre(cat.nombre);
-                  setCatTipo(cat.tipo ?? "drink");
+                  setCatTipo((cat.tipo as "drink" | "food" | "other" | null) ?? "drink");
                   setModalCategoria(true);
                 }}
                 className={cn(
@@ -318,7 +319,7 @@ export default function MenuPage() {
                 const catColor = getCatBg(producto.categoria_id);
                 const catNombre = categoriaNombre(producto.categoria_id);
                 const tags = producto.etiquetas ?? [];
-                const sizes = producto.tamanos ?? [];
+                const sizes = (producto as any).tamanos ?? [];
                 const isLg = menuTileSize === "lg";
                 const isMd = menuTileSize === "md";
                 const isSm = menuTileSize === "sm";
@@ -679,9 +680,9 @@ export default function MenuPage() {
                 showToast("Producto actualizado");
               } else {
                 // ── Crear producto nuevo ──
-                const maxOrden = (productos as any[])
-                  .filter((p: any) => p.categoria_id === data.categoria_id)
-                  .reduce((max: number, p: any) => Math.max(max, p.orden ?? 0), 0);
+                const maxOrden = (productos as Producto[])
+                  .filter((p) => p.categoria_id === data.categoria_id)
+                  .reduce((max: number, p) => Math.max(max, p.orden ?? 0), 0);
 
                 const { success, error } = await insertRecord("productos", {
                   ...productoData,
@@ -761,8 +762,8 @@ export default function MenuPage() {
                 }
                 showToast("Categoría actualizada");
               } else {
-                const maxOrden = (categorias as any[]).reduce(
-                  (max: number, c: any) => Math.max(max, c.orden ?? 0), 0
+                const maxOrden = (categorias as CategoriaMenu[]).reduce(
+                  (max: number, c) => Math.max(max, c.orden ?? 0), 0
                 );
                 const { success, error } = await insertRecord("categorias_menu", {
                   nombre: catNombre.trim(),

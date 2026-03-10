@@ -2,7 +2,7 @@
   "name": "La Commune POS",
   "short_name": "LC POS",
   "description": "Sistema de punto de venta — La Commune Café",
-  "start_url": "/mesas",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0C0B09",

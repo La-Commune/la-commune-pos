@@ -25,7 +25,7 @@ import ZonaManager from "@/components/mesas/ZonaManager";
 import MesaFormModal from "@/components/mesas/MesaFormModal";
 import MesaContextMenu from "@/components/mesas/MesaContextMenu";
 import { showToast } from "@/components/ui/Toast";
-import type { Mesa, Zona } from "@/lib/validators";
+import type { Mesa, Zona } from "@/types/database";
 
 type Vista = "grid" | "plano";
 type EstadoMesaKey = keyof typeof ESTADO_MESA_CONFIG;
@@ -185,7 +185,7 @@ function MesasPageContent() {
         estado: "disponible",
         orden_actual_id: null,
         ocupada_desde: null,
-      } as any);
+      });
       const { success, error: err } = await updateRecord("mesas", mesa.id, {
         estado: "disponible",
         orden_actual_id: null,
@@ -259,12 +259,12 @@ function MesasPageContent() {
           numero: mesa.numero,
           capacidad: mesa.capacidad,
           zona_id: mesa.zona_id,
-          forma: mesa.forma,
+          forma: mesa.forma as 'cuadrada' | 'redonda' | undefined,
           pos_x: mesa.pos_x,
           pos_y: mesa.pos_y,
-          ancho: mesa.ancho,
-          alto: mesa.alto,
-          rotacion: mesa.rotacion,
+          ancho: mesa.ancho ?? undefined,
+          alto: mesa.alto ?? undefined,
+          rotacion: mesa.rotacion ?? undefined,
         };
         useMesasStore.getState().updateMesa(editingMesa.id, updates);
         const { success, error: err } = await updateRecord("mesas", editingMesa.id, updates);
@@ -282,7 +282,7 @@ function MesasPageContent() {
           zona_id: mesa.zona_id ?? selectedZonaId,
           pos_x: mesa.pos_x ?? 80,
           pos_y: mesa.pos_y ?? 80,
-          forma: mesa.forma ?? "cuadrada",
+          forma: (mesa.forma as 'cuadrada' | 'redonda') ?? "cuadrada",
           ancho: mesa.ancho ?? 80,
           alto: mesa.alto ?? 80,
           rotacion: mesa.rotacion ?? 0,
@@ -343,8 +343,7 @@ function MesasPageContent() {
         return false;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: err } = await (supabase as any).rpc("swap_mesa_numeros", {
+      const { error: err } = await (supabase!.rpc as any)("swap_mesa_numeros", {
         mesa_a_id: mesaAId,
         nuevo_numero_a: numA,
         mesa_b_id: mesaBId,
@@ -600,9 +599,9 @@ function MesasPageContent() {
             return (
               <button
                 key={mesa.id}
-                onClick={() => handleClickMesa(mesa)}
-                onContextMenu={(e) => handleRightClick(e, mesa)}
-                onTouchStart={(e) => handleTouchStart(mesa, e)}
+                onClick={() => handleClickMesa(mesa as Mesa)}
+                onContextMenu={(e) => handleRightClick(e, mesa as Mesa)}
+                onTouchStart={(e) => handleTouchStart(mesa as Mesa, e)}
                 onTouchEnd={handleTouchEnd}
                 onTouchMove={handleTouchMove}
                 className={cn(
@@ -673,7 +672,7 @@ function MesasPageContent() {
       {/* ── Vista: Floor Plan ── */}
       {!loading && vista === "plano" && (
         <FloorPlanCanvas
-          mesas={filteredMesas}
+          mesas={filteredMesas as Mesa[]}
           zona={currentZona}
           isAdmin={isAdmin ?? false}
           onMoveMesa={handleMoveMesa}
@@ -758,7 +757,7 @@ function MesasPageContent() {
         }}
         mesa={editingMesa}
         negocioId={user?.negocio_id ?? ""}
-        mesas={mesas}
+        mesas={mesas as Mesa[]}
         onSave={handleSaveMesa}
         onSwap={handleSwapMesas}
         onDelete={handleDeleteMesa}

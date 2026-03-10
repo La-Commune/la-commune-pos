@@ -27,6 +27,7 @@ import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { supabase, USE_MOCK } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth.store";
 import { subscribeToTable } from "@/hooks/useSupabase";
+import type { Pago, ItemOrden } from "@/types/database";
 import {
   MOCK_STATS_REPORTES,
   MOCK_VENTAS_SEMANA,
@@ -207,7 +208,7 @@ export default function ReportesPage() {
         .eq("estado", "completado")
         .gte("creado_en", desde);
 
-      const ventasActual = ((pagosActual ?? []) as any[]).reduce((s: number, p: any) => s + Number(p.monto), 0);
+      const ventasActual = ((pagosActual ?? []) as unknown as Pago[]).reduce((s: number, p) => s + Number(p.monto), 0);
       const ordenesActualCount = (pagosActual ?? []).length;
       const ticketActual = ordenesActualCount > 0 ? ventasActual / ordenesActualCount : 0;
 
@@ -220,7 +221,7 @@ export default function ReportesPage() {
         .gte("creado_en", desdePrev)
         .lt("creado_en", desde);
 
-      const ventasPrev = ((pagosPrev ?? []) as any[]).reduce((s: number, p: any) => s + Number(p.monto), 0);
+      const ventasPrev = ((pagosPrev ?? []) as unknown as Pago[]).reduce((s: number, p) => s + Number(p.monto), 0);
       const ordenesPrevCount = (pagosPrev ?? []).length;
       const ticketPrev = ordenesPrevCount > 0 ? ventasPrev / ordenesPrevCount : 0;
 
@@ -245,7 +246,7 @@ export default function ReportesPage() {
 
       const ventasPorDia: Record<string, number> = {};
       DIAS_SEMANA.forEach((d) => (ventasPorDia[d] = 0));
-      ((pagos7d ?? []) as any[]).forEach((p: any) => {
+      ((pagos7d ?? []) as unknown as Pago[]).forEach((p) => {
         const dia = DIAS_SEMANA[new Date(p.creado_en).getDay()];
         ventasPorDia[dia] += Number(p.monto);
       });
@@ -265,7 +266,7 @@ export default function ReportesPage() {
       for (let h = 7; h <= 22; h++) {
         ventasPorHora[`${h}:00`] = 0;
       }
-      ((pagosHoy ?? []) as any[]).forEach((p: any) => {
+      ((pagosHoy ?? []) as unknown as Pago[]).forEach((p) => {
         const hora = new Date(p.creado_en).getHours();
         const key = `${hora}:00`;
         if (ventasPorHora[key] !== undefined) {
@@ -287,7 +288,7 @@ export default function ReportesPage() {
         .gte("creado_en", desde);
 
       const productoMap: Record<string, { cantidad: number; ingresos: number }> = {};
-      ((items ?? []) as any[]).forEach((item: any) => {
+      ((items ?? []) as unknown as ItemOrden[]).forEach((item) => {
         if (!productoMap[item.nombre]) {
           productoMap[item.nombre] = { cantidad: 0, ingresos: 0 };
         }
@@ -310,7 +311,7 @@ export default function ReportesPage() {
         .gte("creado_en", desde);
 
       const metodoMap: Record<string, number> = { efectivo: 0, tarjeta: 0, transferencia: 0 };
-      ((pagosPeriodo ?? []) as any[]).forEach((p: any) => {
+      ((pagosPeriodo ?? []) as unknown as Pago[]).forEach((p) => {
         const tipo = p.tipo_pago as string;
         if (metodoMap[tipo] !== undefined) {
           metodoMap[tipo] += Number(p.monto);
@@ -400,7 +401,7 @@ export default function ReportesPage() {
         />
         <StatCard
           title="Propinas"
-          value={(stats as any).propinas ?? 0}
+          value={0}
           prevValue={0}
           format="currency"
           icon={TrendingUp}

@@ -92,7 +92,7 @@ function useQuery<T>(
         setError(err.message);
       } else {
         hasFetched.current = true;
-        setData(result ?? []);
+        setData((result ?? []) as T[]);
       }
     } catch {
       setError("Error de conexión");
@@ -248,8 +248,7 @@ export async function updateRecord(
     return { success: true };
   }
 
-  // @ts-expect-error — tipo exacto de update data se resolverá con `supabase gen types`
-  const { error } = await supabase!.from(table).update(data).eq("id", id);
+  const { error } = await supabase!.from(table).update(data as never).eq("id", id);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
@@ -266,8 +265,7 @@ export async function deleteRecord(
   // Soft delete
   const { error } = await supabase!
     .from(table)
-    // @ts-expect-error — tipo exacto de update data se resolverá con `supabase gen types`
-    .update({ eliminado_en: new Date().toISOString() })
+    .update({ eliminado_en: new Date().toISOString() } as never)
     .eq("id", id);
   if (error) return { success: false, error: error.message };
   return { success: true };

@@ -1,0 +1,1418 @@
+// Auto-generated from Supabase OpenAPI spec — 2026-03-10
+// Do not edit manually. Regenerate with: python3 scripts/gen-types.py
+
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+
+export type RolUsuario = "admin" | "barista" | "camarero" | "cocina"
+export type EstadoMesa = "disponible" | "ocupada" | "reservada" | "preparando"
+export type EstadoOrden = "nueva" | "confirmada" | "preparando" | "lista" | "completada" | "cancelada"
+export type TipoPago = "efectivo" | "tarjeta" | "transferencia" | "otro"
+export type EstadoPago = "pendiente" | "completado" | "fallido" | "reembolsado"
+export type OrigenOrden = "mesa" | "delivery" | "para_llevar" | "online"
+export type EstadoTicket = "nueva" | "preparando" | "lista"
+export type TipoMovimiento = "entrada" | "salida" | "ajuste" | "merma"
+export type TipoDescuento = "porcentaje" | "monto_fijo"
+
+// Helper types for JSON fields
+export interface ItemOrdenJSON {
+  id: string
+  nombre: string
+  precio: number
+  cantidad: number
+  [key: string]: any
+}
+
+export interface ItemKDSJSON {
+  id: string
+  nombre: string
+  cantidad: number
+  [key: string]: any
+}
+
+// Joined types
+export type TicketKDSWithJoin = Database['public']['Tables']['tickets_kds']['Row'] & {
+  ordenes?: {
+    folio: number
+    origen: string
+    estado: EstadoOrden
+    mesa_id: string | null
+    mesas?: {
+      numero: number
+    } | null
+  } | null
+  mesa_numero?: number | null
+}
+
+export type MesaType = Database['public']['Tables']['mesas']['Row']
+export type OrdenType = Database['public']['Tables']['ordenes']['Row']
+export type PagoType = Database['public']['Tables']['pagos']['Row']
+export type TicketKDSType = Database['public']['Tables']['tickets_kds']['Row']
+
+export interface Database {
+  public: {
+    Tables: {
+      audit_log: {
+        Row: {
+          accion: string
+          creado_en: string
+          datos_antes: Json | null
+          datos_despues: Json | null
+          id: string
+          ip: string | null
+          negocio_id: string
+          registro_id: string
+          tabla: string
+          usuario_id: string | null
+        }
+        Insert: {
+          accion: string
+          creado_en?: string | null
+          datos_antes?: Json | null
+          datos_despues?: Json | null
+          id?: string | null
+          ip?: string | null
+          negocio_id: string
+          registro_id: string
+          tabla: string
+          usuario_id?: string | null
+        }
+        Update: {
+          accion?: string | null
+          creado_en?: string | null
+          datos_antes?: Json | null
+          datos_despues?: Json | null
+          id?: string | null
+          ip?: string | null
+          negocio_id?: string | null
+          registro_id?: string | null
+          tabla?: string | null
+          usuario_id?: string | null
+        }
+      }
+      categorias_menu: {
+        Row: {
+          activo: boolean
+          actualizado_en: string
+          creado_en: string
+          descripcion: string | null
+          eliminado_en: string | null
+          id: string
+          negocio_id: string
+          nombre: string
+          orden: number
+          tipo: 'drink' | 'food' | 'other'
+        }
+        Insert: {
+          activo?: boolean | null
+          actualizado_en?: string | null
+          creado_en?: string | null
+          descripcion?: string | null
+          eliminado_en?: string | null
+          id?: string | null
+          negocio_id: string
+          nombre: string
+          orden?: number | null
+          tipo?: 'drink' | 'food' | 'other' | null
+        }
+        Update: {
+          activo?: boolean | null
+          actualizado_en?: string | null
+          creado_en?: string | null
+          descripcion?: string | null
+          eliminado_en?: string | null
+          id?: string | null
+          negocio_id?: string | null
+          nombre?: string | null
+          orden?: number | null
+          tipo?: 'drink' | 'food' | 'other' | null
+        }
+      }
+      clientes: {
+        Row: {
+          activo: boolean
+          actualizado_en: string
+          bono_referido_entregado: boolean
+          consentimiento_email: boolean | null
+          consentimiento_whatsapp: boolean | null
+          creado_en: string
+          eliminado_en: string | null
+          email: string | null
+          firebase_id: string | null
+          id: string
+          id_referidor: string | null
+          negocio_id: string
+          nivel: string
+          nombre: string
+          notas: string | null
+          pin_hmac: string | null
+          puntos: number
+          telefono: string | null
+          ticket_promedio: number
+          total_gastado: number
+          total_sellos: number
+          total_visitas: number
+          ultima_visita: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          actualizado_en?: string | null
+          bono_referido_entregado?: boolean | null
+          consentimiento_email?: boolean | null
+          consentimiento_whatsapp?: boolean | null
+          creado_en?: string | null
+          eliminado_en?: string | null
+          email?: string | null
+          firebase_id?: string | null
+          id?: string | null
+          id_referidor?: string | null
+          negocio_id: string
+          nivel?: string | null
+          nombre: string
+          notas?: string | null
+          pin_hmac?: string | null
+          puntos?: number | null
+          telefono?: string | null
+          ticket_promedio?: number | null
+          total_gastado?: number | null
+          total_sellos?: number | null
+          total_visitas?: number | null
+          ultima_visita?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          actualizado_en?: string | null
+          bono_referido_entregado?: boolean | null
+          consentimiento_email?: boolean | null
+          consentimiento_whatsapp?: boolean | null
+          creado_en?: string | null
+          eliminado_en?: string | null
+          email?: string | null
+          firebase_id?: string | null
+          id?: string | null
+          id_referidor?: string | null
+          negocio_id?: string | null
+          nivel?: string | null
+          nombre?: string | null
+          notas?: string | null
+          pin_hmac?: string | null
+          puntos?: number | null
+          telefono?: string | null
+          ticket_promedio?: number | null
+          total_gastado?: number | null
+          total_sellos?: number | null
+          total_visitas?: number | null
+          ultima_visita?: string | null
+        }
+      }
+      config_admin: {
+        Row: {
+          actualizado_en: string
+          creado_en: string
+          id: string
+          longitud_pin: number
+          negocio_id: string
+          pin_hmac: string | null
+        }
+        Insert: {
+          actualizado_en?: string | null
+          creado_en?: string | null
+          id?: string | null
+          longitud_pin?: number | null
+          negocio_id: string
+          pin_hmac?: string | null
+        }
+        Update: {
+          actualizado_en?: string | null
+          creado_en?: string | null
+          id?: string | null
+          longitud_pin?: number | null
+          negocio_id?: string | null
+          pin_hmac?: string | null
+        }
+      }
+      configuracion_sync: {
+        Row: {
+          id: string
+          negocio_id: string
+          tabla: string
+          ultima_sync: string
+        }
+        Insert: {
+          id?: string | null
+          negocio_id: string
+          tabla: string
+          ultima_sync?: string | null
+        }
+        Update: {
+          id?: string | null
+          negocio_id?: string | null
+          tabla?: string | null
+          ultima_sync?: string | null
+        }
+      }
+      cortes_caja: {
+        Row: {
+          abierto_en: string
+          actualizado_en: string
+          cerrado_en: string | null
+          creado_en: string
+          descuentos: number
+          diferencia: number | null
+          efectivo_esperado: number
+          efectivo_real: number | null
+          fondo_inicial: number
+          id: string
+          negocio_id: string
+          notas: string | null
+          ordenes_count: number
+          propinas: number
+          total_ventas: number
+          usuario_id: string
+          ventas_efectivo: number
+          ventas_tarjeta: number
+          ventas_transferencia: number
+        }
+        Insert: {
+          abierto_en?: string | null
+          actualizado_en?: string | null
+          cerrado_en?: string | null
+          creado_en?: string | null
+          descuentos?: number | null
+          diferencia?: number | null
+          efectivo_esperado?: number | null
+          efectivo_real?: number | null
+          fondo_inicial?: number | null
+          id?: string | null
+          negocio_id: string
+          notas?: string | null
+          ordenes_count?: number | null
+          propinas?: number | null
+          total_ventas?: number | null
+          usuario_id: string
+          ventas_efectivo?: number | null
+          ventas_tarjeta?: number | null
+          ventas_transferencia?: number | null
+        }
+        Update: {
+          abierto_en?: string | null
+          actualizado_en?: string | null
+          cerrado_en?: string | null
+          creado_en?: string | null
+          descuentos?: number | null
+          diferencia?: number | null
+          efectivo_esperado?: number | null
+          efectivo_real?: number | null
+          fondo_inicial?: number | null
+          id?: string | null
+          negocio_id?: string | null
+          notas?: string | null
+          ordenes_count?: number | null
+          propinas?: number | null
+          total_ventas?: number | null
+          usuario_id?: string | null
+          ventas_efectivo?: number | null
+          ventas_tarjeta?: number | null
+          ventas_transferencia?: number | null
+        }
+      }
+      eventos_sello: {
+        Row: {
+          agregado_por: string
+          cliente_id: string
+          creado_en: string
+          id: string
+          id_barista: string | null
+          negocio_id: string
+          notas: string | null
+          origen: string
+          tamano: string | null
+          tarjeta_id: string
+          tipo_bebida: string | null
+        }
+        Insert: {
+          agregado_por?: string | null
+          cliente_id: string
+          creado_en?: string | null
+          id?: string | null
+          id_barista?: string | null
+          negocio_id: string
+          notas?: string | null
+          origen?: string | null
+          tamano?: string | null
+          tarjeta_id: string
+          tipo_bebida?: string | null
+        }
+        Update: {
+          agregado_por?: string | null
+          cliente_id?: string | null
+          creado_en?: string | null
+          id?: string | null
+          id_barista?: string | null
+          negocio_id?: string | null
+          notas?: string | null
+          origen?: string | null
+          tamano?: string | null
+          tarjeta_id?: string | null
+          tipo_bebida?: string | null
+        }
+      }
+      gastos: {
+        Row: {
+          actualizado_en: string
+          categoria: string
+          concepto: string
+          corte_caja_id: string | null
+          creado_en: string
+          id: string
+          monto: number
+          negocio_id: string
+          notas: string | null
+          usuario_id: string
+        }
+        Insert: {
+          actualizado_en?: string | null
+          categoria?: string | null
+          concepto: string
+          corte_caja_id?: string | null
+          creado_en?: string | null
+          id?: string | null
+          monto: number
+          negocio_id: string
+          notas?: string | null
+          usuario_id: string
+        }
+        Update: {
+          actualizado_en?: string | null
+          categoria?: string | null
+          concepto?: string | null
+          corte_caja_id?: string | null
+          creado_en?: string | null
+          id?: string | null
+          monto?: number | null
+          negocio_id?: string | null
+          notas?: string | null
+          usuario_id?: string | null
+        }
+      }
+      historico_ordenes: {
+        Row: {
+          cliente_firebase_id: string | null
+          completada_en: string
+          creado_en: string
+          descuento: number
+          id: string
+          impuesto: number
+          items: Json
+          mesa_numero: number | null
+          negocio_id: string
+          orden_id: string
+          origen: string | null
+          propina: number
+          subtotal: number
+          tipo_pago: string | null
+          total: number
+          usuario_nombre: string | null
+        }
+        Insert: {
+          cliente_firebase_id?: string | null
+          completada_en?: string | null
+          creado_en?: string | null
+          descuento?: number | null
+          id?: string | null
+          impuesto?: number | null
+          items: Json
+          mesa_numero?: number | null
+          negocio_id: string
+          orden_id: string
+          origen?: string | null
+          propina?: number | null
+          subtotal?: number | null
+          tipo_pago?: string | null
+          total?: number | null
+          usuario_nombre?: string | null
+        }
+        Update: {
+          cliente_firebase_id?: string | null
+          completada_en?: string | null
+          creado_en?: string | null
+          descuento?: number | null
+          id?: string | null
+          impuesto?: number | null
+          items?: Json | null
+          mesa_numero?: number | null
+          negocio_id?: string | null
+          orden_id?: string | null
+          origen?: string | null
+          propina?: number | null
+          subtotal?: number | null
+          tipo_pago?: string | null
+          total?: number | null
+          usuario_nombre?: string | null
+        }
+      }
+      inventario: {
+        Row: {
+          activo: boolean
+          actualizado_en: string
+          costo_unitario: number
+          creado_en: string
+          descripcion: string | null
+          eliminado_en: string | null
+          id: string
+          negocio_id: string
+          nombre: string
+          proveedor: string | null
+          stock_actual: number
+          stock_minimo: number
+          unidad: string
+        }
+        Insert: {
+          activo?: boolean | null
+          actualizado_en?: string | null
+          costo_unitario?: number | null
+          creado_en?: string | null
+          descripcion?: string | null
+          eliminado_en?: string | null
+          id?: string | null
+          negocio_id: string
+          nombre: string
+          proveedor?: string | null
+          stock_actual?: number | null
+          stock_minimo?: number | null
+          unidad?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          actualizado_en?: string | null
+          costo_unitario?: number | null
+          creado_en?: string | null
+          descripcion?: string | null
+          eliminado_en?: string | null
+          id?: string | null
+          negocio_id?: string | null
+          nombre?: string | null
+          proveedor?: string | null
+          stock_actual?: number | null
+          stock_minimo?: number | null
+          unidad?: string | null
+        }
+      }
+      items_menu: {
+        Row: {
+          actualizado_en: string
+          creado_en: string
+          descripcion: string | null
+          destacado: boolean
+          disponible: boolean
+          estacional: boolean
+          etiquetas: string[] | null
+          id: string
+          imagen_url: string | null
+          ingredientes: string[] | null
+          negocio_id: string
+          nombre: string
+          nota: string | null
+          opcionales: string[] | null
+          orden: number
+          precio: number | null
+          seccion_id: string
+          tamanos: Json | null
+        }
+        Insert: {
+          actualizado_en?: string | null
+          creado_en?: string | null
+          descripcion?: string | null
+          destacado?: boolean | null
+          disponible?: boolean | null
+          estacional?: boolean | null
+          etiquetas?: string[] | null
+          id?: string | null
+          imagen_url?: string | null
+          ingredientes?: string[] | null
+          negocio_id: string
+          nombre: string
+          nota?: string | null
+          opcionales?: string[] | null
+          orden?: number | null
+          precio?: number | null
+          seccion_id: string
+          tamanos?: Json | null
+        }
+        Update: {
+          actualizado_en?: string | null
+          creado_en?: string | null
+          descripcion?: string | null
+          destacado?: boolean | null
+          disponible?: boolean | null
+          estacional?: boolean | null
+          etiquetas?: string[] | null
+          id?: string | null
+          imagen_url?: string | null
+          ingredientes?: string[] | null
+          negocio_id?: string | null
+          nombre?: string | null
+          nota?: string | null
+          opcionales?: string[] | null
+          orden?: number | null
+          precio?: number | null
+          seccion_id?: string | null
+          tamanos?: Json | null
+        }
+      }
+      items_orden: {
+        Row: {
+          actualizado_en: string
+          cantidad: number
+          creado_en: string
+          id: string
+          modificadores: string[] | null
+          negocio_id: string
+          nombre: string
+          notas: string | null
+          orden_id: string
+          precio_unitario: number
+          producto_id: string
+          tamano: string | null
+        }
+        Insert: {
+          actualizado_en?: string | null
+          cantidad?: number | null
+          creado_en?: string | null
+          id?: string | null
+          modificadores?: string[] | null
+          negocio_id: string
+          nombre: string
+          notas?: string | null
+          orden_id: string
+          precio_unitario: number
+          producto_id: string
+          tamano?: string | null
+        }
+        Update: {
+          actualizado_en?: string | null
+          cantidad?: number | null
+          creado_en?: string | null
+          id?: string | null
+          modificadores?: string[] | null
+          negocio_id?: string | null
+          nombre?: string | null
+          notas?: string | null
+          orden_id?: string | null
+          precio_unitario?: number | null
+          producto_id?: string | null
+          tamano?: string | null
+        }
+      }
+      mesas: {
+        Row: {
+          actualizado_en: string
+          alto: number | null
+          ancho: number | null
+          capacidad: number
+          creado_en: string
+          eliminado_en: string | null
+          estado: EstadoMesa
+          forma: 'cuadrada' | 'redonda'
+          id: string
+          negocio_id: string
+          numero: number
+          ocupada_desde: string | null
+          orden_actual_id: string | null
+          pos_x: number
+          pos_y: number
+          rotacion: number | null
+          ubicacion: string | null
+          zona_id: string | null
+        }
+        Insert: {
+          actualizado_en?: string | null
+          alto?: number | null
+          ancho?: number | null
+          capacidad?: number | null
+          creado_en?: string | null
+          eliminado_en?: string | null
+          estado?: EstadoMesa | null
+          forma?: 'cuadrada' | 'redonda' | null
+          id?: string | null
+          negocio_id: string
+          numero: number
+          ocupada_desde?: string | null
+          orden_actual_id?: string | null
+          pos_x?: number | null
+          pos_y?: number | null
+          rotacion?: number | null
+          ubicacion?: string | null
+          zona_id?: string | null
+        }
+        Update: {
+          actualizado_en?: string | null
+          alto?: number | null
+          ancho?: number | null
+          capacidad?: number | null
+          creado_en?: string | null
+          eliminado_en?: string | null
+          estado?: EstadoMesa | null
+          forma?: 'cuadrada' | 'redonda' | null
+          id?: string | null
+          negocio_id?: string | null
+          numero?: number | null
+          ocupada_desde?: string | null
+          orden_actual_id?: string | null
+          pos_x?: number | null
+          pos_y?: number | null
+          rotacion?: number | null
+          ubicacion?: string | null
+          zona_id?: string | null
+        }
+      }
+      modificadores: {
+        Row: {
+          actualizado_en: string
+          categoria: string
+          creado_en: string
+          disponible: boolean
+          id: string
+          negocio_id: string
+          nombre: string
+          orden: number
+          precio_adicional: number
+        }
+        Insert: {
+          actualizado_en?: string | null
+          categoria?: string | null
+          creado_en?: string | null
+          disponible?: boolean | null
+          id?: string | null
+          negocio_id: string
+          nombre: string
+          orden?: number | null
+          precio_adicional?: number | null
+        }
+        Update: {
+          actualizado_en?: string | null
+          categoria?: string | null
+          creado_en?: string | null
+          disponible?: boolean | null
+          id?: string | null
+          negocio_id?: string | null
+          nombre?: string | null
+          orden?: number | null
+          precio_adicional?: number | null
+        }
+      }
+      movimientos_inventario: {
+        Row: {
+          cantidad: number
+          costo_total: number | null
+          creado_en: string
+          id: string
+          inventario_id: string
+          negocio_id: string
+          notas: string | null
+          orden_id: string | null
+          referencia: string | null
+          stock_anterior: number
+          stock_nuevo: number
+          tipo: string
+          usuario_id: string
+        }
+        Insert: {
+          cantidad: number
+          costo_total?: number | null
+          creado_en?: string | null
+          id?: string | null
+          inventario_id: string
+          negocio_id: string
+          notas?: string | null
+          orden_id?: string | null
+          referencia?: string | null
+          stock_anterior: number
+          stock_nuevo: number
+          tipo: string
+          usuario_id: string
+        }
+        Update: {
+          cantidad?: number | null
+          costo_total?: number | null
+          creado_en?: string | null
+          id?: string | null
+          inventario_id?: string | null
+          negocio_id?: string | null
+          notas?: string | null
+          orden_id?: string | null
+          referencia?: string | null
+          stock_anterior?: number | null
+          stock_nuevo?: number | null
+          tipo?: string | null
+          usuario_id?: string | null
+        }
+      }
+      negocios: {
+        Row: {
+          actualizado_en: string
+          creado_en: string
+          direccion: string | null
+          divisa: string
+          eliminado_en: string | null
+          firebase_project_id: string | null
+          id: string
+          nombre: string
+          rfc: string | null
+          telefono: string | null
+          zona_horaria: string
+        }
+        Insert: {
+          actualizado_en?: string | null
+          creado_en?: string | null
+          direccion?: string | null
+          divisa?: string | null
+          eliminado_en?: string | null
+          firebase_project_id?: string | null
+          id?: string | null
+          nombre: string
+          rfc?: string | null
+          telefono?: string | null
+          zona_horaria?: string | null
+        }
+        Update: {
+          actualizado_en?: string | null
+          creado_en?: string | null
+          direccion?: string | null
+          divisa?: string | null
+          eliminado_en?: string | null
+          firebase_project_id?: string | null
+          id?: string | null
+          nombre?: string | null
+          rfc?: string | null
+          telefono?: string | null
+          zona_horaria?: string | null
+        }
+      }
+      opciones_tamano: {
+        Row: {
+          creado_en: string
+          id: string
+          nombre: string
+          orden: number
+          precio_adicional: number
+          producto_id: string
+        }
+        Insert: {
+          creado_en?: string | null
+          id?: string | null
+          nombre: string
+          orden?: number | null
+          precio_adicional?: number | null
+          producto_id: string
+        }
+        Update: {
+          creado_en?: string | null
+          id?: string | null
+          nombre?: string | null
+          orden?: number | null
+          precio_adicional?: number | null
+          producto_id?: string | null
+        }
+      }
+      ordenes: {
+        Row: {
+          actualizado_en: string
+          cliente_firebase_id: string | null
+          cliente_id: string | null
+          creado_en: string
+          descuento: number
+          eliminado_en: string | null
+          estado: EstadoOrden
+          folio: number
+          id: string
+          impuesto: number
+          items: Json
+          mesa_id: string | null
+          negocio_id: string
+          notas: string | null
+          origen: OrigenOrden
+          propina: number
+          subtotal: number
+          total: number
+          usuario_id: string
+        }
+        Insert: {
+          actualizado_en?: string | null
+          cliente_firebase_id?: string | null
+          cliente_id?: string | null
+          creado_en?: string | null
+          descuento?: number | null
+          eliminado_en?: string | null
+          estado?: EstadoOrden | null
+          folio: number
+          id?: string | null
+          impuesto?: number | null
+          items: Json
+          mesa_id?: string | null
+          negocio_id: string
+          notas?: string | null
+          origen?: OrigenOrden | null
+          propina?: number | null
+          subtotal?: number | null
+          total?: number | null
+          usuario_id: string
+        }
+        Update: {
+          actualizado_en?: string | null
+          cliente_firebase_id?: string | null
+          cliente_id?: string | null
+          creado_en?: string | null
+          descuento?: number | null
+          eliminado_en?: string | null
+          estado?: EstadoOrden | null
+          folio?: number | null
+          id?: string | null
+          impuesto?: number | null
+          items?: Json | null
+          mesa_id?: string | null
+          negocio_id?: string | null
+          notas?: string | null
+          origen?: OrigenOrden | null
+          propina?: number | null
+          subtotal?: number | null
+          total?: number | null
+          usuario_id?: string | null
+        }
+      }
+      pagos: {
+        Row: {
+          actualizado_en: string
+          creado_en: string
+          estado: EstadoPago
+          id: string
+          monto: number
+          negocio_id: string
+          orden_id: string
+          propina: number
+          referencia: string | null
+          tipo_pago: TipoPago
+        }
+        Insert: {
+          actualizado_en?: string | null
+          creado_en?: string | null
+          estado?: EstadoPago | null
+          id?: string | null
+          monto: number
+          negocio_id: string
+          orden_id: string
+          propina?: number | null
+          referencia?: string | null
+          tipo_pago?: TipoPago | null
+        }
+        Update: {
+          actualizado_en?: string | null
+          creado_en?: string | null
+          estado?: EstadoPago | null
+          id?: string | null
+          monto?: number | null
+          negocio_id?: string | null
+          orden_id?: string | null
+          propina?: number | null
+          referencia?: string | null
+          tipo_pago?: TipoPago | null
+        }
+      }
+      productos: {
+        Row: {
+          actualizado_en: string
+          categoria_id: string
+          creado_en: string
+          descripcion: string | null
+          destacado: boolean | null
+          disponible: boolean
+          eliminado_en: string | null
+          estacional: boolean | null
+          etiquetas: string[] | null
+          id: string
+          imagen_url: string | null
+          ingredientes: string[] | null
+          negocio_id: string
+          nombre: string
+          nota: string | null
+          opcionales: string[] | null
+          orden: number
+          precio_base: number
+          visible_menu: boolean | null
+        }
+        Insert: {
+          actualizado_en?: string | null
+          categoria_id: string
+          creado_en?: string | null
+          descripcion?: string | null
+          destacado?: boolean | null
+          disponible?: boolean | null
+          eliminado_en?: string | null
+          estacional?: boolean | null
+          etiquetas?: string[] | null
+          id?: string | null
+          imagen_url?: string | null
+          ingredientes?: string[] | null
+          negocio_id: string
+          nombre: string
+          nota?: string | null
+          opcionales?: string[] | null
+          orden?: number | null
+          precio_base?: number | null
+          visible_menu?: boolean | null
+        }
+        Update: {
+          actualizado_en?: string | null
+          categoria_id?: string | null
+          creado_en?: string | null
+          descripcion?: string | null
+          destacado?: boolean | null
+          disponible?: boolean | null
+          eliminado_en?: string | null
+          estacional?: boolean | null
+          etiquetas?: string[] | null
+          id?: string | null
+          imagen_url?: string | null
+          ingredientes?: string[] | null
+          negocio_id?: string | null
+          nombre?: string | null
+          nota?: string | null
+          opcionales?: string[] | null
+          orden?: number | null
+          precio_base?: number | null
+          visible_menu?: boolean | null
+        }
+      }
+      productos_modificadores: {
+        Row: {
+          modificador_id: string
+          producto_id: string
+        }
+        Insert: {
+          modificador_id: string
+          producto_id: string
+        }
+        Update: {
+          modificador_id?: string | null
+          producto_id?: string | null
+        }
+      }
+      promociones: {
+        Row: {
+          activo: boolean
+          actualizado_en: string
+          aplica_a: string | null
+          creado_en: string
+          descripcion: string | null
+          dias_semana: unknown[] | null
+          eliminado_en: string | null
+          es_porcentaje: boolean
+          fecha_fin: string | null
+          fecha_inicio: string | null
+          id: string
+          negocio_id: string
+          nombre: string
+          tipo: string
+          valor_descuento: number | null
+        }
+        Insert: {
+          activo?: boolean | null
+          actualizado_en?: string | null
+          aplica_a?: string | null
+          creado_en?: string | null
+          descripcion?: string | null
+          dias_semana?: unknown[] | null
+          eliminado_en?: string | null
+          es_porcentaje?: boolean | null
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          id?: string | null
+          negocio_id: string
+          nombre: string
+          tipo?: string | null
+          valor_descuento?: number | null
+        }
+        Update: {
+          activo?: boolean | null
+          actualizado_en?: string | null
+          aplica_a?: string | null
+          creado_en?: string | null
+          descripcion?: string | null
+          dias_semana?: unknown[] | null
+          eliminado_en?: string | null
+          es_porcentaje?: boolean | null
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          id?: string | null
+          negocio_id?: string | null
+          nombre?: string | null
+          tipo?: string | null
+          valor_descuento?: number | null
+        }
+      }
+      recetas: {
+        Row: {
+          actualizado_en: string
+          cantidad: number
+          creado_en: string
+          id: string
+          inventario_id: string
+          producto_id: string
+        }
+        Insert: {
+          actualizado_en?: string | null
+          cantidad: number
+          creado_en?: string | null
+          id?: string | null
+          inventario_id: string
+          producto_id: string
+        }
+        Update: {
+          actualizado_en?: string | null
+          cantidad?: number | null
+          creado_en?: string | null
+          id?: string | null
+          inventario_id?: string | null
+          producto_id?: string | null
+        }
+      }
+      recompensas: {
+        Row: {
+          activa: boolean
+          actualizado_en: string
+          creado_en: string
+          descripcion: string | null
+          es_default: boolean
+          expira_en: string | null
+          id: string
+          negocio_id: string
+          nombre: string
+          sellos_requeridos: number
+          tipo: string
+        }
+        Insert: {
+          activa?: boolean | null
+          actualizado_en?: string | null
+          creado_en?: string | null
+          descripcion?: string | null
+          es_default?: boolean | null
+          expira_en?: string | null
+          id?: string | null
+          negocio_id: string
+          nombre: string
+          sellos_requeridos?: number | null
+          tipo?: string | null
+        }
+        Update: {
+          activa?: boolean | null
+          actualizado_en?: string | null
+          creado_en?: string | null
+          descripcion?: string | null
+          es_default?: boolean | null
+          expira_en?: string | null
+          id?: string | null
+          negocio_id?: string | null
+          nombre?: string | null
+          sellos_requeridos?: number | null
+          tipo?: string | null
+        }
+      }
+      secciones_menu: {
+        Row: {
+          activa: boolean
+          actualizado_en: string
+          creado_en: string
+          descripcion: string | null
+          eliminado_en: string | null
+          id: string
+          negocio_id: string
+          orden: number
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          activa?: boolean | null
+          actualizado_en?: string | null
+          creado_en?: string | null
+          descripcion?: string | null
+          eliminado_en?: string | null
+          id?: string | null
+          negocio_id: string
+          orden?: number | null
+          tipo?: string | null
+          titulo: string
+        }
+        Update: {
+          activa?: boolean | null
+          actualizado_en?: string | null
+          creado_en?: string | null
+          descripcion?: string | null
+          eliminado_en?: string | null
+          id?: string | null
+          negocio_id?: string | null
+          orden?: number | null
+          tipo?: string | null
+          titulo?: string | null
+        }
+      }
+      tarjetas: {
+        Row: {
+          actualizado_en: string
+          canjeada_en: string | null
+          cliente_id: string
+          completada_en: string | null
+          creado_en: string
+          estado: string
+          id: string
+          negocio_id: string
+          pin_hash: string | null
+          recompensa_id: string
+          sellos: number
+          sellos_maximos: number
+          ultimo_sello_en: string | null
+        }
+        Insert: {
+          actualizado_en?: string | null
+          canjeada_en?: string | null
+          cliente_id: string
+          completada_en?: string | null
+          creado_en?: string | null
+          estado?: string | null
+          id?: string | null
+          negocio_id: string
+          pin_hash?: string | null
+          recompensa_id: string
+          sellos?: number | null
+          sellos_maximos?: number | null
+          ultimo_sello_en?: string | null
+        }
+        Update: {
+          actualizado_en?: string | null
+          canjeada_en?: string | null
+          cliente_id?: string | null
+          completada_en?: string | null
+          creado_en?: string | null
+          estado?: string | null
+          id?: string | null
+          negocio_id?: string | null
+          pin_hash?: string | null
+          recompensa_id?: string | null
+          sellos?: number | null
+          sellos_maximos?: number | null
+          ultimo_sello_en?: string | null
+        }
+      }
+      tickets_kds: {
+        Row: {
+          actualizado_en: string
+          creado_en: string
+          estado: EstadoTicket
+          id: string
+          items_kds: Json
+          negocio_id: string
+          orden_id: string
+          prioridad: number
+          tiempo_fin: string | null
+          tiempo_inicio: string | null
+        }
+        Insert: {
+          actualizado_en?: string | null
+          creado_en?: string | null
+          estado?: EstadoTicket | null
+          id?: string | null
+          items_kds: Json
+          negocio_id: string
+          orden_id: string
+          prioridad?: number | null
+          tiempo_fin?: string | null
+          tiempo_inicio?: string | null
+        }
+        Update: {
+          actualizado_en?: string | null
+          creado_en?: string | null
+          estado?: EstadoTicket | null
+          id?: string | null
+          items_kds?: Json | null
+          negocio_id?: string | null
+          orden_id?: string | null
+          prioridad?: number | null
+          tiempo_fin?: string | null
+          tiempo_inicio?: string | null
+        }
+      }
+      usuarios: {
+        Row: {
+          activo: boolean
+          actualizado_en: string
+          auth_uid: string
+          creado_en: string
+          eliminado_en: string | null
+          email: string
+          id: string
+          negocio_id: string
+          nombre: string
+          pin: string | null
+          rol: RolUsuario
+          ultimo_acceso: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          actualizado_en?: string | null
+          auth_uid: string
+          creado_en?: string | null
+          eliminado_en?: string | null
+          email: string
+          id?: string | null
+          negocio_id: string
+          nombre: string
+          pin?: string | null
+          rol?: RolUsuario | null
+          ultimo_acceso?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          actualizado_en?: string | null
+          auth_uid?: string | null
+          creado_en?: string | null
+          eliminado_en?: string | null
+          email?: string | null
+          id?: string | null
+          negocio_id?: string | null
+          nombre?: string | null
+          pin?: string | null
+          rol?: RolUsuario | null
+          ultimo_acceso?: string | null
+        }
+      }
+      zonas: {
+        Row: {
+          activa: boolean
+          actualizado_en: string
+          color: string
+          creado_en: string
+          eliminado_en: string | null
+          id: string
+          negocio_id: string
+          nombre: string
+          orden: number
+        }
+        Insert: {
+          activa?: boolean | null
+          actualizado_en?: string | null
+          color?: string | null
+          creado_en?: string | null
+          eliminado_en?: string | null
+          id?: string | null
+          negocio_id: string
+          nombre: string
+          orden?: number | null
+        }
+        Update: {
+          activa?: boolean | null
+          actualizado_en?: string | null
+          color?: string | null
+          creado_en?: string | null
+          eliminado_en?: string | null
+          id?: string | null
+          negocio_id?: string | null
+          nombre?: string | null
+          orden?: number | null
+        }
+      }
+    }
+    Views: {
+      vista_productos_margen: {
+        Row: {
+          costo: number | null
+          id: string | null
+          margen: number | null
+          margen_pct: number | null
+          negocio_id: string | null
+          nombre: string | null
+          precio_base: number | null
+        }
+      }
+    }
+    Functions: {
+      login_por_pin: {
+        Args: { p_pin: string; p_negocio_id: string }
+        Returns: { usuario_id: string; auth_uid: string; nombre: string; rol: RolUsuario }[]
+      }
+      swap_mesa_numeros: {
+        Args: { p_mesa_a_id: string; p_mesa_b_id: string }
+        Returns: void
+      }
+      agregar_sello_a_tarjeta: {
+        Args: { p_tarjeta_id: string; p_cliente_id: string; p_usuario_id?: string }
+        Returns: Json
+      }
+      deshacer_sello: {
+        Args: { p_tarjeta_id: string }
+        Returns: Json
+      }
+      canjear_tarjeta: {
+        Args: { p_tarjeta_id: string; p_cliente_id: string }
+        Returns: Json
+      }
+    }
+    Enums: {
+      rol_usuario: "admin" | "barista" | "camarero" | "cocina"
+      estado_mesa: "disponible" | "ocupada" | "reservada" | "preparando"
+      estado_orden: "nueva" | "confirmada" | "preparando" | "lista" | "completada" | "cancelada"
+      tipo_pago: "efectivo" | "tarjeta" | "transferencia" | "otro"
+      estado_pago: "pendiente" | "completado" | "fallido" | "reembolsado"
+      origen_orden: "mesa" | "delivery" | "para_llevar" | "online"
+      estado_ticket: "nueva" | "preparando" | "lista"
+      tipo_movimiento: "entrada" | "salida" | "ajuste" | "merma"
+      tipo_descuento: "porcentaje" | "monto_fijo"
+    }
+  }
+}
+
+// ── Helper types ──
+export type Tables<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Row"]
+export type TablesInsert<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Insert"]
+export type TablesUpdate<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Update"]
+export type Enums<T extends keyof Database["public"]["Enums"]> = Database["public"]["Enums"][T]
+
+// ── Convenience aliases ──
+export type Negocio = Tables<"negocios">
+export type Usuario = Tables<"usuarios">
+export type Mesa = Tables<"mesas">
+export type CategoriaMenu = Tables<"categorias_menu">
+export type Producto = Tables<"productos">
+export type OpcionTamano = Tables<"opciones_tamano">
+export type Orden = Tables<"ordenes">
+export type ItemOrden = Tables<"items_orden">
+export type TicketKDS = Tables<"tickets_kds">
+export type Pago = Tables<"pagos">
+export type CorteCaja = Tables<"cortes_caja">
+export type Cliente = Tables<"clientes">
+export type Promocion = Tables<"promociones">
+export type Recompensa = Tables<"recompensas">
+export type Tarjeta = Tables<"tarjetas">
+export type EventoSello = Tables<"eventos_sello">
+export type AuditLog = Tables<"audit_log">
+export type Gasto = Tables<"gastos">
+export type Inventario = Tables<"inventario">
+export type Receta = Tables<"recetas">
+export type Modificador = Tables<"modificadores">
+export type MovimientoInventario = Tables<"movimientos_inventario">
+export type HistoricoOrden = Tables<"historico_ordenes">
+export type Zona = Tables<"zonas">
+
+// ── JSONB interfaces ──
+export interface ItemOrdenJSON {
+  producto_id: string
+  nombre: string
+  cantidad: number
+  precio_unitario: number
+  tamano?: string
+  modificadores?: string[]
+  notas?: string
+}
+
+export interface ItemKDSJSON {
+  nombre: string
+  cantidad: number
+  notas?: string
+}

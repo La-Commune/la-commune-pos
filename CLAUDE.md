@@ -3,6 +3,17 @@
 POS web PWA offline-first para el café/restaurante La Commune (Mineral de la Reforma, MX).
 Proyecto separado de `la-commune-frontend` (app de fidelidad), pero comparten datos via Firebase.
 
+## Seguridad — Regla absoluta
+
+**NUNCA incluir credenciales, tokens, keys, secrets, PINs, passwords, emails reales ni UUIDs de usuarios en:**
+- Código fuente, comentarios o strings hardcodeados
+- Archivos SQL (seeds, migrations, scripts)
+- Ejemplos, snippets o documentación dentro del repo
+- Commits, PR descriptions o mensajes de log
+
+Usar siempre placeholders genéricos (`REPLACE_WITH_...`, `admin@example.com`, `000000`).
+Las credenciales reales van **exclusivamente** en `.env.local` (que está en `.gitignore`).
+
 ## Stack
 
 - **Next.js 14** — App Router, `"use client"` explícito requerido

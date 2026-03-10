@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { Users, GripVertical, RotateCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ESTADO_MESA_CONFIG } from "@/lib/constants";
-import type { Mesa } from "@/lib/validators";
+import type { Mesa } from "@/types/database";
 import MesaTimer, { getMins, getLevel } from "./MesaTimer";
 
 interface DraggableMesaProps {

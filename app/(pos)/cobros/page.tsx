@@ -20,6 +20,7 @@ import { cn, formatMXN } from "@/lib/utils";
 import { useOrdenes, insertRecord, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
 import { useAuthStore } from "@/store/auth.store";
 import { showToast } from "@/components/ui/Toast";
+import type { Orden, ItemOrdenJSON } from "@/types/database";
 
 type MetodoPago = "efectivo" | "tarjeta" | "transferencia";
 
@@ -72,9 +73,9 @@ export default function CobrosPage() {
   // Normalizar mesa_numero desde join
   const ordenesNormalizadas = useMemo(
     () =>
-      (ordenes as any[]).map((o: any) => ({
+      (ordenes as unknown as Orden[]).map((o) => ({
         ...o,
-        mesa_numero: o.mesas?.numero ?? o.mesa_numero ?? null,
+        mesa_numero: (o as any).mesas?.numero ?? (o as any).mesa_numero ?? null,
       })),
     [ordenes],
   );
@@ -287,8 +288,8 @@ export default function CobrosPage() {
                 </span>
               </div>
               <div className="text-[11px] text-text-25">
-                {(orden.items ?? []).reduce((a: number, i: any) => a + i.cantidad, 0)} items · {(orden.items ?? []).map((i: any) => i.nombre).slice(0, 2).join(", ")}
-                {(orden.items ?? []).length > 2 && "..."}
+                {(orden.items as unknown as ItemOrdenJSON[]).reduce((a: number, i: ItemOrdenJSON) => a + i.cantidad, 0)} items · {(orden.items as unknown as ItemOrdenJSON[]).map((i: ItemOrdenJSON) => i.nombre).slice(0, 2).join(", ")}
+                {(orden.items as unknown as ItemOrdenJSON[]).length > 2 && "..."}
               </div>
             </button>
           ))}

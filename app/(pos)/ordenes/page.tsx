@@ -30,6 +30,7 @@ import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useUIStore } from "@/store/ui.store";
 import { showToast } from "@/components/ui/Toast";
 import { Star } from "lucide-react";
+import type { Mesa, Producto, CategoriaMenu, Orden, ItemOrdenJSON } from "@/types/database";
 
 /* P11: Colores migrados al design system */
 const estadoOrdenConfig = {
@@ -66,13 +67,13 @@ export default function OrdenesPage() {
   const { data: productos } = useProductos();
   const { data: ordenes, refetch: refetchOrdenes } = useOrdenes();
   const { data: mesas, refetch: refetchMesas } = useMesas();
-  const mesasDisponibles = (mesas as any[]).filter((m: any) => m.estado === "disponible");
+  const mesasDisponibles = (mesas as unknown as Mesa[]).filter((m) => m.estado === "disponible");
 
   // Normalizar órdenes: agregar mesa_numero desde el join de Supabase
   const ordenesNormalizadas = useMemo(() => {
-    return (ordenes as any[]).map((o) => ({
+    return (ordenes as unknown as Orden[]).map((o) => ({
       ...o,
-      mesa_numero: o.mesas?.numero ?? o.mesa_numero ?? null,
+      mesa_numero: (o as any).mesas?.numero ?? (o as any).mesa_numero ?? null,
     }));
   }, [ordenes]);
 
@@ -107,7 +108,7 @@ export default function OrdenesPage() {
     const mesaParam = searchParams.get("mesa");
     if (mesaParam) {
       const mesaNum = parseInt(mesaParam);
-      const mesaObj = (mesas as any[]).find((m: any) => m.numero === mesaNum);
+      const mesaObj = (mesas as unknown as Mesa[]).find((m) => m.numero === mesaNum);
       if (!mesaObj) {
         // Mesa no existe
         setVista("nueva");
@@ -149,7 +150,7 @@ export default function OrdenesPage() {
   }, [vista, pasoOrden]);
 
   const productosFiltrados = useMemo(() => {
-    let lista = (productos as any[]).filter((p: any) => p.disponible);
+    let lista = (productos as Producto[]).filter((p) => p.disponible);
     if (categoriaActiva !== "todas") {
       lista = lista.filter((p) => p.categoria_id === categoriaActiva);
     }
@@ -213,7 +214,7 @@ export default function OrdenesPage() {
       // 1. Encontrar mesa_id real si es orden de mesa
       let mesaId: string | null = null;
       if (origenSeleccionado === "mesa" && mesaSeleccionada) {
-        const mesa = (mesas as any[]).find((m: any) => m.numero === mesaSeleccionada);
+        const mesa = (mesas as unknown as Mesa[]).find((m) => m.numero === mesaSeleccionada);
         mesaId = mesa?.id ?? null;
       }
 
@@ -490,12 +491,12 @@ export default function OrdenesPage() {
                     </div>
 
                     <div className="text-[11px] text-text-45 mb-2">
-                      {(orden.items ?? []).map((i: any) => `${i.cantidad}x ${i.nombre}`).join(" · ")}
+                      {(orden.items as unknown as ItemOrdenJSON[]).map((i: ItemOrdenJSON) => `${i.cantidad}x ${i.nombre}`).join(" · ")}
                     </div>
 
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-text-45">
-                        {(orden.items ?? []).reduce((a: number, i: any) => a + i.cantidad, 0)} items
+                        {(orden.items as unknown as ItemOrdenJSON[]).reduce((a: number, i: ItemOrdenJSON) => a + i.cantidad, 0)} items
                       </span>
                       <span className="text-sm font-semibold text-accent tabular-nums">
                         {formatMXN(orden.total)}
@@ -636,7 +637,7 @@ export default function OrdenesPage() {
                 >
                   Todas
                 </button>
-                {(categorias as any[]).map((cat) => (
+                {(categorias as CategoriaMenu[]).map((cat) => (
                   <button
                     key={cat.id}
                     onClick={() => setCategoriaActiva(cat.id)}
@@ -667,7 +668,7 @@ export default function OrdenesPage() {
                 <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Favoritos</p>
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {favoriteProductIds.map((fid) => {
-                    const prod = (productos as any[]).find((p) => p.id === fid);
+                    const prod = (productos as Producto[]).find((p) => p.id === fid);
                     if (!prod) return null;
                     const enCarrito = carrito.find((i) => i.producto_id === prod.id);
                     return (

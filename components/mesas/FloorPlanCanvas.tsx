@@ -11,7 +11,8 @@ import {
 } from "@dnd-kit/core";
 import { Plus, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import DraggableMesaWrapper from "./DraggableMesaWrapper";
-import type { Mesa, Zona } from "@/lib/validators";
+import type { Zona } from "@/lib/validators";
+import type { Mesa } from "@/types/database";
 
 interface FloorPlanCanvasProps {
   mesas: Mesa[];
