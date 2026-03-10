@@ -30,8 +30,9 @@ export function useSW() {
   }, []);
 
   useEffect(() => {
-    // ── Registrar SW ──
-    if ("serviceWorker" in navigator) {
+    // ── Registrar SW (solo en producción) ──
+    const isDev = process.env.NODE_ENV === "development";
+    if ("serviceWorker" in navigator && !isDev) {
       navigator.serviceWorker
         .register("/sw.js")
         .then((reg) => {

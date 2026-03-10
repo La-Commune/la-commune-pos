@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase, USE_MOCK } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth.store";
-import type { Database } from "@/types/database";
+import type { Database, Negocio } from "@/types/database";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import {
   MOCK_CATEGORIAS,
@@ -202,6 +202,90 @@ export function useNegocio() {
   }, [isAuthenticated, negocioId]);
 
   return negocio;
+}
+
+// ── Negocio completo (para página de configuración) ──
+
+export function useNegocioCompleto() {
+  const [negocio, setNegocio] = useState<Negocio | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const negocioId = useAuthStore((s) => s.user?.negocio_id);
+
+  const fetchNegocio = useCallback(async () => {
+    if (USE_MOCK || !supabase || !negocioId) {
+      setNegocio({
+        id: "dev-negocio-1",
+        nombre: "La Commune",
+        direccion: "Mineral de la Reforma, Hidalgo",
+        telefono: null,
+        rfc: null,
+        divisa: "MXN",
+        zona_horaria: "America/Mexico_City",
+        firebase_project_id: null,
+        creado_en: new Date().toISOString(),
+        actualizado_en: new Date().toISOString(),
+        eliminado_en: null,
+        logo_url: null,
+        color_primario: "#C49A3C",
+        slogan: null,
+        email: null,
+        sitio_web: null,
+        whatsapp: null,
+        redes_sociales: {},
+        razon_social: null,
+        regimen_fiscal: null,
+        codigo_postal_fiscal: null,
+        footer_ticket: "¡Gracias por tu visita!",
+        horario: {},
+        propina_sugerida: [10, 15, 20],
+        iva_incluido: true,
+      } as Negocio);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const { data, error: err } = await supabase
+      .from("negocios")
+      .select("*")
+      .eq("id", negocioId)
+      .single();
+
+    if (err) {
+      setError(err.message);
+    } else if (data) {
+      setNegocio(data as Negocio);
+    }
+    setLoading(false);
+  }, [negocioId]);
+
+  useEffect(() => {
+    if (isAuthenticated || USE_MOCK) fetchNegocio();
+  }, [isAuthenticated, fetchNegocio]);
+
+  const updateNegocio = useCallback(
+    async (updates: Partial<Negocio>) => {
+      if (USE_MOCK || !supabase || !negocioId) {
+        setNegocio((prev) => prev ? { ...prev, ...updates } as Negocio : prev);
+        return { success: true };
+      }
+
+      const { error: err } = await supabase
+        .from("negocios")
+        .update(updates as never)
+        .eq("id", negocioId);
+
+      if (err) return { success: false, error: err.message };
+
+      setNegocio((prev) => prev ? { ...prev, ...updates } as Negocio : prev);
+      return { success: true };
+    },
+    [negocioId]
+  );
+
+  return { negocio, loading, error, updateNegocio, refetch: fetchNegocio };
 }
 
 // ── Mutation helpers ──

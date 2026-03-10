@@ -17,6 +17,7 @@ const ROLE_ACCESS: Record<string, RolUsuario[]> = {
   "/reportes": ["admin"],
   "/usuarios": ["admin"],
   "/fidelidad": ["admin", "camarero"],
+  "/configuracion": ["admin"],
 };
 
 const ROLE_HOME: Record<RolUsuario, string> = {

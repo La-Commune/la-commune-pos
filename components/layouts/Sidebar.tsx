@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Vault,
+  Settings,
 } from "lucide-react";
 import { useUIStore } from "@/store/ui.store";
 import { useAuthStore } from "@/store/auth.store";
@@ -35,6 +36,7 @@ const ROLE_ACCESS: Record<string, RolUsuario[]> = {
   "/reportes": ["admin"],
   "/usuarios": ["admin"],
   "/fidelidad": ["admin", "camarero"],
+  "/configuracion": ["admin"],
 };
 
 /* Default landing page per role */
@@ -56,6 +58,7 @@ export const navItems = [
   { href: "/reportes", label: "Reportes", icon: BarChart3, color: "#60A5FA" },
   { href: "/usuarios", label: "Usuarios", icon: Users, color: "#F2A7C3" },
   { href: "/fidelidad", label: "Fidelidad", icon: Heart, color: "#B8A9EA" },
+  { href: "/configuracion", label: "Config", icon: Settings, color: "#94A3B8" },
 ];
 
 export default function Sidebar() {
