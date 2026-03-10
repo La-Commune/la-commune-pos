@@ -23,8 +23,14 @@ export const supabaseAdmin = createClient<Database>(supabaseUrl, serviceRoleKey,
 
 /**
  * Genera el password determinístico para login por PIN.
- * Formato: lc_pos_{auth_uid} — único por usuario, irreversible sin conocer el uid.
+ * Usa HMAC-SHA256 con un secret de entorno para que no sea derivable solo con el uid.
+ * Requiere PIN_PASSWORD_SECRET en .env.local (generar con: openssl rand -hex 32)
  */
 export function derivePinPassword(authUid: string): string {
-  return `lc_pos_${authUid}`;
+  const crypto = require("crypto");
+  const secret = process.env.PIN_PASSWORD_SECRET;
+  if (!secret) {
+    throw new Error("Falta PIN_PASSWORD_SECRET en variables de entorno");
+  }
+  return crypto.createHmac("sha256", secret).update(authUid).digest("hex");
 }

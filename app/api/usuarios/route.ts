@@ -5,7 +5,12 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
 function derivePinPassword(authUid: string): string {
-  return `lc_pos_${authUid}`;
+  const crypto = require("crypto");
+  const secret = process.env.PIN_PASSWORD_SECRET;
+  if (!secret) {
+    throw new Error("Falta PIN_PASSWORD_SECRET en variables de entorno");
+  }
+  return crypto.createHmac("sha256", secret).update(authUid).digest("hex");
 }
 
 /**

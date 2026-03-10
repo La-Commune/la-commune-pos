@@ -64,7 +64,7 @@ Dos métodos de login, ambos crean sesión Auth real en Supabase:
 - **Email/password**: `signInWithPassword()` directo desde el cliente
 - **PIN (4 dígitos)**: Frontend → `POST /api/auth/pin` → service role valida PIN + genera sesión → frontend hace `setSession()` con los tokens
 
-El endpoint PIN usa `SUPABASE_SERVICE_ROLE_KEY` (server-side only) y un password determinístico (`lc_pos_{auth_uid}`) que se sincroniza automáticamente.
+El endpoint PIN usa `SUPABASE_SERVICE_ROLE_KEY` (server-side only) y un password determinístico derivado via HMAC-SHA256 con `PIN_PASSWORD_SECRET` que se sincroniza automáticamente.
 
 Archivos clave: `app/api/auth/pin/route.ts`, `lib/supabase-admin.ts`, `store/auth.store.ts`
 
