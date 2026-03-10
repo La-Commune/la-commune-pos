@@ -7,16 +7,20 @@
 -- ============================================================
 
 -- Insertar usuario admin
+-- ⚠️ IMPORTANTE: Cambia estos valores antes de ejecutar en producción
+--   - auth_uid: tu UUID real de Supabase Auth
+--   - email: tu email real
+--   - pin: un PIN seguro (NO uses 1234)
 INSERT INTO usuarios (negocio_id, auth_uid, nombre, email, rol, pin, activo)
 SELECT
   (SELECT id FROM negocios WHERE nombre = 'La Commune' LIMIT 1),
-  '81850ac4-446a-4558-a787-2d66834aa474',   -- ← Tu auth_uid de Supabase Auth
-  'David',
-  'deivod_halo@hotmail.com',
+  'REPLACE_WITH_YOUR_AUTH_UID',              -- ← Tu auth_uid de Supabase Auth
+  'Admin',
+  'admin@example.com',                       -- ← Tu email real
   'admin',
-  '1234',                                     -- ← Tu PIN de acceso rápido
+  '000000',                                  -- ← Cambia por un PIN seguro de 6 dígitos
   TRUE
-WHERE NOT EXISTS (SELECT 1 FROM usuarios WHERE email = 'deivod_halo@hotmail.com');
+WHERE NOT EXISTS (SELECT 1 FROM usuarios WHERE email = 'admin@example.com');
 
 -- ── Verificación ──
 SELECT 'negocios' as tabla, count(*) as registros FROM negocios
