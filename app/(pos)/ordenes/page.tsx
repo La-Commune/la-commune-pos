@@ -159,7 +159,7 @@ export default function OrdenesPage() {
       lista = lista.filter((p) => p.nombre.toLowerCase().includes(q));
     }
     return lista;
-  }, [categoriaActiva, busqueda]);
+  }, [categoriaActiva, busqueda, productos]);
 
   // Precios ya incluyen IVA — el total es la suma directa
   const totalCarrito = carrito.reduce((acc, item) => acc + item.precio_unitario * item.cantidad, 0);
