@@ -208,41 +208,6 @@ export type Database = {
           },
         ]
       }
-      config_admin: {
-        Row: {
-          actualizado_en: string
-          creado_en: string
-          id: string
-          longitud_pin: number
-          negocio_id: string
-          pin_hmac: string | null
-        }
-        Insert: {
-          actualizado_en?: string
-          creado_en?: string
-          id?: string
-          longitud_pin?: number
-          negocio_id: string
-          pin_hmac?: string | null
-        }
-        Update: {
-          actualizado_en?: string
-          creado_en?: string
-          id?: string
-          longitud_pin?: number
-          negocio_id?: string
-          pin_hmac?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "config_admin_negocio_id_fkey"
-            columns: ["negocio_id"]
-            isOneToOne: true
-            referencedRelation: "negocios"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       configuracion_sync: {
         Row: {
           id: string
@@ -602,84 +567,6 @@ export type Database = {
             columns: ["negocio_id"]
             isOneToOne: false
             referencedRelation: "negocios"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      items_menu: {
-        Row: {
-          actualizado_en: string
-          creado_en: string
-          descripcion: string | null
-          destacado: boolean
-          disponible: boolean
-          estacional: boolean
-          etiquetas: string[] | null
-          id: string
-          imagen_url: string | null
-          ingredientes: string[] | null
-          negocio_id: string
-          nombre: string
-          nota: string | null
-          opcionales: string[] | null
-          orden: number
-          precio: number | null
-          seccion_id: string
-          tamanos: Json | null
-        }
-        Insert: {
-          actualizado_en?: string
-          creado_en?: string
-          descripcion?: string | null
-          destacado?: boolean
-          disponible?: boolean
-          estacional?: boolean
-          etiquetas?: string[] | null
-          id?: string
-          imagen_url?: string | null
-          ingredientes?: string[] | null
-          negocio_id: string
-          nombre: string
-          nota?: string | null
-          opcionales?: string[] | null
-          orden?: number
-          precio?: number | null
-          seccion_id: string
-          tamanos?: Json | null
-        }
-        Update: {
-          actualizado_en?: string
-          creado_en?: string
-          descripcion?: string | null
-          destacado?: boolean
-          disponible?: boolean
-          estacional?: boolean
-          etiquetas?: string[] | null
-          id?: string
-          imagen_url?: string | null
-          ingredientes?: string[] | null
-          negocio_id?: string
-          nombre?: string
-          nota?: string | null
-          opcionales?: string[] | null
-          orden?: number
-          precio?: number | null
-          seccion_id?: string
-          tamanos?: Json | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "items_menu_negocio_id_fkey"
-            columns: ["negocio_id"]
-            isOneToOne: false
-            referencedRelation: "negocios"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "items_menu_seccion_id_fkey"
-            columns: ["seccion_id"]
-            isOneToOne: false
-            referencedRelation: "secciones_menu"
             referencedColumns: ["id"]
           },
         ]
@@ -1511,53 +1398,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "recompensas_negocio_id_fkey"
-            columns: ["negocio_id"]
-            isOneToOne: false
-            referencedRelation: "negocios"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      secciones_menu: {
-        Row: {
-          activa: boolean
-          actualizado_en: string
-          creado_en: string
-          descripcion: string | null
-          eliminado_en: string | null
-          id: string
-          negocio_id: string
-          orden: number
-          tipo: string
-          titulo: string
-        }
-        Insert: {
-          activa?: boolean
-          actualizado_en?: string
-          creado_en?: string
-          descripcion?: string | null
-          eliminado_en?: string | null
-          id?: string
-          negocio_id: string
-          orden?: number
-          tipo?: string
-          titulo: string
-        }
-        Update: {
-          activa?: boolean
-          actualizado_en?: string
-          creado_en?: string
-          descripcion?: string | null
-          eliminado_en?: string | null
-          id?: string
-          negocio_id?: string
-          orden?: number
-          tipo?: string
-          titulo?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "secciones_menu_negocio_id_fkey"
             columns: ["negocio_id"]
             isOneToOne: false
             referencedRelation: "negocios"
