@@ -12,22 +12,30 @@ import {
   BarChart3,
   Calendar,
   Loader2,
+  Heart,
+  Stamp,
+  Gift,
+  CreditCard,
+  History,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from "recharts";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { supabase, USE_MOCK } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth.store";
 import { subscribeToTable } from "@/hooks/useSupabase";
-import type { Pago, ItemOrden } from "@/types/database";
+import type { Pago, ItemOrden, EventoSello } from "@/types/database";
 import {
   MOCK_STATS_REPORTES,
   MOCK_VENTAS_SEMANA,
@@ -46,6 +54,33 @@ interface StatsKPI {
   ordenesPrev: number;
   ticketPromedio: number;
   ticketPromedioPrev: number;
+}
+
+interface LealtadKPI {
+  clientesActivos: number;
+  sellosDelPeriodo: number;
+  sellosPrevPeriodo: number;
+  canjesDelPeriodo: number;
+  canjesPrevPeriodo: number;
+  tarjetasActivas: number;
+  sellosHistorico: number;
+  canjesHistorico: number;
+}
+
+interface TopBebidaSello {
+  nombre: string;
+  cantidad: number;
+}
+
+interface SellosPorDia {
+  dia: string;
+  sellos: number;
+}
+
+interface SellosPorMes {
+  mes: string;
+  sellos: number;
+  canjes: number;
 }
 
 interface VentaDia {
@@ -168,12 +203,20 @@ export default function ReportesPage() {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
+  const isAdmin = user?.rol === "admin";
+
   // ── Estado de datos ──
   const [stats, setStats] = useState<StatsKPI>({ ventas: 0, ventasPrev: 0, ordenes: 0, ordenesPrev: 0, ticketPromedio: 0, ticketPromedioPrev: 0 });
   const [ventasSemana, setVentasSemana] = useState<VentaDia[]>([]);
   const [ventasHora, setVentasHora] = useState<VentaHora[]>([]);
   const [topProductos, setTopProductos] = useState<TopProducto[]>([]);
   const [metodosPago, setMetodosPago] = useState<MetodoPago[]>([]);
+
+  // ── Estado de lealtad (solo admin) ──
+  const [lealtadKPI, setLealtadKPI] = useState<LealtadKPI>({ clientesActivos: 0, sellosDelPeriodo: 0, sellosPrevPeriodo: 0, canjesDelPeriodo: 0, canjesPrevPeriodo: 0, tarjetasActivas: 0, sellosHistorico: 0, canjesHistorico: 0 });
+  const [topBebidasSello, setTopBebidasSello] = useState<TopBebidaSello[]>([]);
+  const [sellosSemana, setSellosSemana] = useState<SellosPorDia[]>([]);
+  const [tendenciaMensual, setTendenciaMensual] = useState<SellosPorMes[]>([]);
 
   // ── Cargar datos ──
   const cargarDatos = useCallback(async () => {
@@ -191,6 +234,24 @@ export default function ReportesPage() {
       setVentasHora(MOCK_VENTAS_HORA);
       setTopProductos(MOCK_TOP_PRODUCTOS);
       setMetodosPago(MOCK_METODOS_PAGO);
+      // Mock lealtad
+      setLealtadKPI({ clientesActivos: 29, sellosDelPeriodo: 14, sellosPrevPeriodo: 11, canjesDelPeriodo: 3, canjesPrevPeriodo: 2, tarjetasActivas: 22, sellosHistorico: 187, canjesHistorico: 34 });
+      setTopBebidasSello([
+        { nombre: "Americano", cantidad: 8 },
+        { nombre: "Latte", cantidad: 6 },
+        { nombre: "Cappuccino", cantidad: 4 },
+        { nombre: "Mocha", cantidad: 3 },
+        { nombre: "Espresso", cantidad: 2 },
+      ]);
+      setSellosSemana(DIAS_SEMANA.map((dia, i) => ({ dia, sellos: [2, 4, 3, 5, 3, 1, 0][i] })));
+      setTendenciaMensual([
+        { mes: "Oct", sellos: 22, canjes: 4 },
+        { mes: "Nov", sellos: 31, canjes: 6 },
+        { mes: "Dic", sellos: 38, canjes: 7 },
+        { mes: "Ene", sellos: 28, canjes: 5 },
+        { mes: "Feb", sellos: 34, canjes: 6 },
+        { mes: "Mar", sellos: 14, canjes: 3 },
+      ]);
       setLoading(false);
       return;
     }
@@ -326,6 +387,137 @@ export default function ReportesPage() {
           porcentaje: totalMetodos > 0 ? Math.round((monto / totalMetodos) * 100) : 0,
         }))
       );
+      // ── 7. Lealtad (solo admin) ──
+      if (user.rol === "admin") {
+        // Clientes activos
+        const { count: clientesActivos } = await supabase
+          .from("clientes")
+          .select("id", { count: "exact", head: true })
+          .eq("negocio_id", negocioId)
+          .eq("activo", true);
+
+        // Tarjetas activas
+        const { count: tarjetasActivas } = await supabase
+          .from("tarjetas")
+          .select("id", { count: "exact", head: true })
+          .eq("negocio_id", negocioId)
+          .eq("estado", "activa");
+
+        // Sellos del período actual
+        const { data: sellosActual } = await supabase
+          .from("eventos_sello")
+          .select("id, origen, tipo_bebida, creado_en")
+          .eq("negocio_id", negocioId)
+          .gte("creado_en", desde);
+
+        const sellosArr = (sellosActual ?? []) as unknown as EventoSello[];
+        const sellosCount = sellosArr.filter((e) => e.origen !== "canje").length;
+        const canjesCount = sellosArr.filter((e) => e.origen === "canje").length;
+
+        // Sellos del período anterior
+        const { data: sellosPrev } = await supabase
+          .from("eventos_sello")
+          .select("id, origen")
+          .eq("negocio_id", negocioId)
+          .gte("creado_en", desdePrev)
+          .lt("creado_en", desde);
+
+        const sellosPrevArr = (sellosPrev ?? []) as unknown as EventoSello[];
+        const sellosPrevCount = sellosPrevArr.filter((e) => e.origen !== "canje").length;
+        const canjesPrevCount = sellosPrevArr.filter((e) => e.origen === "canje").length;
+
+        // Totales históricos (all-time)
+        const { count: sellosHistorico } = await supabase
+          .from("eventos_sello")
+          .select("id", { count: "exact", head: true })
+          .eq("negocio_id", negocioId)
+          .neq("origen", "canje");
+
+        const { count: canjesHistorico } = await supabase
+          .from("eventos_sello")
+          .select("id", { count: "exact", head: true })
+          .eq("negocio_id", negocioId)
+          .eq("origen", "canje");
+
+        setLealtadKPI({
+          clientesActivos: clientesActivos ?? 0,
+          sellosDelPeriodo: sellosCount,
+          sellosPrevPeriodo: sellosPrevCount,
+          canjesDelPeriodo: canjesCount,
+          canjesPrevPeriodo: canjesPrevCount,
+          tarjetasActivas: tarjetasActivas ?? 0,
+          sellosHistorico: sellosHistorico ?? 0,
+          canjesHistorico: canjesHistorico ?? 0,
+        });
+
+        // Top bebidas por sellos (del período)
+        const bebidaMap: Record<string, number> = {};
+        sellosArr.forEach((e) => {
+          if (e.tipo_bebida && e.origen !== "canje") {
+            bebidaMap[e.tipo_bebida] = (bebidaMap[e.tipo_bebida] ?? 0) + 1;
+          }
+        });
+        const topBebidas = Object.entries(bebidaMap)
+          .map(([nombre, cantidad]) => ({ nombre, cantidad }))
+          .sort((a, b) => b.cantidad - a.cantidad)
+          .slice(0, 8);
+        setTopBebidasSello(topBebidas);
+
+        // Sellos por día de la semana (últimos 7 días)
+        const { data: sellos7d } = await supabase
+          .from("eventos_sello")
+          .select("creado_en, origen")
+          .eq("negocio_id", negocioId)
+          .neq("origen", "canje")
+          .gte("creado_en", hace7Dias.toISOString());
+
+        const sellosPorDia: Record<string, number> = {};
+        DIAS_SEMANA.forEach((d) => (sellosPorDia[d] = 0));
+        ((sellos7d ?? []) as unknown as EventoSello[]).forEach((e) => {
+          const dia = DIAS_SEMANA[new Date(e.creado_en).getDay()];
+          sellosPorDia[dia] += 1;
+        });
+        setSellosSemana(DIAS_SEMANA.map((dia) => ({ dia, sellos: sellosPorDia[dia] })));
+
+        // Tendencia mensual (últimos 6 meses)
+        const hace6Meses = new Date();
+        hace6Meses.setMonth(hace6Meses.getMonth() - 5);
+        hace6Meses.setDate(1);
+        hace6Meses.setHours(0, 0, 0, 0);
+
+        const { data: sellos6m } = await supabase
+          .from("eventos_sello")
+          .select("creado_en, origen")
+          .eq("negocio_id", negocioId)
+          .gte("creado_en", hace6Meses.toISOString());
+
+        const MESES_CORTOS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+        const mesesMap: Record<string, { sellos: number; canjes: number }> = {};
+
+        // Inicializar los últimos 6 meses
+        for (let i = 0; i < 6; i++) {
+          const d = new Date();
+          d.setMonth(d.getMonth() - (5 - i));
+          const key = `${MESES_CORTOS[d.getMonth()]} ${d.getFullYear().toString().slice(-2)}`;
+          mesesMap[key] = { sellos: 0, canjes: 0 };
+        }
+
+        ((sellos6m ?? []) as unknown as EventoSello[]).forEach((e) => {
+          const fecha = new Date(e.creado_en);
+          const key = `${MESES_CORTOS[fecha.getMonth()]} ${fecha.getFullYear().toString().slice(-2)}`;
+          if (mesesMap[key]) {
+            if (e.origen === "canje") {
+              mesesMap[key].canjes += 1;
+            } else {
+              mesesMap[key].sellos += 1;
+            }
+          }
+        });
+
+        setTendenciaMensual(
+          Object.entries(mesesMap).map(([mes, data]) => ({ mes, ...data }))
+        );
+      }
     } catch (err) {
       console.warn("[Reportes] Error cargando datos:", err);
     } finally {
@@ -483,7 +675,7 @@ export default function ReportesPage() {
         </div>
       </div>
 
-      {/* Bottom row */}
+      {/* Bottom row — Ventas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Top productos */}
         <div className="p-5 rounded-xl bg-surface-2 border border-border">
@@ -583,6 +775,238 @@ export default function ReportesPage() {
           </div>
         </div>
       </div>
+
+      {/* ══════════════════════════════════════════════════════════ */}
+      {/* ── Sección Programa de Lealtad (solo admin) ── */}
+      {/* ══════════════════════════════════════════════════════════ */}
+      {isAdmin && (
+        <>
+          {/* Divider */}
+          <div className="flex items-center gap-4 my-8">
+            <div className="flex-1 h-px bg-border" />
+            <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface-2 border border-border">
+              <Heart size={14} className="text-accent" />
+              <span className="text-[11px] font-medium text-text-45 uppercase tracking-widest">
+                Programa de Lealtad
+              </span>
+            </div>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          {/* Lealtad KPI Cards — Del período */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+            <StatCard
+              title="Clientes activos"
+              value={lealtadKPI.clientesActivos}
+              prevValue={0}
+              icon={Users}
+            />
+            <StatCard
+              title="Sellos dados"
+              value={lealtadKPI.sellosDelPeriodo}
+              prevValue={lealtadKPI.sellosPrevPeriodo}
+              icon={Stamp}
+            />
+            <StatCard
+              title="Canjes"
+              value={lealtadKPI.canjesDelPeriodo}
+              prevValue={lealtadKPI.canjesPrevPeriodo}
+              icon={Gift}
+            />
+            <StatCard
+              title="Tarjetas activas"
+              value={lealtadKPI.tarjetasActivas}
+              prevValue={0}
+              icon={CreditCard}
+            />
+          </div>
+
+          {/* Histórico acumulado */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <div className="p-4 rounded-xl bg-surface-2 border border-border flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                <History size={18} className="text-accent" />
+              </div>
+              <div>
+                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-0.5">
+                  Total sellos (histórico)
+                </p>
+                <p className="text-lg font-semibold text-text-100 tabular-nums">
+                  {lealtadKPI.sellosHistorico.toLocaleString("es-MX")}
+                </p>
+              </div>
+            </div>
+            <div className="p-4 rounded-xl bg-surface-2 border border-border flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                <Gift size={18} className="text-accent" />
+              </div>
+              <div>
+                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-0.5">
+                  Total canjes (histórico)
+                </p>
+                <p className="text-lg font-semibold text-text-100 tabular-nums">
+                  {lealtadKPI.canjesHistorico.toLocaleString("es-MX")}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Tendencia mensual (línea) + Sellos de la semana (barras) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            {/* Tendencia últimos 6 meses */}
+            <div className="p-5 rounded-xl bg-surface-2 border border-border">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-[11px] font-medium text-text-25 uppercase tracking-widest">
+                  Tendencia últimos 6 meses
+                </h3>
+                <TrendingUp size={14} className="text-text-25 opacity-40" />
+              </div>
+              {tendenciaMensual.some((v) => v.sellos > 0 || v.canjes > 0) ? (
+                <ResponsiveContainer width="100%" height={180}>
+                  <LineChart data={tendenciaMensual}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                    <XAxis
+                      dataKey="mes"
+                      tick={{ fontSize: 10, fill: "var(--text-45)" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: "var(--text-25)" }}
+                      axisLine={false}
+                      tickLine={false}
+                      allowDecimals={false}
+                      width={30}
+                    />
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (!active || !payload?.length) return null;
+                        return (
+                          <div className="px-3 py-2 rounded-xl bg-surface-3 border border-border shadow-lg text-xs">
+                            <p className="text-text-45 mb-1">{label}</p>
+                            {payload.map((p) => (
+                              <p key={p.dataKey as string} className="text-text-100 font-semibold tabular-nums">
+                                {p.dataKey === "sellos" ? "Sellos" : "Canjes"}: {p.value}
+                              </p>
+                            ))}
+                          </div>
+                        );
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="sellos"
+                      stroke="var(--accent)"
+                      strokeWidth={2}
+                      dot={{ fill: "var(--accent)", r: 4 }}
+                      activeDot={{ r: 6 }}
+                      name="Sellos"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="canjes"
+                      stroke="var(--ok)"
+                      strokeWidth={2}
+                      dot={{ fill: "var(--ok)", r: 4 }}
+                      activeDot={{ r: 6 }}
+                      name="Canjes"
+                    />
+                    <Legend
+                      verticalAlign="top"
+                      height={28}
+                      formatter={(value) => <span className="text-[11px] text-text-45">{value}</span>}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[180px]">
+                  <p className="text-xs text-text-25">Sin datos históricos</p>
+                </div>
+              )}
+            </div>
+
+            {/* Sellos por día (semana) */}
+            <div className="p-5 rounded-xl bg-surface-2 border border-border">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-[11px] font-medium text-text-25 uppercase tracking-widest">
+                  Sellos de la semana
+                </h3>
+                <Stamp size={14} className="text-text-25 opacity-40" />
+              </div>
+              {sellosSemana.some((v) => v.sellos > 0) ? (
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={sellosSemana} barSize={24}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                    <XAxis
+                      dataKey="dia"
+                      tick={{ fontSize: 11, fill: "var(--text-45)" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: "var(--text-25)" }}
+                      axisLine={false}
+                      tickLine={false}
+                      allowDecimals={false}
+                      width={30}
+                    />
+                    <Tooltip content={<CustomTooltip formatter={(v) => `${v} sellos`} />} cursor={{ fill: "var(--surface-3)", radius: 8 }} />
+                    <Bar dataKey="sellos" fill="var(--accent)" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[180px]">
+                  <p className="text-xs text-text-25">Sin sellos esta semana</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Top bebidas por sellos */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="p-5 rounded-xl bg-surface-2 border border-border">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[11px] font-medium text-text-25 uppercase tracking-widest">
+                  Bebidas más selladas
+                </h3>
+                <Coffee size={14} className="text-text-25 opacity-40" />
+              </div>
+              {topBebidasSello.length > 0 ? (
+                <div className="space-y-2.5">
+                  {topBebidasSello.map((beb, idx) => {
+                    const maxCant = topBebidasSello[0].cantidad;
+                    return (
+                      <div key={beb.nombre} className="flex items-center gap-3">
+                        <span className="text-[11px] text-text-25 tabular-nums w-4 text-right">
+                          {idx + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs text-text-100 truncate">{beb.nombre}</span>
+                            <span className="text-[11px] text-text-45 tabular-nums">
+                              {beb.cantidad} sellos
+                            </span>
+                          </div>
+                          <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-accent rounded-full transition-all duration-500"
+                              style={{ width: `${(beb.cantidad / maxCant) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center py-8">
+                  <p className="text-xs text-text-25">Sin sellos en este período</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
       </div>
     </ErrorBoundary>
   );
