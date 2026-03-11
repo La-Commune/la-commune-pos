@@ -984,6 +984,48 @@ body {
   .text-balance { text-wrap: balance; }
 }
 
+/* ── Collapsible panel animation (design system standard) ──
+   Usa --ease de cada tema para mantener consistencia.
+   Uso: wrapper con overflow-hidden + JS que anima max-height.
+   Helpers CSS para casos simples sin JS:                       */
+.collapsible-enter {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.3s var(--ease), opacity 0.25s var(--ease);
+  will-change: max-height, opacity;
+}
+.collapsible-enter.is-open {
+  opacity: 1;
+  /* max-height se setea inline o via JS */
+}
+
+/* Chevron rotate — estandarizado para cualquier accordión */
+.chevron-rotate {
+  transition: transform 0.3s var(--ease);
+}
+.chevron-rotate.is-open {
+  transform: rotate(180deg);
+}
+
+/* Fade in/out genérico */
+.fade-in {
+  animation: pos-fade-in 0.25s var(--ease) both;
+}
+@keyframes pos-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Scale-in para modales y popovers */
+.scale-in {
+  animation: pos-scale-in 0.2s var(--ease) both;
+}
+@keyframes pos-scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
 /* ── Mesa estancada pulse ── */
 @keyframes mesa-pulse {
   0%, 100% {
