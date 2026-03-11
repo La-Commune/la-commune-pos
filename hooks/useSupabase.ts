@@ -179,9 +179,11 @@ export function useClientes() {
 interface NegocioInfo {
   id: string;
   nombre: string;
+  logo_url: string | null;
+  slogan: string | null;
 }
 
-const MOCK_NEGOCIO: NegocioInfo = { id: "dev-negocio-1", nombre: "La Commune" };
+const MOCK_NEGOCIO: NegocioInfo = { id: "dev-negocio-1", nombre: "La Commune", logo_url: null, slogan: null };
 
 export function useNegocio() {
   const [negocio, setNegocio] = useState<NegocioInfo>(MOCK_NEGOCIO);
@@ -193,7 +195,7 @@ export function useNegocio() {
 
     supabase
       .from("negocios")
-      .select("id, nombre")
+      .select("id, nombre, logo_url, slogan")
       .eq("id", negocioId)
       .single<NegocioInfo>()
       .then(({ data }) => {

@@ -102,16 +102,26 @@ export default function Sidebar() {
         <Link href="/mesas" className="flex items-center gap-3.5 min-w-0 group relative">
           {/* Logo mark */}
           <div className="relative w-10 h-10 flex-shrink-0">
-            <div
-              className="absolute inset-0 rounded-xl transition-all duration-300 group-hover:scale-105"
-              style={{
-                background: "linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 70%, #000) 100%)",
-                boxShadow: "0 2px 8px color-mix(in srgb, var(--accent) 25%, transparent)",
-              }}
-            />
-            <span className="relative z-10 flex items-center justify-center w-full h-full text-white font-display font-bold text-[14px] tracking-wide leading-none">
-              {iniciales}
-            </span>
+            {negocio.logo_url ? (
+              <img
+                src={negocio.logo_url}
+                alt={negocio.nombre}
+                className="w-full h-full rounded-xl object-contain transition-all duration-300 group-hover:scale-105"
+              />
+            ) : (
+              <>
+                <div
+                  className="absolute inset-0 rounded-xl transition-all duration-300 group-hover:scale-105"
+                  style={{
+                    background: "linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 70%, #000) 100%)",
+                    boxShadow: "0 2px 8px color-mix(in srgb, var(--accent) 25%, transparent)",
+                  }}
+                />
+                <span className="relative z-10 flex items-center justify-center w-full h-full text-white font-display font-bold text-[14px] tracking-wide leading-none">
+                  {iniciales}
+                </span>
+              </>
+            )}
           </div>
 
           {/* Texto con AnimatePresence */}

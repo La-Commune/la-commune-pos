@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   Store,
   MapPin,
@@ -19,6 +19,8 @@ import {
   Palette,
   FileText,
   Building2,
+  Upload,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNegocioCompleto } from "@/hooks/useSupabase";
@@ -95,9 +97,11 @@ function Field({
 
 // ── Página principal ──
 function ConfiguracionContent() {
-  const { negocio, loading, updateNegocio } = useNegocioCompleto();
+  const { negocio, loading, updateNegocio, refetch } = useNegocioCompleto();
   const [activeSection, setActiveSection] = useState<Section>("general");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Form state ──
   const [form, setForm] = useState<Record<string, unknown>>({});
@@ -150,6 +154,50 @@ function ConfiguracionContent() {
       redes_sociales: { ...(prev.redes_sociales as RedesSociales), [key]: value },
     }));
     setDirty(true);
+  };
+
+  // ── Upload logo ──
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !negocio) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("negocio_id", negocio.id);
+
+      const res = await fetch("/api/upload-logo", { method: "POST", body: formData });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast(data.error ?? "Error al subir imagen", "error");
+        return;
+      }
+
+      // El endpoint ya guardó logo_url en la BD
+      // Actualizar form state para que "Guardar" no lo sobreescriba
+      set("logo_url", data.url);
+      // Refrescar negocio para sincronizar todo
+      await refetch();
+      showToast("Logo actualizado", "success");
+    } catch {
+      showToast("Error de conexión al subir imagen", "error");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    set("logo_url", null);
+    const result = await updateNegocio({ logo_url: null } as Partial<Record<string, unknown>>);
+    if (result.success) {
+      await refetch();
+      showToast("Logo eliminado", "success");
+    } else {
+      showToast(result.error ?? "Error al eliminar logo", "error");
+    }
   };
 
   const setHorario = (dia: string, field: keyof HorarioDia, value: string | boolean) => {
@@ -280,14 +328,73 @@ function ConfiguracionContent() {
                 onChange={(v) => set("slogan", v)}
                 placeholder="El mejor café de la ciudad"
               />
-              <Field
-                label="URL del logo"
-                icon={ImageIcon}
-                value={(form.logo_url as string) ?? ""}
-                onChange={(v) => set("logo_url", v)}
-                placeholder="https://ejemplo.com/logo.png"
-                hint="Se usará en recibos y la app de fidelidad"
-              />
+              {/* Logo upload */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-text-secondary flex items-center gap-1.5">
+                  <ImageIcon size={14} className="text-text-muted" />
+                  Logo del negocio
+                </label>
+                <div className="flex items-start gap-4">
+                  {/* Preview */}
+                  <div
+                    className={cn(
+                      "w-24 h-24 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden shrink-0",
+                      (form.logo_url as string)
+                        ? "border-accent/30 bg-surface-2"
+                        : "border-border-subtle bg-surface-2"
+                    )}
+                  >
+                    {(form.logo_url as string) ? (
+                      <img
+                        src={form.logo_url as string}
+                        alt="Logo"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <ImageIcon size={32} className="text-text-muted" />
+                    )}
+                  </div>
+                  {/* Actions */}
+                  <div className="space-y-2 pt-1">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium",
+                        "bg-surface-3 text-text-primary hover:bg-surface-4",
+                        "border border-border-subtle transition-all",
+                        "disabled:opacity-50"
+                      )}
+                    >
+                      {uploading ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <Upload size={14} />
+                      )}
+                      {uploading ? "Subiendo..." : "Subir imagen"}
+                    </button>
+                    {(form.logo_url as string) && (
+                      <button
+                        onClick={handleRemoveLogo}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-status-error hover:bg-status-error-bg transition-all"
+                      >
+                        <Trash2 size={12} />
+                        Quitar logo
+                      </button>
+                    )}
+                    <p className="text-xs text-text-muted">
+                      PNG, JPG o WebP. Máx 5MB. Se redimensiona a 512×512.
+                    </p>
+                  </div>
+                </div>
+              </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-text-secondary flex items-center gap-1.5">
                   <Palette size={14} className="text-text-muted" />
