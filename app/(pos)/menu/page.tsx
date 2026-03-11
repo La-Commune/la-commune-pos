@@ -18,12 +18,14 @@ import Modal from "@/components/ui/Modal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ProductoForm from "@/components/menu/ProductoForm";
 import ProductoContextMenu from "@/components/menu/ProductoContextMenu";
-import { useCategorias, useProductos, insertRecord, updateRecord, deleteRecord } from "@/hooks/useSupabase";
+import { useCategorias, useProductos, insertRecord, updateRecord, deleteRecord, subscribeToTable } from "@/hooks/useSupabase";
 import { useAuthStore } from "@/store/auth.store";
 import { useUIStore } from "@/store/ui.store";
 import { showToast } from "@/components/ui/Toast";
 import { Grid3X3, List } from "lucide-react";
-import type { Producto, CategoriaMenu } from "@/types/database";
+import type { Producto, CategoriaMenu, OpcionTamano } from "@/types/database";
+
+type ProductoConTamanos = Producto & { tamanos?: OpcionTamano[] };
 
 export default function MenuPage() {
   const { data: categorias, loading: loadingCats, refetch: refetchCategorias } = useCategorias();
@@ -32,32 +34,42 @@ export default function MenuPage() {
   const [categoriaActiva, setCategoriaActiva] = useState<string | "todas">("todas");
   const [busqueda, setBusqueda] = useState("");
   const [soloDisponibles, setSoloDisponibles] = useState(false);
-  const [productoDetalle, setProductoDetalle] = useState<any | null>(null);
+  const [productoDetalle, setProductoDetalle] = useState<ProductoConTamanos | null>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [productoEditando, setProductoEditando] = useState<any | null>(null);
+  const [productoEditando, setProductoEditando] = useState<ProductoConTamanos | null>(null);
   /* R2: Estado para confirmación de eliminar */
   const [confirmEliminar, setConfirmEliminar] = useState(false);
-  const [productoAEliminar, setProductoAEliminar] = useState<any | null>(null);
+  const [productoAEliminar, setProductoAEliminar] = useState<ProductoConTamanos | null>(null);
   const [saving, setSaving] = useState(false);
   /* Context menu producto (right-click / long-press) */
-  const [ctxMenu, setCtxMenu] = useState<{ producto: any; position: { x: number; y: number } } | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ producto: ProductoConTamanos; position: { x: number; y: number } } | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   /* Categoría CRUD */
   const [modalCategoria, setModalCategoria] = useState(false);
-  const [categoriaEditando, setCategoriaEditando] = useState<any | null>(null);
+  const [categoriaEditando, setCategoriaEditando] = useState<CategoriaMenu | null>(null);
   const [catNombre, setCatNombre] = useState("");
   const [catTipo, setCatTipo] = useState<"drink" | "food" | "other">("drink");
   const { menuViewMode, setMenuViewMode, menuTileSize, setMenuTileSize } = useUIStore();
   const loading = loadingCats || loadingProds;
 
+  // ── Realtime: recargar cuando cambian productos o categorías ──
+  useEffect(() => {
+    const subProds = subscribeToTable("productos", () => refetchProductos());
+    const subCats = subscribeToTable("categorias_menu", () => refetchCategorias());
+    return () => {
+      subProds.unsubscribe();
+      subCats.unsubscribe();
+    };
+  }, [refetchProductos, refetchCategorias]);
+
   /* ── Handlers context menu producto ── */
-  const handleProductoContextMenu = useCallback((e: React.MouseEvent, producto: any) => {
+  const handleProductoContextMenu = useCallback((e: React.MouseEvent, producto: ProductoConTamanos) => {
     e.preventDefault();
     e.stopPropagation();
     setCtxMenu({ producto, position: { x: e.clientX, y: e.clientY } });
   }, []);
 
-  const handleProductoTouchStart = useCallback((e: React.TouchEvent, producto: any) => {
+  const handleProductoTouchStart = useCallback((e: React.TouchEvent, producto: ProductoConTamanos) => {
     const touch = e.touches[0];
     const pos = { x: touch.clientX, y: touch.clientY };
     longPressTimer.current = setTimeout(() => {
@@ -72,17 +84,17 @@ export default function MenuPage() {
     }
   }, []);
 
-  const handleCtxEdit = useCallback((producto: any) => {
+  const handleCtxEdit = useCallback((producto: ProductoConTamanos) => {
     setProductoEditando(producto);
     setModalAbierto(true);
   }, []);
 
-  const handleCtxDelete = useCallback((producto: any) => {
+  const handleCtxDelete = useCallback((producto: ProductoConTamanos) => {
     setProductoAEliminar(producto);
     setConfirmEliminar(true);
   }, []);
 
-  const handleCtxToggle = useCallback(async (producto: any) => {
+  const handleCtxToggle = useCallback(async (producto: Producto) => {
     const { success, error } = await updateRecord("productos", producto.id, {
       disponible: !producto.disponible,
     });
@@ -110,8 +122,8 @@ export default function MenuPage() {
       lista = lista.filter(
         (p) =>
           p.nombre.toLowerCase().includes(q) ||
-          (p as any).descripcion?.toLowerCase().includes(q) ||
-          ((p as any).etiquetas ?? []).some((e: string) => e.toLowerCase().includes(q))
+          p.descripcion?.toLowerCase().includes(q) ||
+          (p.etiquetas ?? []).some((e: string) => e.toLowerCase().includes(q))
       );
     }
 
@@ -319,7 +331,7 @@ export default function MenuPage() {
                 const catColor = getCatBg(producto.categoria_id);
                 const catNombre = categoriaNombre(producto.categoria_id);
                 const tags = producto.etiquetas ?? [];
-                const sizes = (producto as any).tamanos ?? [];
+                const sizes: { nombre: string; precio_adicional: number }[] = [];
                 const isLg = menuTileSize === "lg";
                 const isMd = menuTileSize === "md";
                 const isSm = menuTileSize === "sm";

@@ -519,7 +519,7 @@ export default function ReportesPage() {
         );
       }
     } catch (err) {
-      console.warn("[Reportes] Error cargando datos:", err);
+      if (process.env.NODE_ENV === "development") console.warn("[Reportes] Error cargando datos:", err);
     } finally {
       setLoading(false);
     }

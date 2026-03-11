@@ -49,7 +49,7 @@ function playUrgentSound() {
  * - Sonido cuando un ticket supera el umbral de urgencia (>10min preparando)
  */
 export function useKDSNotifications(
-  tickets: any[],
+  tickets: { id: string; estado: string; tiempo_inicio?: string | null }[],
   options: { enabled?: boolean; urgentThresholdMin?: number } = {},
 ) {
   const { enabled = true, urgentThresholdMin = 10 } = options;

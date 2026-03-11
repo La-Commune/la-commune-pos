@@ -12,7 +12,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useMesas, useZonas, insertRecord, updateRecord, deleteRecord } from "@/hooks/useSupabase";
+import { useMesas, useZonas, insertRecord, updateRecord, deleteRecord, subscribeToTable } from "@/hooks/useSupabase";
 import { useAuthStore } from "@/store/auth.store";
 import { useMesasStore } from "@/store/mesas.store";
 import { useZonasStore } from "@/store/zonas.store";
@@ -61,6 +61,12 @@ function MesasPageContent() {
   // Long-press support
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressMesaRef = useRef<Mesa | null>(null);
+
+  // ── Realtime subscription ──
+  useEffect(() => {
+    const sub = subscribeToTable("mesas", refetchMesas);
+    return () => { sub.unsubscribe(); };
+  }, [refetchMesas]);
 
   // ── Sync fetched data → stores ──
   useEffect(() => {
@@ -194,7 +200,7 @@ function MesasPageContent() {
       if (success) {
         showToast(`Mesa ${mesa.numero} liberada`, "success");
       } else {
-        console.warn("[Mesas] Error liberando mesa:", err);
+        if (process.env.NODE_ENV === "development") console.warn("[Mesas] Error liberando mesa:", err);
         showToast("Error liberando mesa", "error");
         refetchMesas();
       }
@@ -208,7 +214,7 @@ function MesasPageContent() {
       useMesasStore.getState().updateMesa(mesaId, { pos_x, pos_y });
       const { success, error: err } = await updateRecord("mesas", mesaId, { pos_x, pos_y });
       if (!success) {
-        console.warn("[Mesas] Error guardando posición:", err);
+        if (process.env.NODE_ENV === "development") console.warn("[Mesas] Error guardando posición:", err);
         showToast("Error guardando posición", "error");
       }
     },
@@ -226,7 +232,7 @@ function MesasPageContent() {
       resizeTimerRef.current = setTimeout(async () => {
         const { success, error: err } = await updateRecord("mesas", mesaId, { ancho, alto });
         if (!success) {
-          console.warn("[Mesas] Error guardando tamaño:", err);
+          if (process.env.NODE_ENV === "development") console.warn("[Mesas] Error guardando tamaño:", err);
         }
       }, 300);
     },
@@ -242,7 +248,7 @@ function MesasPageContent() {
       rotateTimerRef.current = setTimeout(async () => {
         const { success, error: err } = await updateRecord("mesas", mesaId, { rotacion });
         if (!success) {
-          console.warn("[Mesas] Error guardando rotación:", err);
+          if (process.env.NODE_ENV === "development") console.warn("[Mesas] Error guardando rotación:", err);
         }
       }, 300);
     },
@@ -343,7 +349,7 @@ function MesasPageContent() {
         return false;
       }
 
-      const { error: err } = await (supabase!.rpc as any)("swap_mesa_numeros", {
+      const { error: err } = await supabase!.rpc("swap_mesa_numeros", {
         mesa_a_id: mesaAId,
         nuevo_numero_a: numA,
         mesa_b_id: mesaBId,

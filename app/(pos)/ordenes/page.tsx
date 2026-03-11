@@ -30,7 +30,7 @@ import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useUIStore } from "@/store/ui.store";
 import { showToast } from "@/components/ui/Toast";
 import { Star } from "lucide-react";
-import type { Mesa, Producto, CategoriaMenu, Orden, ItemOrdenJSON } from "@/types/database";
+import type { Mesa, Producto, CategoriaMenu, Orden, OrdenWithMesa, ItemOrdenJSON } from "@/types/database";
 
 /* P11: Colores migrados al design system */
 const estadoOrdenConfig = {
@@ -71,9 +71,9 @@ export default function OrdenesPage() {
 
   // Normalizar órdenes: agregar mesa_numero desde el join de Supabase
   const ordenesNormalizadas = useMemo(() => {
-    return (ordenes as unknown as Orden[]).map((o) => ({
+    return (ordenes as unknown as OrdenWithMesa[]).map((o) => ({
       ...o,
-      mesa_numero: (o as any).mesas?.numero ?? (o as any).mesa_numero ?? null,
+      mesa_numero: o.mesas?.numero ?? o.mesa_numero ?? null,
     }));
   }, [ordenes]);
 
@@ -119,7 +119,7 @@ export default function OrdenesPage() {
       // Si la mesa está ocupada y tiene orden activa → mostrarla
       if (mesaObj.estado === "ocupada" && mesaObj.orden_actual_id) {
         const ordenActiva = ordenesNormalizadas.find(
-          (o: any) => o.id === mesaObj.orden_actual_id
+          (o) => o.id === mesaObj.orden_actual_id
         );
         if (ordenActiva) {
           setVista("activas");
