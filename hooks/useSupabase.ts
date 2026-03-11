@@ -83,10 +83,14 @@ function useQuery<T>(
       const { data: result, error: err } = await query;
 
       if (err) {
-        console.warn(`[Supabase] Error en ${table}:`, err.message);
+        if (process.env.NODE_ENV === "development") {
+          console.warn(`[Supabase] Error en ${table}:`, err.message);
+        }
         // Fallback a mock data si hay error de permisos
         if (err.message.includes("permission denied") || err.code === "42501") {
-          console.warn(`[Supabase] Fallback a mock data para ${table}`);
+          if (process.env.NODE_ENV === "development") {
+            console.warn(`[Supabase] Fallback a mock data para ${table}`);
+          }
           setData(mockData);
         }
         setError(err.message);
@@ -298,7 +302,7 @@ export async function insertRecord(
   data: Record<string, unknown>,
 ): Promise<{ success: boolean; error?: string }> {
   if (USE_MOCK) {
-    console.log(`[MOCK] Insert into ${table}:`, data);
+    if (process.env.NODE_ENV === "development") console.log(`[MOCK] Insert into ${table}:`, data);
     return { success: true };
   }
 
@@ -314,7 +318,7 @@ export async function insertRecordReturning<T = Record<string, unknown>>(
   data: Record<string, unknown>,
 ): Promise<{ success: boolean; data?: T; error?: string }> {
   if (USE_MOCK) {
-    console.log(`[MOCK] Insert+returning into ${table}:`, data);
+    if (process.env.NODE_ENV === "development") console.log(`[MOCK] Insert+returning into ${table}:`, data);
     const mockRow = { ...data, id: `mock-${Date.now()}` } as T;
     return { success: true, data: mockRow };
   }
@@ -331,7 +335,7 @@ export async function updateRecord(
   data: Record<string, unknown>,
 ): Promise<{ success: boolean; error?: string }> {
   if (USE_MOCK) {
-    console.log(`[MOCK] Update ${table} (${id}):`, data);
+    if (process.env.NODE_ENV === "development") console.log(`[MOCK] Update ${table} (${id}):`, data);
     return { success: true };
   }
 
@@ -345,7 +349,7 @@ export async function deleteRecord(
   id: string,
 ): Promise<{ success: boolean; error?: string }> {
   if (USE_MOCK) {
-    console.log(`[MOCK] Delete from ${table}: ${id}`);
+    if (process.env.NODE_ENV === "development") console.log(`[MOCK] Delete from ${table}: ${id}`);
     return { success: true };
   }
 

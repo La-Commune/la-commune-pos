@@ -3,14 +3,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { formatMXN } from "@/lib/utils";
-
-interface Producto {
-  id: string;
-  nombre: string;
-  precio_base: number;
-  disponible: boolean;
-  [key: string]: unknown;
-}
+import type { Producto } from "@/types/database";
 
 interface ProductoContextMenuProps {
   producto: Producto;

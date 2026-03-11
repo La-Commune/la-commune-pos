@@ -1950,7 +1950,16 @@ export interface RedesSociales {
 }
 
 // ── Joined types (for queries with select joins) ──
+export type OrdenWithMesa = Orden & {
+  mesas: { numero: number } | null
+  mesa_numero?: number | null
+}
+
+export type PagoWithOrden = Pago & {
+  ordenes: { descuento: number } | null
+}
+
 export type TicketKDSWithJoin = TicketKDS & {
-  ordenes?: { mesa_id: string | null; mesas?: { numero: number } | null } | null
+  ordenes?: { folio: number; origen: string; estado: string; mesa_id: string | null; mesas?: { numero: number } | null } | null
   mesa_numero?: number | null
 }

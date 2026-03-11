@@ -20,7 +20,7 @@ import { cn, formatMXN } from "@/lib/utils";
 import { useOrdenes, insertRecord, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
 import { useAuthStore } from "@/store/auth.store";
 import { showToast } from "@/components/ui/Toast";
-import type { Orden, ItemOrdenJSON } from "@/types/database";
+import type { Orden, OrdenWithMesa, ItemOrdenJSON } from "@/types/database";
 
 type MetodoPago = "efectivo" | "tarjeta" | "transferencia";
 
@@ -73,16 +73,16 @@ export default function CobrosPage() {
   // Normalizar mesa_numero desde join
   const ordenesNormalizadas = useMemo(
     () =>
-      (ordenes as unknown as Orden[]).map((o) => ({
+      (ordenes as unknown as OrdenWithMesa[]).map((o) => ({
         ...o,
-        mesa_numero: (o as any).mesas?.numero ?? (o as any).mesa_numero ?? null,
+        mesa_numero: o.mesas?.numero ?? o.mesa_numero ?? null,
       })),
     [ordenes],
   );
 
   // Órdenes listas para cobrar
   const ordenesCobrables = useMemo(
-    () => ordenesNormalizadas.filter((o: any) => ["lista", "confirmada", "preparando"].includes(o.estado)),
+    () => ordenesNormalizadas.filter((o) => ["lista", "confirmada", "preparando"].includes(o.estado)),
     [ordenesNormalizadas],
   );
 
@@ -90,7 +90,7 @@ export default function CobrosPage() {
   useEffect(() => {
     const ordenParam = searchParams.get("orden");
     if (ordenParam) {
-      const orden = ordenesCobrables.find((o: any) => o.id === ordenParam);
+      const orden = ordenesCobrables.find((o) => o.id === ordenParam);
       if (orden) setOrdenSeleccionada(orden);
     }
   }, [searchParams, ordenesCobrables]);
@@ -98,7 +98,7 @@ export default function CobrosPage() {
   // Sincronizar orden seleccionada cuando llegan updates realtime
   useEffect(() => {
     if (!ordenSeleccionada) return;
-    const updated = ordenesNormalizadas.find((o: any) => o.id === ordenSeleccionada.id);
+    const updated = ordenesNormalizadas.find((o) => o.id === ordenSeleccionada.id);
     if (updated && JSON.stringify(updated) !== JSON.stringify(ordenSeleccionada)) {
       setOrdenSeleccionada(updated);
     }
@@ -144,7 +144,7 @@ export default function CobrosPage() {
     setSplits([{ id: "1", metodo: "efectivo", monto: 0 }]);
   };
 
-  const handleSeleccionarOrden = (orden: any) => {
+  const handleSeleccionarOrden = (orden: Orden) => {
     setOrdenSeleccionada(orden);
     resetCobro();
   };

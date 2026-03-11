@@ -20,7 +20,7 @@ export function useSW() {
       try {
         // Aquí se procesará cada acción cuando Supabase esté conectado
         // Por ahora solo logueamos y removemos
-        console.log(`[SW] Procesando acción offline: ${action.type}`, action.payload);
+        if (process.env.NODE_ENV === "development") console.log(`[SW] Procesando acción offline: ${action.type}`, action.payload);
         await removeAction(action.id!);
       } catch (err) {
         console.error(`[SW] Error procesando acción ${action.id}:`, err);
@@ -36,7 +36,7 @@ export function useSW() {
       navigator.serviceWorker
         .register("/sw.js")
         .then((reg) => {
-          console.log("[SW] Registrado:", reg.scope);
+          if (process.env.NODE_ENV === "development") console.log("[SW] Registrado:", reg.scope);
 
           // Escuchar actualizaciones
           reg.addEventListener("updatefound", () => {

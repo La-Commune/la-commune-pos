@@ -304,7 +304,7 @@ function KDSPageContent() {
   const ticketsActivos = useMemo(
     () =>
       (tickets as unknown as TicketKDSWithJoin[]).filter((t) => {
-        const estadoOrden = (t as any).ordenes?.estado;
+        const estadoOrden = t.ordenes?.estado;
         // Si no hay join data, mostrar (mock mode)
         if (!estadoOrden) return true;
         // Ocultar si la orden ya está completada o cancelada
@@ -323,7 +323,7 @@ function KDSPageContent() {
   };
 
   /* R5: Conteo de urgentes para badge */
-  const urgentes = ticketsActivos.filter((t: any) => {
+  const urgentes = ticketsActivos.filter((t) => {
     if (t.estado !== "preparando" || !t.tiempo_inicio) return false;
     const mins = Math.floor((Date.now() - new Date(t.tiempo_inicio).getTime()) / 60000);
     return mins > 10;
@@ -343,7 +343,7 @@ function KDSPageContent() {
       });
 
       // 2. Encontrar la orden vinculada y marcarla como 'lista'
-      const ticket = ticketsActivos.find((t: any) => t.id === confirmListaId);
+      const ticket = ticketsActivos.find((t) => t.id === confirmListaId);
       if (ticket?.orden_id) {
         await updateRecord("ordenes", ticket.orden_id, {
           estado: "lista",
@@ -414,7 +414,7 @@ function KDSPageContent() {
                 const conf = estadoConfig[estado];
                 const statusColor = estado === "nueva" ? "bg-status-info" : estado === "preparando" ? "bg-status-warn" : "bg-status-ok";
                 const filtered = filtroEstado === "todas" || filtroEstado === estado
-                  ? ticketsActivos.filter((t: any) => t.estado === estado)
+                  ? ticketsActivos.filter((t) => t.estado === estado)
                   : [];
                 return (
                   <div key={estado} className="flex flex-col min-h-0">

@@ -21,7 +21,7 @@ import { supabase, USE_MOCK } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth.store";
 import { insertRecordReturning, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
 import { showToast } from "@/components/ui/Toast";
-import type { Pago } from "@/types/database";
+import type { Pago, PagoWithOrden } from "@/types/database";
 
 // ── TIPOS ──
 
@@ -137,7 +137,7 @@ export default function CajaPage() {
 
       setOrdenesCompletadas(count ?? 0);
     } catch {
-      console.warn("[Caja] Error cargando pagos del turno");
+      if (process.env.NODE_ENV === "development") console.warn("[Caja] Error cargando pagos del turno");
     }
   }, [turnoActivo]);
 
@@ -156,7 +156,7 @@ export default function CajaPage() {
 
       if (data) setCortesHistorial(data as CorteCaja[]);
     } catch {
-      console.warn("[Caja] Error cargando historial");
+      if (process.env.NODE_ENV === "development") console.warn("[Caja] Error cargando historial");
     }
   }, [user]);
 
@@ -203,7 +203,7 @@ export default function CajaPage() {
     [pagosTurno],
   );
   const descuentosTotal = useMemo(
-    () => pagosTurno.reduce((acc, p) => acc + Number(((p as any).ordenes)?.descuento || 0), 0),
+    () => pagosTurno.reduce((acc, p) => acc + Number(((p as unknown as PagoWithOrden).ordenes)?.descuento || 0), 0),
     [pagosTurno],
   );
   const fondoInicialNum = turnoActivo ? Number(turnoActivo.fondo_inicial) : (parseFloat(fondoInicial) || 0);
