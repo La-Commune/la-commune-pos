@@ -10,28 +10,28 @@ test.describe("POS — Flujo de Órdenes (mock mode)", () => {
   });
 
   test("muestra el tab de nueva orden y el tab de órdenes activas", async ({ page }) => {
-    await expect(page.locator("text=Nueva orden")).toBeVisible();
+    await expect(page.getByText("Nueva orden")).toBeVisible();
   });
 
   test("muestra categorías del menú en el catálogo", async ({ page }) => {
     // En mock mode muestra las categorías: Café Caliente, Café Frío, etc.
-    await expect(page.locator("text=Café Caliente").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Café Caliente").first()).toBeVisible({ timeout: 10_000 });
   });
 
   test("muestra productos del menú en la lista", async ({ page }) => {
     // Productos mock: Americano, Latte, Cappuccino, etc.
-    await expect(page.locator("text=Americano").first()).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator("text=Latte").first()).toBeVisible();
+    await expect(page.getByText("Americano").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Latte").first()).toBeVisible();
   });
 
   test("agrega productos al carrito", async ({ page }) => {
     // Click en un producto para agregarlo al carrito
-    const americano = page.locator("text=Americano").first();
+    const americano = page.getByText("Americano").first();
     await americano.click();
 
     // El carrito debería mostrar al menos 1 item
     // Buscar el botón de enviar orden que muestra el total
-    await expect(page.locator("text=Enviar").first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText("Enviar").first()).toBeVisible({ timeout: 5_000 });
   });
 
   test("selecciona origen Para llevar", async ({ page }) => {
@@ -54,7 +54,7 @@ test.describe("POS — Flujo de Órdenes (mock mode)", () => {
 
     // Debería haber órdenes mock visibles (Mesa 2, Mesa 3, Mesa 6, Para llevar)
     await expect(
-      page.locator("text=Mesa").first()
+      page.getByText("Mesa").first()
     ).toBeVisible({ timeout: 10_000 });
   });
 });

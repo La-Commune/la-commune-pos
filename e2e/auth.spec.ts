@@ -3,9 +3,9 @@ import { test, expect } from "@playwright/test";
 test.describe("POS — Login", () => {
   test("muestra la pantalla de login con PIN pad", async ({ page }) => {
     await page.goto("/login");
-    await expect(page.locator("text=La Commune")).toBeVisible();
-    await expect(page.locator("text=Punto de Venta")).toBeVisible();
-    await expect(page.locator("text=Ingresa tu PIN")).toBeVisible();
+    await expect(page.getByText("La Commune")).toBeVisible();
+    await expect(page.getByText("Punto de Venta")).toBeVisible();
+    await expect(page.getByText("Ingresa tu PIN")).toBeVisible();
 
     // Verifica que el numpad tiene los 10 dígitos
     for (const digit of ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]) {
@@ -19,37 +19,37 @@ test.describe("POS — Login", () => {
     await page.goto("/login");
 
     // Click "Usar credenciales"
-    await page.click("text=Usar credenciales");
+    await page.click("button:has-text('Usar credenciales')");
     await expect(page.locator("#login-email")).toBeVisible();
     await expect(page.locator("#login-password")).toBeVisible();
-    await expect(page.locator("text=Iniciar Sesión")).toBeVisible();
+    await expect(page.getByText("Iniciar Sesión")).toBeVisible();
 
     // Click "Volver al PIN"
-    await page.click("text=Volver al PIN");
-    await expect(page.locator("text=Ingresa tu PIN")).toBeVisible();
+    await page.click("button:has-text('Volver al PIN')");
+    await expect(page.getByText("Ingresa tu PIN")).toBeVisible();
   });
 
   test("valida email en vista de credenciales", async ({ page }) => {
     await page.goto("/login");
-    await page.click("text=Usar credenciales");
+    await page.click("button:has-text('Usar credenciales')");
 
     // Submit con email inválido
     await page.fill("#login-email", "invalido");
     await page.fill("#login-password", "123456");
     await page.click("button:has-text('Iniciar Sesión')");
 
-    await expect(page.locator("text=Ingresa un email válido")).toBeVisible();
+    await expect(page.getByText("Ingresa un email válido")).toBeVisible();
   });
 
   test("valida contraseña mínima en credenciales", async ({ page }) => {
     await page.goto("/login");
-    await page.click("text=Usar credenciales");
+    await page.click("button:has-text('Usar credenciales')");
 
     await page.fill("#login-email", "test@example.com");
     await page.fill("#login-password", "123");
     await page.click("button:has-text('Iniciar Sesión')");
 
-    await expect(page.locator("text=Mínimo 6 caracteres")).toBeVisible();
+    await expect(page.getByText("Mínimo 6 caracteres")).toBeVisible();
   });
 
   test("PIN dots se llenan al escribir dígitos", async ({ page }) => {

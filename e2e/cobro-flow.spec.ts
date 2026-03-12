@@ -14,12 +14,12 @@ test.describe("POS — Flujo de Cobros (mock mode)", () => {
   });
 
   test("muestra la lista de órdenes por cobrar", async ({ page }) => {
-    await expect(page.locator("text=Órdenes por cobrar")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Órdenes por cobrar")).toBeVisible({ timeout: 10_000 });
   });
 
   test("muestra empty state cuando no hay orden seleccionada", async ({ page }) => {
     await expect(
-      page.locator("text=Selecciona una orden para cobrar")
+      page.getByText("Selecciona una orden para cobrar")
     ).toBeVisible({ timeout: 10_000 });
   });
 
@@ -30,9 +30,9 @@ test.describe("POS — Flujo de Cobros (mock mode)", () => {
     await primerOrden.click();
 
     // Debe mostrar los métodos de pago
-    await expect(page.locator("text=Efectivo")).toBeVisible();
-    await expect(page.locator("text=Tarjeta")).toBeVisible();
-    await expect(page.locator("text=Transferencia")).toBeVisible();
+    await expect(page.getByText("Efectivo")).toBeVisible();
+    await expect(page.getByText("Tarjeta")).toBeVisible();
+    await expect(page.getByText("Transferencia")).toBeVisible();
   });
 
   test("selecciona método de pago tarjeta y muestra botón cobrar", async ({ page }) => {
@@ -56,7 +56,7 @@ test.describe("POS — Flujo de Cobros (mock mode)", () => {
     await primerOrden.click();
 
     // Efectivo está seleccionado por defecto
-    await expect(page.locator("text=Monto recibido")).toBeVisible();
+    await expect(page.getByText("Monto recibido")).toBeVisible();
 
     // Quick amounts
     await expect(page.locator("button:has-text('$50')")).toBeVisible();
@@ -74,7 +74,7 @@ test.describe("POS — Flujo de Cobros (mock mode)", () => {
     await primerOrden.click();
 
     // Click en Exacto
-    await page.locator("button:has-text('Exacto')").click();
+    await page.getByText("Exacto").click();
 
     // El botón Cobrar debería estar habilitado
     const btnCobrar = page.locator("button:has-text('Cobrar')").first();
@@ -94,9 +94,9 @@ test.describe("POS — Flujo de Cobros (mock mode)", () => {
     await page.locator("button:has-text('Cobrar')").first().click();
 
     // Pantalla de verificación
-    await expect(page.locator("text=Confirme con el cliente")).toBeVisible();
-    await expect(page.locator("text=Confirmar cobro")).toBeVisible();
-    await expect(page.locator("text=Volver")).toBeVisible();
+    await expect(page.getByText("Confirme con el cliente")).toBeVisible();
+    await expect(page.getByText("Confirmar cobro")).toBeVisible();
+    await expect(page.getByText("Volver")).toBeVisible();
   });
 
   test("botón Volver regresa al formulario de cobro", async ({ page }) => {
@@ -107,13 +107,13 @@ test.describe("POS — Flujo de Cobros (mock mode)", () => {
 
     await page.locator("button:has-text('Tarjeta')").first().click();
     await page.locator("button:has-text('Cobrar')").first().click();
-    await expect(page.locator("text=Confirme con el cliente")).toBeVisible();
+    await expect(page.getByText("Confirme con el cliente")).toBeVisible();
 
     // Click Volver
     await page.locator("button:has-text('Volver')").click();
 
     // Regresa al formulario — métodos de pago visibles de nuevo
-    await expect(page.locator("text=Método de pago")).toBeVisible();
+    await expect(page.getByText("Método de pago")).toBeVisible();
   });
 
   test("toggle Dividir pago muestra formulario de split", async ({ page }) => {
@@ -125,8 +125,8 @@ test.describe("POS — Flujo de Cobros (mock mode)", () => {
     await page.locator("button:has-text('Dividir pago')").click();
 
     // Debe mostrar "Formas de pago" y "Por cobrar"
-    await expect(page.locator("text=Formas de pago")).toBeVisible();
-    await expect(page.locator("text=Por cobrar")).toBeVisible();
+    await expect(page.getByText("Formas de pago")).toBeVisible();
+    await expect(page.getByText("Por cobrar")).toBeVisible();
     await expect(page.locator("button:has-text('Agregar método')")).toBeVisible();
   });
 
@@ -142,7 +142,7 @@ test.describe("POS — Flujo de Cobros (mock mode)", () => {
     await page.locator("button:has-text('5%')").first().click();
 
     // Verificar que aparecen los labels de propina y descuento
-    await expect(page.locator("text=Propina")).toBeVisible();
-    await expect(page.locator("text=Descuento")).toBeVisible();
+    await expect(page.getByText("Propina")).toBeVisible();
+    await expect(page.getByText("Descuento")).toBeVisible();
   });
 });
