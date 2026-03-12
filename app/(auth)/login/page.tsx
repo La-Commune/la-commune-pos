@@ -58,12 +58,13 @@ function PinView({
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const { login, isLoading } = useAuthStore();
   const router = useRouter();
 
   const handleKey = useCallback(
     (key: string, e?: React.MouseEvent) => {
-      if (isLoading || success) return;
+      if (isLoading || success || verifying) return;
 
       // Ripple
       if (e) {
@@ -90,7 +91,9 @@ function PinView({
         if (newPin.length === 4) {
           // Auto-submit on 4 digits
           setTimeout(async () => {
+            setVerifying(true);
             const ok = await login(`pin:${newPin}`, newPin);
+            setVerifying(false);
             if (ok) {
               setSuccess(true);
               setTimeout(() => router.push("/mesas"), 1200);
@@ -105,7 +108,7 @@ function PinView({
         }
       }
     },
-    [pin, isLoading, success, login, router]
+    [pin, isLoading, success, verifying, login, router]
   );
 
   // Keyboard support
@@ -137,6 +140,8 @@ function PinView({
                   ? "var(--ok)"
                   : error && i < pin.length
                   ? "var(--err)"
+                  : verifying
+                  ? "var(--accent)"
                   : i < pin.length
                   ? "var(--accent)"
                   : "var(--border-hover)"
@@ -146,12 +151,16 @@ function PinView({
                   ? "var(--ok)"
                   : error && i < pin.length
                   ? "var(--err)"
+                  : verifying
+                  ? "var(--accent)"
                   : i < pin.length
                   ? "var(--accent)"
                   : "transparent",
               boxShadow:
                 success
                   ? "0 0 16px var(--ok)"
+                  : verifying
+                  ? "0 0 14px var(--accent-soft)"
                   : i < pin.length && !error
                   ? "0 0 14px var(--accent-soft)"
                   : "none",
@@ -164,6 +173,8 @@ function PinView({
               animation:
                 error && i < pin.length
                   ? "login-shake 0.5s cubic-bezier(0.36,0.07,0.19,0.97)"
+                  : verifying
+                  ? `login-verifying-dot 1.2s ease-in-out ${i * 0.15}s infinite`
                   : "none",
             }}
           />
@@ -188,6 +199,8 @@ function PinView({
           ? "¡Bienvenido!"
           : error
           ? "PIN incorrecto"
+          : verifying
+          ? "Verificando..."
           : "Ingresa tu PIN"}
       </p>
 
@@ -203,7 +216,7 @@ function PinView({
                 if (key === "ok") return; // no-op, auto-submit at 4
                 handleKey(key, e);
               }}
-              disabled={success}
+              disabled={success || verifying}
               className="login-pin-key flex items-center justify-center rounded-2xl border cursor-pointer select-none transition-all duration-200 hover:scale-[1.03] active:scale-95 disabled:opacity-40"
               style={{
                 height: 68,
