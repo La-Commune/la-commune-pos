@@ -14,11 +14,12 @@ import {
   AlertTriangle,
   CreditCard,
   Loader2,
+  Package,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import { supabase, USE_MOCK } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth.store";
-import { useMesas, useOrdenes, subscribeToTable } from "@/hooks/useSupabase";
+import { useMesas, useOrdenes, useInventario, subscribeToTable } from "@/hooks/useSupabase";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import type { Mesa, Orden } from "@/types/database";
 
@@ -127,6 +128,7 @@ function DashboardContent() {
   const user = useAuthStore((s) => s.user);
   const { data: mesas } = useMesas();
   const { data: ordenes, refetch: refetchOrdenes } = useOrdenes();
+  const { data: inventario } = useInventario();
   const [ventasHoy, setVentasHoy] = useState(0);
   const [ordenesHoyCount, setOrdenesHoyCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -195,6 +197,11 @@ function DashboardContent() {
     ["preparando", "lista"].includes(o.estado),
   ).length;
   const ticketPromedio = ordenesHoyCount > 0 ? ventasHoy / ordenesHoyCount : 0;
+
+  // Ingredientes con stock bajo (stock_actual <= stock_minimo)
+  const ingredientesBajos = (inventario as any[]).filter(
+    (i) => Number(i.stock_actual ?? 0) <= Number(i.stock_minimo ?? 0) && i.activo !== false,
+  ).length;
 
   // Hora actual
   const [hora, setHora] = useState(new Date());
@@ -272,6 +279,13 @@ function DashboardContent() {
               icon={ChefHat}
               color="bg-status-info-bg text-status-info border-status-info/20"
               onClick={() => router.push("/kds")}
+            />
+            <AlertCard
+              label={ingredientesBajos === 1 ? "ingrediente con stock bajo" : "ingredientes con stock bajo"}
+              count={ingredientesBajos}
+              icon={Package}
+              color="bg-status-error-bg text-status-error border-status-error/20"
+              onClick={() => router.push("/inventario")}
             />
           </div>
 

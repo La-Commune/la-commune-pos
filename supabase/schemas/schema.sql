@@ -355,6 +355,7 @@ CREATE TABLE movimientos_inventario (
   costo_total     NUMERIC(10,2),
   referencia      TEXT,
   orden_id        UUID REFERENCES ordenes(id) ON DELETE SET NULL,
+  motivo          TEXT,
   notas           TEXT,
   creado_en       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -962,7 +963,12 @@ CREATE POLICY "anon_insert_audit"         ON audit_log      FOR INSERT TO anon W
 CREATE POLICY "anon_insert_clientes"      ON clientes       FOR INSERT TO anon WITH CHECK (true);
 CREATE POLICY "anon_update_clientes"      ON clientes       FOR UPDATE TO anon USING (true);
 CREATE POLICY "anon_insert_mov_inv"       ON movimientos_inventario FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "anon_select_mov_inv"      ON movimientos_inventario FOR SELECT TO anon USING (true);
 CREATE POLICY "anon_update_inventario"    ON inventario     FOR UPDATE TO anon USING (true);
+CREATE POLICY "anon_select_recetas"      ON recetas         FOR SELECT TO anon USING (true);
+CREATE POLICY "anon_insert_recetas"      ON recetas         FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "anon_update_recetas"      ON recetas         FOR UPDATE TO anon USING (true);
+CREATE POLICY "anon_delete_recetas"      ON recetas         FOR DELETE TO anon USING (true);
 
 
 -- ┌─────────────────────────────────────┐
