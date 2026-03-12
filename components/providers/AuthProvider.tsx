@@ -13,6 +13,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   const router = useRouter();
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
+  const [exiting, setExiting] = useState(false);
+  const [show, setShow] = useState(false);
 
   // Registrar Service Worker y listeners online/offline
   useSW();
@@ -35,7 +37,11 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
             isLoading: false,
           });
         }
-        setReady(true);
+        setExiting(true);
+        setTimeout(() => {
+          setReady(true);
+          setShow(true);
+        }, 250);
         return;
       }
 
@@ -49,7 +55,12 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           isLoading: false,
         });
       } finally {
-        setReady(true);
+        // Animate loading screen out before showing app
+        setExiting(true);
+        setTimeout(() => {
+          setReady(true);
+          setShow(true);
+        }, 250);
       }
     }
 
@@ -75,7 +86,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   if (!ready) {
     return (
       <div
-        className="min-h-screen bg-surface-0 flex items-center justify-center"
+        className={`min-h-screen bg-surface-0 flex items-center justify-center ${exiting ? "auth-loading-exit" : ""}`}
         role="status"
         aria-live="polite"
         aria-label="Cargando aplicación"
