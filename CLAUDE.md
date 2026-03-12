@@ -156,8 +156,21 @@ Ambos proyectos (POS y frontend de fidelidad) comparten la misma instancia de Su
 - `precio_base NUMERIC NOT NULL` — precio incluye IVA
 - Tamaños en tabla separada `opciones_tamano` con `precio_adicional`
 
+## Tests E2E (Playwright)
+
+- `e2e/auth.spec.ts` — Login PIN pad, switch PIN/credenciales, validación email/password (5)
+- `e2e/navigation.spec.ts` — Navegación a todos los módulos en mock mode (7)
+- `e2e/orden-flow.spec.ts` — Catálogo, categorías, carrito, órdenes activas (6)
+- `e2e/cobro-flow.spec.ts` — Selección orden, métodos pago, quick amounts, split, propina/descuento, verificación (10)
+- `e2e/caja-flow.spec.ts` — Abrir turno, fondo inicial, quick amounts, diálogo confirmación, historial (7)
+- `e2e/critical-path.spec.ts` — Flujo completo Dashboard→Caja→Órdenes→Cobros→Caja, sidebar (2)
+- Total: 37 tests E2E
+- Framework: Playwright (chromium)
+- Modo: mock (sin Supabase) — el AuthProvider auto-logea como "David (Dev)" admin
+- Comandos: `npm run test:e2e`, `npm run test:e2e:ui`, `npm run test:e2e:headed`
+
 ## Pendiente
 
 1. Crear iconos PWA reales (192x192 y 512x512) en `/public/icons/`
-2. Tests de integración y E2E
-3. Eliminar dependencia `firebase` de package.json (legacy)
+2. Eliminar dependencia `firebase` de package.json (legacy)
+3. Tests E2E contra Supabase staging (auth real, flujo completo con persistencia)
