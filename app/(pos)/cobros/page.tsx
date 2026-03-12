@@ -20,6 +20,7 @@ import { cn, formatMXN } from "@/lib/utils";
 import { useOrdenes, insertRecord, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
 import { useAuthStore } from "@/store/auth.store";
 import { showToast } from "@/components/ui/Toast";
+import { deducirInventarioPorOrden } from "@/lib/inventory-deduction";
 import type { Orden, OrdenWithMesa, ItemOrdenJSON } from "@/types/database";
 
 type MetodoPago = "efectivo" | "tarjeta" | "transferencia";
@@ -245,6 +246,24 @@ export default function CobrosPage() {
           orden_actual_id: null,
           ocupada_desde: null,
         });
+      }
+
+      // 4. Auto-deducir inventario según recetas
+      const items = (ordenSeleccionada.items ?? []) as ItemOrdenJSON[];
+      if (items.length > 0) {
+        const invResult = await deducirInventarioPorOrden(
+          items,
+          ordenSeleccionada.id,
+          negocioId,
+          user.id,
+          ordenSeleccionada.folio,
+        );
+        if (invResult.lowStock.length > 0) {
+          showToast(`Stock bajo: ${invResult.lowStock.join(", ")}`, "info");
+        }
+        if (invResult.errors.length > 0 && process.env.NODE_ENV === "development") {
+          console.log("[Inventario] Errores de deducción:", invResult.errors);
+        }
       }
 
       showToast("Cobro completado", "success");

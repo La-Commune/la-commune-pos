@@ -10,10 +10,16 @@ import {
   MOCK_PRODUCTOS,
   MOCK_ORDENES,
   MOCK_TICKETS_KDS,
+  MOCK_INVENTARIO,
+  MOCK_MOVIMIENTOS,
+  MOCK_RECETAS,
   type MockCategoria,
   type MockProducto,
   type MockOrden,
   type MockTicketKDS,
+  type MockInventario,
+  type MockMovimientoInventario,
+  type MockReceta,
 } from "@/lib/mock-data";
 
 // ── Tipos auxiliares ──
@@ -175,6 +181,27 @@ export function useUsuarios() {
 export function useClientes() {
   return useQuery("clientes", [], {
     orderBy: { column: "puntos", ascending: false },
+  });
+}
+
+export function useInventario() {
+  return useQuery<MockInventario>("inventario", MOCK_INVENTARIO, {
+    orderBy: { column: "nombre", ascending: true },
+  });
+}
+
+export function useMovimientosInventario(inventarioId?: string) {
+  const filters = inventarioId ? { inventario_id: inventarioId } : undefined;
+  return useQuery<MockMovimientoInventario>("movimientos_inventario", MOCK_MOVIMIENTOS, {
+    filters,
+    orderBy: { column: "creado_en", ascending: false },
+  });
+}
+
+export function useRecetas(productoId?: string) {
+  const filters = productoId ? { producto_id: productoId } : undefined;
+  return useQuery<MockReceta>("recetas", MOCK_RECETAS, {
+    filters,
   });
 }
 

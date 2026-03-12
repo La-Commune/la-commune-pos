@@ -1963,3 +1963,16 @@ export type TicketKDSWithJoin = TicketKDS & {
   ordenes?: { folio: number; origen: string; estado: string; mesa_id: string | null; mesas?: { numero: number } | null } | null
   mesa_numero?: number | null
 }
+
+export type MovimientoWithInventario = MovimientoInventario & {
+  inventario: { nombre: string } | null
+}
+
+export type RecetaWithProductoAndInventario = Receta & {
+  productos?: { nombre: string } | null
+  inventario?: { nombre: string } | null
+}
+
+export type InventarioWithStock = Inventario & {
+  stock_bajo: boolean
+}

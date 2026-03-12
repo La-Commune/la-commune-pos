@@ -512,3 +512,339 @@ export const MOCK_STATS_FIDELIDAD: MockStatFidelidad = {
   puntosEmitidos: 45_200,
   canjesEsteMes: 23,
 };
+
+// ── INVENTARIO ──
+
+export interface MockInventario {
+  id: string;
+  negocio_id: string;
+  nombre: string;
+  unidad: string; // kg, lt, pz, etc.
+  stock_actual: number;
+  stock_minimo: number;
+  costo_unitario: number;
+  proveedor?: string | null;
+  descripcion?: string | null;
+  notas?: string | null;
+  activo: boolean;
+  creado_en: string;
+  actualizado_en: string;
+}
+
+export interface MockMovimientoInventario {
+  id: string;
+  inventario_id: string;
+  tipo: "entrada" | "salida" | "ajuste";
+  cantidad: number;
+  stock_anterior: number;
+  stock_nuevo: number;
+  referencia?: string | null; // orden_id, folio, etc.
+  motivo?: string | null;
+  notas?: string | null;
+  usuario_id: string;
+  creado_en: string;
+}
+
+export interface MockReceta {
+  id: string;
+  producto_id: string;
+  ingrediente_id: string;
+  cantidad: number;
+  unidad: string;
+  notas?: string | null;
+}
+
+export const MOCK_INVENTARIO: MockInventario[] = [
+  {
+    id: "inv-1",
+    negocio_id: "dev-negocio-1",
+    nombre: "Café grano premium",
+    unidad: "kg",
+    stock_actual: 5,
+    stock_minimo: 2,
+    costo_unitario: 450,
+    proveedor: "Cafés de Altura",
+    descripcion: "Almacén A - Estante 1",
+    notas: "100% Arábica, tostado medio",
+    activo: true,
+    creado_en: new Date(Date.now() - 30 * 86400000).toISOString(),
+    actualizado_en: new Date(Date.now() - 1 * 86400000).toISOString(),
+  },
+  {
+    id: "inv-2",
+    negocio_id: "dev-negocio-1",
+    nombre: "Leche entera",
+    unidad: "lt",
+    stock_actual: 20,
+    stock_minimo: 8,
+    costo_unitario: 28,
+    proveedor: "Lechería Local",
+    descripcion: "Refrigerador A",
+    notas: "Fresca, entrega diaria",
+    activo: true,
+    creado_en: new Date(Date.now() - 30 * 86400000).toISOString(),
+    actualizado_en: new Date(Date.now() - 2 * 3600000).toISOString(),
+  },
+  {
+    id: "inv-3",
+    negocio_id: "dev-negocio-1",
+    nombre: "Leche deslactosada",
+    unidad: "lt",
+    stock_actual: 8,
+    stock_minimo: 4,
+    costo_unitario: 35,
+    proveedor: "Lechería Local",
+    descripcion: "Refrigerador A",
+    activo: true,
+    creado_en: new Date(Date.now() - 30 * 86400000).toISOString(),
+    actualizado_en: new Date(Date.now() - 5 * 3600000).toISOString(),
+  },
+  {
+    id: "inv-4",
+    negocio_id: "dev-negocio-1",
+    nombre: "Leche de almendra",
+    unidad: "lt",
+    stock_actual: 3,
+    stock_minimo: 2,
+    costo_unitario: 65,
+    proveedor: "Distribuidora Premium",
+    descripcion: "Refrigerador B",
+    activo: true,
+    creado_en: new Date(Date.now() - 30 * 86400000).toISOString(),
+    actualizado_en: new Date(Date.now() - 8 * 3600000).toISOString(),
+  },
+  {
+    id: "inv-5",
+    negocio_id: "dev-negocio-1",
+    nombre: "Chocolate en polvo",
+    unidad: "kg",
+    stock_actual: 2,
+    stock_minimo: 1,
+    costo_unitario: 180,
+    proveedor: "Distribuidora Gourmet",
+    descripcion: "Almacén A - Estante 2",
+    notas: "Cacao 100%, sin azúcar añadida",
+    activo: true,
+    creado_en: new Date(Date.now() - 30 * 86400000).toISOString(),
+    actualizado_en: new Date(Date.now() - 3 * 86400000).toISOString(),
+  },
+  {
+    id: "inv-6",
+    negocio_id: "dev-negocio-1",
+    nombre: "Azúcar",
+    unidad: "kg",
+    stock_actual: 4,
+    stock_minimo: 2,
+    costo_unitario: 35,
+    proveedor: "Mayorista Local",
+    descripcion: "Almacén A - Estante 3",
+    activo: true,
+    creado_en: new Date(Date.now() - 30 * 86400000).toISOString(),
+    actualizado_en: new Date(Date.now() - 7 * 86400000).toISOString(),
+  },
+  {
+    id: "inv-7",
+    negocio_id: "dev-negocio-1",
+    nombre: "Vainilla",
+    unidad: "lt",
+    stock_actual: 0.5,
+    stock_minimo: 0.3,
+    costo_unitario: 280,
+    proveedor: "Distribuidora Premium",
+    descripcion: "Almacén A - Estante 2",
+    notas: "Extracto puro de vainilla",
+    activo: true,
+    creado_en: new Date(Date.now() - 30 * 86400000).toISOString(),
+    actualizado_en: new Date(Date.now() - 10 * 86400000).toISOString(),
+  },
+  {
+    id: "inv-8",
+    negocio_id: "dev-negocio-1",
+    nombre: "Vasos desechables 12oz",
+    unidad: "pz",
+    stock_actual: 150,
+    stock_minimo: 50,
+    costo_unitario: 2.5,
+    proveedor: "Empaque Plus",
+    descripcion: "Almacén B",
+    activo: true,
+    creado_en: new Date(Date.now() - 30 * 86400000).toISOString(),
+    actualizado_en: new Date(Date.now() - 4 * 86400000).toISOString(),
+  },
+  {
+    id: "inv-9",
+    negocio_id: "dev-negocio-1",
+    nombre: "Tapas desechables",
+    unidad: "pz",
+    stock_actual: 120,
+    stock_minimo: 50,
+    costo_unitario: 1.8,
+    proveedor: "Empaque Plus",
+    descripcion: "Almacén B",
+    activo: true,
+    creado_en: new Date(Date.now() - 30 * 86400000).toISOString(),
+    actualizado_en: new Date(Date.now() - 6 * 86400000).toISOString(),
+  },
+  {
+    id: "inv-10",
+    negocio_id: "dev-negocio-1",
+    nombre: "Servilletas",
+    unidad: "pz",
+    stock_actual: 500,
+    stock_minimo: 200,
+    costo_unitario: 0.3,
+    proveedor: "Mayorista Local",
+    descripcion: "Almacén B",
+    activo: true,
+    creado_en: new Date(Date.now() - 30 * 86400000).toISOString(),
+    actualizado_en: new Date(Date.now() - 12 * 86400000).toISOString(),
+  },
+];
+
+export const MOCK_MOVIMIENTOS: MockMovimientoInventario[] = [
+  {
+    id: "mov-1",
+    inventario_id: "inv-1",
+    tipo: "entrada",
+    cantidad: 10,
+    stock_anterior: -5,
+    stock_nuevo: 5,
+    referencia: "Compra OP-2026-0301",
+    motivo: null,
+    notas: "Recibido de Cafés de Altura",
+    usuario_id: "user-admin-1",
+    creado_en: new Date(Date.now() - 1 * 86400000).toISOString(),
+  },
+  {
+    id: "mov-2",
+    inventario_id: "inv-2",
+    tipo: "salida",
+    cantidad: 12,
+    stock_anterior: 32,
+    stock_nuevo: 20,
+    referencia: "ord-2",
+    motivo: null,
+    notas: "Consumo día",
+    usuario_id: "user-admin-1",
+    creado_en: new Date(Date.now() - 4 * 3600000).toISOString(),
+  },
+  {
+    id: "mov-3",
+    inventario_id: "inv-5",
+    tipo: "ajuste",
+    cantidad: -0.5,
+    stock_anterior: 2.5,
+    stock_nuevo: 2,
+    referencia: null,
+    motivo: "merma",
+    notas: "Desperdicio durante preparación",
+    usuario_id: "user-admin-1",
+    creado_en: new Date(Date.now() - 6 * 3600000).toISOString(),
+  },
+  {
+    id: "mov-4",
+    inventario_id: "inv-3",
+    tipo: "entrada",
+    cantidad: 4,
+    stock_anterior: 4,
+    stock_nuevo: 8,
+    referencia: "Compra OP-2026-0310",
+    motivo: null,
+    notas: "Reorden semanal",
+    usuario_id: "user-admin-1",
+    creado_en: new Date(Date.now() - 12 * 3600000).toISOString(),
+  },
+  {
+    id: "mov-5",
+    inventario_id: "inv-8",
+    tipo: "salida",
+    cantidad: 30,
+    stock_anterior: 180,
+    stock_nuevo: 150,
+    referencia: null,
+    motivo: null,
+    notas: "Consumo de la mañana",
+    usuario_id: "user-admin-1",
+    creado_en: new Date(Date.now() - 3 * 3600000).toISOString(),
+  },
+  {
+    id: "mov-6",
+    inventario_id: "inv-6",
+    tipo: "entrada",
+    cantidad: 2,
+    stock_anterior: 2,
+    stock_nuevo: 4,
+    referencia: "Compra OP-2026-0305",
+    motivo: null,
+    notas: "Repuesto semanal",
+    usuario_id: "user-admin-1",
+    creado_en: new Date(Date.now() - 18 * 3600000).toISOString(),
+  },
+];
+
+export const MOCK_RECETAS: MockReceta[] = [
+  {
+    id: "rec-1",
+    producto_id: "prod-1", // Americano
+    ingrediente_id: "inv-1", // Café grano premium
+    cantidad: 18,
+    unidad: "g",
+    notas: "Dos shots de espresso",
+  },
+  {
+    id: "rec-2",
+    producto_id: "prod-2", // Latte
+    ingrediente_id: "inv-1", // Café grano premium
+    cantidad: 18,
+    unidad: "g",
+    notas: null,
+  },
+  {
+    id: "rec-3",
+    producto_id: "prod-2", // Latte
+    ingrediente_id: "inv-2", // Leche entera
+    cantidad: 200,
+    unidad: "ml",
+    notas: "Vaporizada",
+  },
+  {
+    id: "rec-4",
+    producto_id: "prod-3", // Cappuccino
+    ingrediente_id: "inv-1", // Café grano premium
+    cantidad: 18,
+    unidad: "g",
+    notas: null,
+  },
+  {
+    id: "rec-5",
+    producto_id: "prod-3", // Cappuccino
+    ingrediente_id: "inv-2", // Leche entera
+    cantidad: 150,
+    unidad: "ml",
+    notas: "Con espuma",
+  },
+  {
+    id: "rec-6",
+    producto_id: "prod-4", // Mocha
+    ingrediente_id: "inv-1", // Café grano premium
+    cantidad: 18,
+    unidad: "g",
+    notas: null,
+  },
+  {
+    id: "rec-7",
+    producto_id: "prod-4", // Mocha
+    ingrediente_id: "inv-2", // Leche entera
+    cantidad: 150,
+    unidad: "ml",
+    notas: null,
+  },
+  {
+    id: "rec-8",
+    producto_id: "prod-4", // Mocha
+    ingrediente_id: "inv-5", // Chocolate en polvo
+    cantidad: 20,
+    unidad: "g",
+    notas: null,
+  },
+];
