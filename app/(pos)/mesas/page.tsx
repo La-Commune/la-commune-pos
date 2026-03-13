@@ -209,7 +209,9 @@ function MesasPageContent() {
     [refetchMesas]
   );
 
-  // ── Mover mesa (drag & drop) → optimistic + persist ──
+  // ── Mover mesa (drag & drop + keyboard) → optimistic + immediate persist ──
+  // Note: keyboard movement is already debounced in DraggableMesaWrapper,
+  // so this only fires once per drag-end or once per keyboard burst.
   const handleMoveMesa = useCallback(
     async (mesaId: string, pos_x: number, pos_y: number) => {
       useMesasStore.getState().updateMesa(mesaId, { pos_x, pos_y });
@@ -471,14 +473,14 @@ function MesasPageContent() {
           <div className="flex items-center gap-2">
             <button
               onClick={handleAddMesa}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg btn-primary text-[12px] min-h-[40px]"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg btn-primary text-[12px]"
             >
               <Plus size={15} />
               Nueva mesa
             </button>
             <button
               onClick={() => setZonaManagerOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-2 text-text-70 hover:bg-surface-3 transition-colors text-[12px] min-h-[40px]"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-2 text-text-70 hover:bg-surface-3 transition-colors text-[12px]"
             >
               <Settings2 size={14} />
               Zonas
