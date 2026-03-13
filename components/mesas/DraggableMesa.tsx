@@ -251,7 +251,7 @@ export default function DraggableMesa({
         {/* Capacidad */}
         <div className="flex items-center gap-0.5 mt-1">
           <Users size={10} className="text-text-25" />
-          <span className="text-[10px] text-text-25">{mesa.capacidad}</span>
+          <span className="text-xs text-text-25">{mesa.capacidad}</span>
         </div>
 
         {/* Timer inline — solo cuando ocupada/reservada */}

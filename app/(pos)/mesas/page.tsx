@@ -525,7 +525,7 @@ function MesasPageContent() {
                   style={{ backgroundColor: zona.color ?? "#94a3b8" }}
                 />
                 {zona.nombre}
-                <span className="text-[10px] text-text-25 ml-0.5">{count}</span>
+                <span className="text-xs text-text-25 ml-0.5">{count}</span>
               </button>
             );
           })}
@@ -660,7 +660,7 @@ function MesasPageContent() {
 
                   {/* Zona label */}
                   {selectedZonaId === null && (
-                    <div className="text-[10px] text-text-25 mb-3 uppercase tracking-wider">
+                    <div className="text-xs text-text-25 mb-3 uppercase tracking-wider">
                       {zonas.find((z) => z.id === mesa.zona_id)?.nombre ??
                         mesa.ubicacion ??
                         "Sin zona"}
@@ -670,7 +670,7 @@ function MesasPageContent() {
                   {/* Status pill */}
                   <div
                     className={cn(
-                      "inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider px-3 py-1 rounded-full",
+                      "inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full",
                       config.bg,
                       config.tailwind
                     )}

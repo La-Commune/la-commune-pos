@@ -126,7 +126,7 @@ export const useUIStore = create<UIState>()(
       /* Accessibility */
       reducedMotion: false,
       highContrast: false,
-      largeTouchTargets: false,
+      largeTouchTargets: true,
       setReducedMotion: (v) => set({ reducedMotion: v }),
       setHighContrast: (v) => set({ highContrast: v }),
       setLargeTouchTargets: (v) => set({ largeTouchTargets: v }),

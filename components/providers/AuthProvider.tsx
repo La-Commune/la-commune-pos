@@ -98,7 +98,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           <p className="text-text-25 text-xs uppercase tracking-widest animate-pulse">
             Cargando...
           </p>
-          <p className="text-text-25 text-[10px] mt-1">
+          <p className="text-text-25 text-xs mt-1">
             {DEV_MODE ? "Modo desarrollo" : "Verificando sesión"}
           </p>
         </div>

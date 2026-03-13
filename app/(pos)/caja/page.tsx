@@ -344,17 +344,17 @@ export default function CajaPage() {
                     <CheckCircle2 size={14} className="text-status-ok" />
                   )}
                   {esPositiva && (
-                    <span className="text-[10px] font-semibold text-status-warn tabular-nums">
+                    <span className="text-xs font-semibold text-status-warn tabular-nums">
                       +{formatMXN(diferenciaCorte)}
                     </span>
                   )}
                   {esNegativa && (
-                    <span className="text-[10px] font-semibold text-status-err tabular-nums">
+                    <span className="text-xs font-semibold text-status-err tabular-nums">
                       {formatMXN(diferenciaCorte)}
                     </span>
                   )}
                 </div>
-                <div className="text-[10px] text-text-25 tabular-nums">
+                <div className="text-xs text-text-25 tabular-nums">
                   {formatMXN(Number(corte.total_ventas))} · {corte.ordenes_count} órdenes
                 </div>
               </button>
@@ -401,7 +401,7 @@ export default function CajaPage() {
                     min="0"
                     className="w-full px-4 py-3.5 rounded-xl bg-surface-2 border border-border text-text-100 text-2xl font-semibold tabular-nums placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 min-h-[48px]"
                   />
-                  <p className="text-[10px] text-text-25 mt-2">
+                  <p className="text-xs text-text-25 mt-2">
                     Cantidad de efectivo que inicia en caja
                   </p>
                 </div>
@@ -504,7 +504,7 @@ export default function CajaPage() {
                 <div className="space-y-3 mb-6 p-4 rounded-xl bg-surface-3">
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <p className="text-text-25 text-[10px] mb-0.5">
+                      <p className="text-text-25 text-xs mb-0.5">
                         Fondo inicial
                       </p>
                       <p className="text-text-100 font-semibold tabular-nums text-base">
@@ -512,7 +512,7 @@ export default function CajaPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-text-25 text-[10px] mb-0.5">
+                      <p className="text-text-25 text-xs mb-0.5">
                         Vtas. Efectivo
                       </p>
                       <p className="text-text-100 font-semibold tabular-nums text-base">
@@ -522,7 +522,7 @@ export default function CajaPage() {
                   </div>
 
                   <div className="border-t border-border pt-3">
-                    <p className="text-text-25 text-[10px] mb-1">
+                    <p className="text-text-25 text-xs mb-1">
                       Esperado en caja
                     </p>
                     <p className="text-accent font-bold tabular-nums text-xl">
@@ -531,7 +531,7 @@ export default function CajaPage() {
                   </div>
 
                   <div className={cn("border-t border-border pt-3 rounded-lg p-2", diferenciaBg)}>
-                    <p className="text-[10px] mb-1 opacity-70">Contaste:</p>
+                    <p className="text-xs mb-1 opacity-70">Contaste:</p>
                     <p className={cn("font-bold tabular-nums text-xl", diferenciaText)}>
                       {formatMXN(efectivoRealNum)}
                     </p>
@@ -567,7 +567,7 @@ export default function CajaPage() {
 
                 {/* Notas de cierre */}
                 <div className="mb-6">
-                  <label className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">
+                  <label className="text-xs font-medium text-text-25 uppercase tracking-widest block mb-2">
                     Notas (opcional)
                   </label>
                   <textarea
@@ -632,7 +632,7 @@ export default function CajaPage() {
                 <div className="p-5 rounded-xl bg-surface-2 border border-border">
                   <div className="flex items-center justify-between mb-3">
                     <TrendingUp size={18} className="text-accent" />
-                    <span className="text-[10px] text-text-25 font-medium">Hoy</span>
+                    <span className="text-xs text-text-25 font-medium">Hoy</span>
                   </div>
                   <p className="text-sm text-text-45 mb-1">Total vendido</p>
                   <p className="text-2xl font-bold text-text-100 tabular-nums">
@@ -644,7 +644,7 @@ export default function CajaPage() {
                 <div className="p-5 rounded-xl bg-surface-2 border border-border">
                   <div className="flex items-center justify-between mb-3">
                     <FileText size={18} className="text-accent" />
-                    <span className="text-[10px] text-text-25 font-medium">Total</span>
+                    <span className="text-xs text-text-25 font-medium">Total</span>
                   </div>
                   <p className="text-sm text-text-45 mb-1">Órdenes</p>
                   <p className="text-2xl font-bold text-text-100 tabular-nums">
@@ -656,7 +656,7 @@ export default function CajaPage() {
                 <div className="p-5 rounded-xl bg-surface-2 border border-border">
                   <div className="flex items-center justify-between mb-3">
                     <DollarSign size={18} className="text-accent" />
-                    <span className="text-[10px] text-text-25 font-medium">Promedio</span>
+                    <span className="text-xs text-text-25 font-medium">Promedio</span>
                   </div>
                   <p className="text-sm text-text-45 mb-1">Ticket</p>
                   <p className="text-2xl font-bold text-text-100 tabular-nums">
@@ -668,7 +668,7 @@ export default function CajaPage() {
                 <div className="p-5 rounded-xl bg-surface-2 border border-border">
                   <div className="flex items-center justify-between mb-3">
                     <TrendingUp size={18} className="text-accent" />
-                    <span className="text-[10px] text-text-25 font-medium">Extra</span>
+                    <span className="text-xs text-text-25 font-medium">Extra</span>
                   </div>
                   <p className="text-sm text-text-45 mb-1">Propinas</p>
                   <p className="text-2xl font-bold text-accent tabular-nums">
@@ -696,7 +696,7 @@ export default function CajaPage() {
                       }}
                     />
                   </div>
-                  <p className="text-[10px] text-text-25 mt-2 tabular-nums">
+                  <p className="text-xs text-text-25 mt-2 tabular-nums">
                     {totalVentas > 0 ? Math.round((ventasEfectivo / totalVentas) * 100) : 0}%
                   </p>
                 </div>
@@ -718,7 +718,7 @@ export default function CajaPage() {
                       }}
                     />
                   </div>
-                  <p className="text-[10px] text-text-25 mt-2 tabular-nums">
+                  <p className="text-xs text-text-25 mt-2 tabular-nums">
                     {totalVentas > 0 ? Math.round((ventasTarjeta / totalVentas) * 100) : 0}%
                   </p>
                 </div>
@@ -740,7 +740,7 @@ export default function CajaPage() {
                       }}
                     />
                   </div>
-                  <p className="text-[10px] text-text-25 mt-2 tabular-nums">
+                  <p className="text-xs text-text-25 mt-2 tabular-nums">
                     {totalVentas > 0 ? Math.round((ventasTransferencia / totalVentas) * 100) : 0}%
                   </p>
                 </div>
@@ -773,7 +773,7 @@ export default function CajaPage() {
                 </h2>
                 <div className="flex items-end gap-3">
                   <div className="flex-1">
-                    <label className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">
+                    <label className="text-xs font-medium text-text-25 uppercase tracking-widest block mb-2">
                       Efectivo contado
                     </label>
                     <input
@@ -911,7 +911,7 @@ export default function CajaPage() {
                       </p>
                     )}
 
-                    <div className="grid grid-cols-4 gap-2 mt-3 text-[10px] text-text-25">
+                    <div className="grid grid-cols-4 gap-2 mt-3 text-xs text-text-25">
                       <div>
                         <p className="opacity-70">Fondo</p>
                         <p className="font-medium text-text-70">

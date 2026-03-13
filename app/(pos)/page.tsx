@@ -58,7 +58,7 @@ function KPICard({
         <Icon size={20} className="text-white" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1">{label}</p>
+        <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-1">{label}</p>
         <p className="text-xl font-bold text-text-100 tracking-tight">{value}</p>
       </div>
       {onClick && (
@@ -246,20 +246,20 @@ function DashboardContent() {
               label="Órdenes completadas"
               value={String(ordenesHoyCount)}
               icon={ClipboardList}
-              color="bg-[#9B8AFB]"
+              color="bg-cat-4"
               onClick={() => router.push("/ordenes")}
             />
             <KPICard
               label="Ticket promedio"
               value={formatMXN(ticketPromedio)}
               icon={TrendingUp}
-              color="bg-[#60A5FA]"
+              color="bg-[var(--info)]"
             />
             <KPICard
               label="Mesas ocupadas"
               value={`${mesasOcupadas} / ${mesasList.length}`}
               icon={LayoutGrid}
-              color="bg-[#7EC8E3]"
+              color="bg-cat-3"
               onClick={() => router.push("/mesas")}
             />
           </div>
@@ -294,11 +294,11 @@ function DashboardContent() {
             <h2 className="text-xs font-medium text-text-25 uppercase tracking-widest mb-3">Accesos rápidos</h2>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-            <QuickLink label="Mesas" icon={LayoutGrid} color="bg-[#7EC8E3]" onClick={() => router.push("/mesas")} />
-            <QuickLink label="Órdenes" icon={ClipboardList} color="bg-[#9B8AFB]" onClick={() => router.push("/ordenes")} />
-            <QuickLink label="Cocina" icon={ChefHat} color="bg-[#FFB347]" onClick={() => router.push("/kds")} />
-            <QuickLink label="Cobros" icon={CreditCard} color="bg-[#F5C26B]" onClick={() => router.push("/cobros")} />
-            <QuickLink label="Reportes" icon={TrendingUp} color="bg-[#60A5FA]" onClick={() => router.push("/reportes")} />
+            <QuickLink label="Mesas" icon={LayoutGrid} color="bg-cat-3" onClick={() => router.push("/mesas")} />
+            <QuickLink label="Órdenes" icon={ClipboardList} color="bg-cat-4" onClick={() => router.push("/ordenes")} />
+            <QuickLink label="Cocina" icon={ChefHat} color="bg-cat-5" onClick={() => router.push("/kds")} />
+            <QuickLink label="Cobros" icon={CreditCard} color="bg-cat-1" onClick={() => router.push("/cobros")} />
+            <QuickLink label="Reportes" icon={TrendingUp} color="bg-[var(--info)]" onClick={() => router.push("/reportes")} />
           </div>
         </>
       )}

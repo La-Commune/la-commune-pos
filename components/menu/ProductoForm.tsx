@@ -67,7 +67,7 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Nombre */}
       <div>
-        <label htmlFor="prod-nombre" className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+        <label htmlFor="prod-nombre" className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
           Nombre del producto *
         </label>
         <input
@@ -84,7 +84,7 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
 
       {/* Descripción */}
       <div>
-        <label htmlFor="prod-descripcion" className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+        <label htmlFor="prod-descripcion" className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
           Descripción
         </label>
         <input
@@ -100,7 +100,7 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
       {/* Precio y Categoría */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="prod-precio" className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+          <label htmlFor="prod-precio" className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
             Precio base (MXN) *
           </label>
           <input
@@ -116,7 +116,7 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
           />
         </div>
         <div>
-          <label htmlFor="prod-categoria" className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+          <label htmlFor="prod-categoria" className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
             Categoría *
           </label>
           <select
@@ -136,7 +136,7 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
 
       {/* Ingredientes */}
       <div>
-        <label htmlFor="prod-ingredientes" className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+        <label htmlFor="prod-ingredientes" className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
           Ingredientes (separados por coma)
         </label>
         <input
@@ -151,7 +151,7 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
 
       {/* Etiquetas */}
       <div>
-        <label htmlFor="prod-etiquetas" className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+        <label htmlFor="prod-etiquetas" className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
           Etiquetas (separadas por coma)
         </label>
         <input
@@ -167,7 +167,7 @@ export default function ProductoForm({ producto, onSave, onCancel }: ProductoFor
       {/* Tamaños */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="text-[10px] font-medium text-text-25 uppercase tracking-widest">
+          <label className="text-xs font-medium text-text-25 uppercase tracking-widest">
             Tamaños
           </label>
           <button

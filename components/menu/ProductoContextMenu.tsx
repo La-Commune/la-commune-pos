@@ -100,7 +100,7 @@ export default function ProductoContextMenu({
         <span className="text-xs font-semibold text-text-100 truncate block max-w-[200px]">
           {producto.nombre}
         </span>
-        <span className="text-[10px] text-text-25">
+        <span className="text-xs text-text-25">
           {formatMXN(producto.precio_base)}
         </span>
       </div>
