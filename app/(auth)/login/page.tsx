@@ -127,58 +127,28 @@ function PinView({
     <div className="login-panel-enter flex flex-col items-center">
       {/* PIN dots */}
       <div className="flex gap-4 mb-8">
-        {[0, 1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="transition-all duration-300"
-            style={{
-              width: success ? 14 : i < pin.length ? 16 : 14,
-              height: success ? 14 : i < pin.length ? 16 : 14,
-              borderRadius: "50%",
-              border: `2px solid ${
-                success
-                  ? "var(--ok)"
-                  : error && i < pin.length
-                  ? "var(--err)"
-                  : verifying
-                  ? "var(--accent)"
-                  : i < pin.length
-                  ? "var(--accent)"
-                  : "var(--border-hover)"
-              }`,
-              background:
-                success
-                  ? "var(--ok)"
-                  : error && i < pin.length
-                  ? "var(--err)"
-                  : verifying
-                  ? "var(--accent)"
-                  : i < pin.length
-                  ? "var(--accent)"
-                  : "transparent",
-              boxShadow:
-                success
-                  ? "0 0 16px var(--ok)"
-                  : verifying
-                  ? "0 0 14px var(--accent-soft)"
-                  : i < pin.length && !error
-                  ? "0 0 14px var(--accent-soft)"
-                  : "none",
-              transform:
-                success
-                  ? "scale(1.3)"
-                  : i < pin.length
-                  ? "scale(1.15)"
-                  : "scale(1)",
-              animation:
-                error && i < pin.length
-                  ? "login-shake 0.5s cubic-bezier(0.36,0.07,0.19,0.97)"
-                  : verifying
-                  ? `login-verifying-dot 1.2s ease-in-out ${i * 0.15}s infinite`
-                  : "none",
-            }}
-          />
-        ))}
+        {[0, 1, 2, 3].map((i) => {
+          const filled = i < pin.length;
+          return (
+            <div
+              key={i}
+              className={[
+                "pin-dot",
+                success && "pin-dot--success",
+                error && filled && "pin-dot--error",
+                verifying && "pin-dot--verifying",
+                !success && !error && !verifying && filled && "pin-dot--filled",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              style={
+                verifying
+                  ? { animationDelay: `${i * 0.15}s` }
+                  : undefined
+              }
+            />
+          );
+        })}
       </div>
 
       {/* Status text */}

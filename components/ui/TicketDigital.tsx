@@ -269,7 +269,7 @@ export default function TicketDigital({ ticket, onClose, className }: TicketDigi
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute -top-2 -right-2 z-10 p-2 rounded-full bg-surface-2 border border-border text-text-45 hover:text-text-100 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center shadow-lg"
+          className="absolute -top-2 -right-2 z-10 p-2 rounded-full bg-surface-2 border border-border text-text-45 hover:text-text-100 transition-colors min-w-[40px] flex items-center justify-center shadow-lg"
           aria-label="Cerrar ticket"
         >
           <X size={16} />
