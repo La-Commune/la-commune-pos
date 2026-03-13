@@ -260,7 +260,6 @@ export function useNegocioCompleto() {
         rfc: null,
         divisa: "MXN",
         zona_horaria: "America/Mexico_City",
-        firebase_project_id: null,
         creado_en: new Date().toISOString(),
         actualizado_en: new Date().toISOString(),
         eliminado_en: null,

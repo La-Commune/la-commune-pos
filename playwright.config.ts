@@ -16,6 +16,12 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      testIgnore: /staging-.*\.spec\.ts/,
+    },
+    {
+      name: "staging",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: /staging-.*\.spec\.ts/,
     },
   ],
   webServer: {

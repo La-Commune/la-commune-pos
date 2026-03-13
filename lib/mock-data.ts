@@ -58,7 +58,6 @@ export interface MockOrden {
   estado: "nueva" | "confirmada" | "preparando" | "lista" | "completada" | "cancelada";
   origen: "mesa" | "delivery" | "para_llevar" | "online";
   notas: string | null;
-  cliente_firebase_id?: string | null;
   creado_en: string;
 }
 

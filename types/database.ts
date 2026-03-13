@@ -125,7 +125,6 @@ export type Database = {
           creado_en: string
           eliminado_en: string | null
           email: string | null
-          firebase_id: string | null
           id: string
           id_referidor: string | null
           negocio_id: string
@@ -150,7 +149,6 @@ export type Database = {
           creado_en?: string
           eliminado_en?: string | null
           email?: string | null
-          firebase_id?: string | null
           id?: string
           id_referidor?: string | null
           negocio_id: string
@@ -175,7 +173,6 @@ export type Database = {
           creado_en?: string
           eliminado_en?: string | null
           email?: string | null
-          firebase_id?: string | null
           id?: string
           id_referidor?: string | null
           negocio_id?: string
@@ -445,7 +442,6 @@ export type Database = {
       }
       historico_ordenes: {
         Row: {
-          cliente_firebase_id: string | null
           completada_en: string
           creado_en: string
           descuento: number
@@ -463,7 +459,6 @@ export type Database = {
           usuario_nombre: string | null
         }
         Insert: {
-          cliente_firebase_id?: string | null
           completada_en?: string
           creado_en?: string
           descuento?: number
@@ -481,7 +476,6 @@ export type Database = {
           usuario_nombre?: string | null
         }
         Update: {
-          cliente_firebase_id?: string | null
           completada_en?: string
           creado_en?: string
           descuento?: number
@@ -861,7 +855,6 @@ export type Database = {
           divisa: string
           eliminado_en: string | null
           email: string | null
-          firebase_project_id: string | null
           footer_ticket: string | null
           horario: Json | null
           id: string
@@ -888,7 +881,6 @@ export type Database = {
           divisa?: string
           eliminado_en?: string | null
           email?: string | null
-          firebase_project_id?: string | null
           footer_ticket?: string | null
           horario?: Json | null
           id?: string
@@ -915,7 +907,6 @@ export type Database = {
           divisa?: string
           eliminado_en?: string | null
           email?: string | null
-          firebase_project_id?: string | null
           footer_ticket?: string | null
           horario?: Json | null
           id?: string
@@ -980,7 +971,6 @@ export type Database = {
       ordenes: {
         Row: {
           actualizado_en: string
-          cliente_firebase_id: string | null
           cliente_id: string | null
           creado_en: string
           descuento: number
@@ -1001,7 +991,6 @@ export type Database = {
         }
         Insert: {
           actualizado_en?: string
-          cliente_firebase_id?: string | null
           cliente_id?: string | null
           creado_en?: string
           descuento?: number
@@ -1022,7 +1011,6 @@ export type Database = {
         }
         Update: {
           actualizado_en?: string
-          cliente_firebase_id?: string | null
           cliente_id?: string | null
           creado_en?: string
           descuento?: number
