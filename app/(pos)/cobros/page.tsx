@@ -337,7 +337,7 @@ export default function CobrosPage() {
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-sm font-medium text-text-100">
                   {orden.mesa_numero ? `Mesa ${orden.mesa_numero}` : orden.origen.replace("_", " ")}
-                  {orden.folio && <span className="ml-1.5 text-[10px] text-text-25 font-normal">#{orden.folio}</span>}
+                  {orden.folio && <span className="ml-1.5 text-xs text-text-25 font-normal">#{orden.folio}</span>}
                 </span>
                 <span className="text-sm font-semibold text-text-100 tabular-nums">
                   {formatMXN(orden.total)}
@@ -640,7 +640,7 @@ export default function CobrosPage() {
               {/* Método de pago — R1: min-h-[44px] */}
               {!dividirPago && (
                 <div>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2.5">
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest block mb-2.5">
                     Método de pago
                   </span>
                   <div className="grid grid-cols-3 gap-2">
@@ -671,7 +671,7 @@ export default function CobrosPage() {
               {/* Split payments form */}
               {dividirPago && (
                 <div>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2.5">
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest block mb-2.5">
                     Formas de pago
                   </span>
                   <div className="space-y-2.5">
@@ -756,7 +756,7 @@ export default function CobrosPage() {
                     {/* Efectivo split monto recibido */}
                     {efectivoSplit && (
                       <div>
-                        <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2.5">
+                        <span className="text-xs font-medium text-text-25 uppercase tracking-widest block mb-2.5">
                           Monto recibido (efectivo)
                         </span>
                         <input
@@ -791,7 +791,7 @@ export default function CobrosPage() {
               {/* Monto recibido (solo efectivo, sin split) */}
               {!dividirPago && metodoPago === "efectivo" && (
                 <div>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2.5">
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest block mb-2.5">
                     Monto recibido
                   </span>
                   <input
@@ -839,7 +839,7 @@ export default function CobrosPage() {
 
               {/* Propina — R1: min-h-[44px] */}
               <div>
-                <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2.5">
+                <span className="text-xs font-medium text-text-25 uppercase tracking-widest block mb-2.5">
                   Propina
                 </span>
                 <div className="flex gap-1.5">
@@ -878,7 +878,7 @@ export default function CobrosPage() {
 
               {/* Descuento — R1: min-h-[44px] */}
               <div>
-                <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2.5">
+                <span className="text-xs font-medium text-text-25 uppercase tracking-widest block mb-2.5">
                   Descuento
                 </span>
                 <div className="flex gap-1.5">

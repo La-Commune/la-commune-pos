@@ -83,7 +83,7 @@ export default function MesaTimer({
   if (variant === "inline") {
     return (
       <span
-        className="text-[10px] font-medium tabular-nums"
+        className="text-xs font-medium tabular-nums"
         style={{ color: styles.color }}
       >
         {showIcon && <Clock size={9} className="inline mr-0.5 -mt-px" />}
@@ -135,7 +135,7 @@ export default function MesaTimer({
   // Default: badge
   return (
     <div
-      className="inline-flex items-center gap-1 text-[10px] font-semibold tabular-nums px-2 py-0.5 rounded-full"
+      className="inline-flex items-center gap-1 text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full"
       style={{
         color: styles.color,
         backgroundColor: `color-mix(in srgb, ${styles.bg} 15%, transparent)`,

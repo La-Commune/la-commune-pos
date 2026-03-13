@@ -157,7 +157,7 @@ function StatCard({
   return (
     <div className="p-5 rounded-xl bg-surface-2 border border-border">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">
+        <span className="text-xs font-medium text-text-25 uppercase tracking-widest">
           {title}
         </span>
         <Icon size={16} className="text-text-25 opacity-40" />
@@ -828,7 +828,7 @@ export default function ReportesPage() {
                 <History size={18} className="text-accent" />
               </div>
               <div>
-                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-0.5">
+                <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-0.5">
                   Total sellos (histórico)
                 </p>
                 <p className="text-lg font-semibold text-text-100 tabular-nums">
@@ -841,7 +841,7 @@ export default function ReportesPage() {
                 <Gift size={18} className="text-accent" />
               </div>
               <div>
-                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-0.5">
+                <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-0.5">
                   Total canjes (histórico)
                 </p>
                 <p className="text-lg font-semibold text-text-100 tabular-nums">

@@ -104,7 +104,7 @@ export default function MesaContextMenu({
         <span className="text-xs font-semibold text-text-100">
           Mesa {mesa.numero}
         </span>
-        <span className="text-[10px] text-text-25 ml-1.5">
+        <span className="text-xs text-text-25 ml-1.5">
           · {mesa.capacidad} personas
         </span>
       </div>

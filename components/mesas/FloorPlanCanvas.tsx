@@ -128,7 +128,7 @@ export default function FloorPlanCanvas({
           >
             <ZoomOut size={16} />
           </button>
-          <span className="text-[10px] text-text-25 w-10 text-center tabular-nums">
+          <span className="text-xs text-text-25 w-10 text-center tabular-nums">
             {Math.round(scale * 100)}%
           </span>
           <button
@@ -214,7 +214,7 @@ export default function FloorPlanCanvas({
 
       {/* Hint */}
       {isAdmin && mesas.length > 0 && (
-        <p className="text-[10px] text-text-25 mt-2 text-center">
+        <p className="text-xs text-text-25 mt-2 text-center">
           Arrastra para mover · Handles para redimensionar · Icono superior para rotar (Shift = snap 45°) · Click derecho para más opciones
         </p>
       )}

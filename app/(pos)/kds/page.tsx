@@ -395,7 +395,7 @@ function KDSPageContent() {
               >
                 <span>{estado === "todas" ? "Todas" : conf?.label}</span>
                 <span className={cn(
-                  "text-[10px] px-1.5 py-0.5 rounded-lg tabular-nums",
+                  "text-xs px-1.5 py-0.5 rounded-lg tabular-nums",
                   filtroEstado === estado ? "bg-accent-soft text-accent" : "bg-surface-3 text-text-25"
                 )}>
                   {count}

@@ -764,13 +764,13 @@ export default function InventarioPage() {
               <div className="rounded-xl border border-border overflow-hidden min-w-[900px]">
                 {/* Header */}
                 <div className="grid grid-cols-[120px_1fr_100px_120px_100px_1fr_100px] gap-3 px-5 py-3 bg-surface-2 border-b border-border">
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Fecha</span>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Ingrediente</span>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Tipo</span>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Cantidad</span>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Stock anterior</span>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Referencia</span>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Notas</span>
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Fecha</span>
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Ingrediente</span>
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Tipo</span>
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Cantidad</span>
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Stock anterior</span>
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Referencia</span>
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Notas</span>
                 </div>
 
                 {/* Rows */}
@@ -786,7 +786,7 @@ export default function InventarioPage() {
                         {new Date(mov.creado_en).toLocaleDateString("es-MX", { month: "short", day: "numeric" })}
                       </span>
                       <span className="text-xs font-medium text-text-100 truncate">{inv?.nombre ?? "—"}</span>
-                      <span className={cn("text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg w-fit", getTipoColor(mov.tipo))}>
+                      <span className={cn("text-xs font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg w-fit", getTipoColor(mov.tipo))}>
                         {mov.tipo}
                       </span>
                       <span className="text-xs text-text-45 font-mono">
@@ -926,7 +926,7 @@ export default function InventarioPage() {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+                    <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
                       Cantidad (en {invSeleccionadoMerma.unidad})
                     </label>
                     <input
@@ -941,7 +941,7 @@ export default function InventarioPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+                    <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
                       Motivo
                     </label>
                     <select
@@ -957,7 +957,7 @@ export default function InventarioPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+                    <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
                       Notas (opcional)
                     </label>
                     <textarea
@@ -998,12 +998,12 @@ export default function InventarioPage() {
               <div className="rounded-xl border border-border overflow-hidden min-w-[900px]">
                 {/* Header */}
                 <div className="grid grid-cols-[120px_1fr_100px_120px_100px_1fr] gap-3 px-5 py-3 bg-surface-2 border-b border-border">
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Fecha</span>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Ingrediente</span>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Motivo</span>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Cantidad</span>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Costo</span>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Notas</span>
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Fecha</span>
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Ingrediente</span>
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Motivo</span>
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Cantidad</span>
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Costo</span>
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Notas</span>
                 </div>
 
                 {/* Rows */}
@@ -1044,7 +1044,7 @@ export default function InventarioPage() {
       >
         <form onSubmit={handleGuardarInventario} className="space-y-4">
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Nombre *
             </label>
             <input
@@ -1059,7 +1059,7 @@ export default function InventarioPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Unidad de medida *
             </label>
             <select
@@ -1079,7 +1079,7 @@ export default function InventarioPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+              <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
                 Stock actual *
               </label>
               <input
@@ -1093,7 +1093,7 @@ export default function InventarioPage() {
               />
             </div>
             <div>
-              <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+              <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
                 Stock mínimo *
               </label>
               <input
@@ -1109,7 +1109,7 @@ export default function InventarioPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Costo unitario (MXN) *
             </label>
             <input
@@ -1124,7 +1124,7 @@ export default function InventarioPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Proveedor
             </label>
             <input
@@ -1138,7 +1138,7 @@ export default function InventarioPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Ubicación / Notas
             </label>
             <textarea
@@ -1188,7 +1188,7 @@ export default function InventarioPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Cantidad *
             </label>
             <input
@@ -1204,7 +1204,7 @@ export default function InventarioPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Referencia (Ej: Compra, Orden #)
             </label>
             <input
@@ -1218,7 +1218,7 @@ export default function InventarioPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Notas
             </label>
             <textarea
@@ -1319,7 +1319,7 @@ export default function InventarioPage() {
           className="space-y-4"
         >
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Ingrediente *
             </label>
             <select
@@ -1338,7 +1338,7 @@ export default function InventarioPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Tipo *
             </label>
             <select
@@ -1354,7 +1354,7 @@ export default function InventarioPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Cantidad *
             </label>
             <input
@@ -1369,7 +1369,7 @@ export default function InventarioPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Referencia
             </label>
             <input
@@ -1383,7 +1383,7 @@ export default function InventarioPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Notas
             </label>
             <textarea
@@ -1424,7 +1424,7 @@ export default function InventarioPage() {
       >
         <form onSubmit={handleGuardarReceta} className="space-y-4">
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Producto *
             </label>
             <select
@@ -1443,7 +1443,7 @@ export default function InventarioPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Ingrediente *
             </label>
             <select
@@ -1462,7 +1462,7 @@ export default function InventarioPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Cantidad necesaria *
             </label>
             <input

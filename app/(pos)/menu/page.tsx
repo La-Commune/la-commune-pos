@@ -361,7 +361,7 @@ export default function MenuPage() {
                         <span className="font-semibold text-text-100 leading-tight text-xs">
                           {producto.nombre}
                         </span>
-                        <span className="font-medium tabular-nums mt-1.5 text-[10px] text-text-45">
+                        <span className="font-medium tabular-nums mt-1.5 text-xs text-text-45">
                           {formatMXN(producto.precio_base)}
                         </span>
                       </>
@@ -384,7 +384,7 @@ export default function MenuPage() {
                           <span className="text-xs font-semibold tabular-nums text-text-100">
                             {formatMXN(producto.precio_base)}
                           </span>
-                          <span className="text-[10px] text-text-25 truncate">
+                          <span className="text-xs text-text-25 truncate">
                             {catNombre}
                           </span>
                         </div>
@@ -407,7 +407,7 @@ export default function MenuPage() {
                           {sizes.length > 0 && (
                             <div className="flex gap-1 mt-2 flex-wrap">
                               {sizes.map((s: any) => (
-                                <span key={s.nombre ?? s} className="text-[10px] px-1.5 py-0.5 rounded-md bg-surface-3 text-text-45 font-medium">
+                                <span key={s.nombre ?? s} className="text-xs px-1.5 py-0.5 rounded-md bg-surface-3 text-text-45 font-medium">
                                   {s.nombre ?? s}
                                 </span>
                               ))}
@@ -417,7 +417,7 @@ export default function MenuPage() {
                           {sizes.length === 0 && tags.length > 0 && (
                             <div className="flex gap-1 mt-2 flex-wrap">
                               {tags.slice(0, 3).map((tag: string) => (
-                                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-md bg-surface-3 text-text-45">
+                                <span key={tag} className="text-xs px-1.5 py-0.5 rounded-md bg-surface-3 text-text-45">
                                   {tag}
                                 </span>
                               ))}
@@ -472,14 +472,14 @@ export default function MenuPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-[10px] text-text-25 px-2 py-0.5 rounded-lg bg-surface-3">
+                    <span className="text-xs text-text-25 px-2 py-0.5 rounded-lg bg-surface-3">
                       {categoriaNombre(producto.categoria_id)}
                     </span>
                     {(producto.etiquetas ?? []).map((tag: string) => (
                       <span
                         key={tag}
                         className={cn(
-                          "text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg",
+                          "text-xs font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg",
                           tag === "popular" && "bg-status-ok-bg text-status-ok",
                           tag === "nuevo" && "bg-status-info-bg text-status-info",
                           tag === "especial" && "bg-accent-soft text-accent"
@@ -489,7 +489,7 @@ export default function MenuPage() {
                       </span>
                     ))}
                     {!producto.disponible && (
-                      <span className="text-[10px] font-medium uppercase px-2 py-0.5 rounded-lg bg-status-err-bg text-status-err">
+                      <span className="text-xs font-medium uppercase px-2 py-0.5 rounded-lg bg-status-err-bg text-status-err">
                         N/D
                       </span>
                     )}
@@ -531,7 +531,7 @@ export default function MenuPage() {
                   <div className="flex items-center gap-2 mb-2">
                     <span
                       className={cn(
-                        "text-[10px] font-medium px-2 py-0.5 rounded-lg",
+                        "text-xs font-medium px-2 py-0.5 rounded-lg",
                         productoDetalle.disponible
                           ? "bg-status-ok-bg text-status-ok"
                           : "bg-status-err-bg text-status-err"
@@ -539,7 +539,7 @@ export default function MenuPage() {
                     >
                       {productoDetalle.disponible ? "Disponible" : "No disponible"}
                     </span>
-                    <span className="text-[10px] text-text-25 px-2 py-0.5 rounded-lg bg-surface-3">
+                    <span className="text-xs text-text-25 px-2 py-0.5 rounded-lg bg-surface-3">
                       {categoriaNombre(productoDetalle.categoria_id)}
                     </span>
                   </div>
@@ -569,7 +569,7 @@ export default function MenuPage() {
 
               {(productoDetalle.tamanos ?? []).length > 0 && (
                 <div>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest block mb-2">
                     Tamaños
                   </span>
                   <div className="space-y-1">
@@ -590,12 +590,12 @@ export default function MenuPage() {
 
               {(productoDetalle.ingredientes ?? []).length > 0 && (
                 <div>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest block mb-2">
                     Ingredientes
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {(productoDetalle.ingredientes ?? []).map((ing: string) => (
-                      <span key={ing} className="text-[10px] text-text-45 px-2.5 py-1 rounded-lg bg-surface-3 border border-border">
+                      <span key={ing} className="text-xs text-text-45 px-2.5 py-1 rounded-lg bg-surface-3 border border-border">
                         {ing}
                       </span>
                     ))}
@@ -605,7 +605,7 @@ export default function MenuPage() {
 
               {(productoDetalle.etiquetas ?? []).length > 0 && (
                 <div>
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest block mb-2">
                     Etiquetas
                   </span>
                   <div className="flex flex-wrap gap-1.5">
@@ -613,7 +613,7 @@ export default function MenuPage() {
                       <span
                         key={tag}
                         className={cn(
-                          "text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg",
+                          "text-xs font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg",
                           tag === "popular" && "bg-status-ok-bg text-status-ok",
                           tag === "nuevo" && "bg-status-info-bg text-status-info",
                           tag === "especial" && "bg-accent-soft text-accent"
@@ -800,7 +800,7 @@ export default function MenuPage() {
           className="space-y-4"
         >
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Nombre *
             </label>
             <input
@@ -814,7 +814,7 @@ export default function MenuPage() {
             />
           </div>
           <div>
-            <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
               Tipo
             </label>
             <div className="flex gap-2">

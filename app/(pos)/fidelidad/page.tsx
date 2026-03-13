@@ -186,7 +186,7 @@ function FidelidadPageContent() {
       <div className="grid grid-cols-3 gap-3 mb-6">
         <div className="p-4 rounded-xl bg-surface-2 border border-border">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Clientes</span>
+            <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Clientes</span>
             <Users size={14} className="text-text-25 opacity-40" />
           </div>
           <p className="text-xl font-semibold text-text-100 tabular-nums">{stats.totalClientes}</p>
@@ -194,7 +194,7 @@ function FidelidadPageContent() {
         </div>
         <div className="p-4 rounded-xl bg-surface-2 border border-border">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Puntos en circulación</span>
+            <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Puntos en circulación</span>
             <Star size={14} className="text-text-25 opacity-40" />
           </div>
           <p className="text-xl font-semibold text-text-100 tabular-nums">{stats.puntosEmitidos.toLocaleString("es-MX")}</p>
@@ -202,7 +202,7 @@ function FidelidadPageContent() {
         </div>
         <div className="p-4 rounded-xl bg-surface-2 border border-border">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Niveles</span>
+            <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Niveles</span>
             <Award size={14} className="text-text-25 opacity-40" />
           </div>
           <div className="flex items-center gap-2 mt-1">
@@ -210,7 +210,7 @@ function FidelidadPageContent() {
               const count = clientesList.filter((c) => c.nivel === n).length;
               const conf = nivelConfig[n];
               return (
-                <span key={n} className={cn("text-[10px] font-medium px-2 py-0.5 rounded-lg", conf.bg, conf.color)}>
+                <span key={n} className={cn("text-xs font-medium px-2 py-0.5 rounded-lg", conf.bg, conf.color)}>
                   {count} {conf.label}
                 </span>
               );
@@ -262,12 +262,12 @@ function FidelidadPageContent() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
-                      <span className={cn("text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg", nivel.bg, nivel.color)}>
+                      <span className={cn("text-xs font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg", nivel.bg, nivel.color)}>
                         {nivel.label}
                       </span>
                       <div className="text-right">
                         <p className="text-xs font-semibold text-text-100 tabular-nums">{cliente.puntos.toLocaleString("es-MX")}</p>
-                        <p className="text-[10px] text-text-25">puntos</p>
+                        <p className="text-xs text-text-25">puntos</p>
                       </div>
                       <ChevronRight size={14} className="text-text-25" />
                     </div>
@@ -315,7 +315,7 @@ function FidelidadPageContent() {
                   </p>
                 )}
                 <span className={cn(
-                  "inline-flex items-center gap-1 mt-2 text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg",
+                  "inline-flex items-center gap-1 mt-2 text-xs font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg",
                   (nivelConfig[clienteSeleccionado.nivel] ?? nivelConfig.bronce).bg,
                   (nivelConfig[clienteSeleccionado.nivel] ?? nivelConfig.bronce).color,
                 )}>
@@ -326,11 +326,11 @@ function FidelidadPageContent() {
               <div className="grid grid-cols-2 gap-2.5 mb-5">
                 <div className="p-3 rounded-xl bg-surface-3 text-center">
                   <p className="text-lg font-semibold text-text-100 tabular-nums">{clienteSeleccionado.puntos.toLocaleString("es-MX")}</p>
-                  <p className="text-[10px] text-text-25 uppercase tracking-widest">Puntos</p>
+                  <p className="text-xs text-text-25 uppercase tracking-widest">Puntos</p>
                 </div>
                 <div className="p-3 rounded-xl bg-surface-3 text-center">
                   <p className="text-lg font-semibold text-text-100 tabular-nums">{clienteSeleccionado.total_visitas}</p>
-                  <p className="text-[10px] text-text-25 uppercase tracking-widest">Visitas</p>
+                  <p className="text-xs text-text-25 uppercase tracking-widest">Visitas</p>
                 </div>
               </div>
 
@@ -360,7 +360,7 @@ function FidelidadPageContent() {
               {/* Progreso de nivel */}
               <div className="mb-5">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Progreso al siguiente nivel</span>
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Progreso al siguiente nivel</span>
                 </div>
                 {clienteSeleccionado.nivel !== "oro" ? (
                   <>
@@ -372,20 +372,20 @@ function FidelidadPageContent() {
                         }}
                       />
                     </div>
-                    <p className="text-[10px] text-text-25">
+                    <p className="text-xs text-text-25">
                       {clienteSeleccionado.nivel === "bronce"
                         ? `${Math.max(0, 500 - clienteSeleccionado.puntos)} puntos para Plata`
                         : `${Math.max(0, 1000 - clienteSeleccionado.puntos)} puntos para Oro`}
                     </p>
                   </>
                 ) : (
-                  <p className="text-[10px] text-accent font-medium">Nivel máximo alcanzado</p>
+                  <p className="text-xs text-accent font-medium">Nivel máximo alcanzado</p>
                 )}
               </div>
 
               {/* Recompensas */}
               <div className="mb-5">
-                <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">Recompensas disponibles</span>
+                <span className="text-xs font-medium text-text-25 uppercase tracking-widest block mb-2">Recompensas disponibles</span>
                 <div className="space-y-1.5">
                   {RECOMPENSAS.map((r) => (
                     <div key={r.nombre} className="flex items-center justify-between p-2.5 rounded-xl bg-surface-3">
@@ -401,7 +401,7 @@ function FidelidadPageContent() {
                         }}
                         disabled={clienteSeleccionado.puntos < r.puntos}
                         className={cn(
-                          "text-[10px] font-medium px-2.5 py-1.5 rounded-lg transition-all duration-300 min-h-[32px]",
+                          "text-xs font-medium px-2.5 py-1.5 rounded-lg transition-all duration-300 min-h-[32px]",
                           clienteSeleccionado.puntos >= r.puntos
                             ? "bg-accent-soft text-accent hover:opacity-80"
                             : "bg-surface-2 text-text-25 cursor-not-allowed",
@@ -514,7 +514,7 @@ function ClienteForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">Nombre completo *</label>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">Nombre completo *</label>
         <input
           type="text"
           value={nombre}
@@ -525,7 +525,7 @@ function ClienteForm({
         />
       </div>
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">Teléfono</label>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">Teléfono</label>
         <input
           type="tel"
           value={telefono}
@@ -535,7 +535,7 @@ function ClienteForm({
         />
       </div>
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">Email (opcional)</label>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">Email (opcional)</label>
         <input
           type="email"
           value={email}

@@ -150,7 +150,7 @@ export default function Sidebar() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.18 }}
-                  className="text-[10px] text-text-25 uppercase tracking-[0.18em] whitespace-nowrap mt-0.5"
+                  className="text-xs text-text-25 uppercase tracking-[0.18em] whitespace-nowrap mt-0.5"
                 >
                   Punto de venta
                 </motion.span>
