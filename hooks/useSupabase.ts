@@ -59,7 +59,10 @@ function useQuery<T>(
       return;
     }
 
-    setLoading(true);
+    // Solo mostrar loading en la carga inicial, no en refetch
+    if (!hasFetched.current) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
