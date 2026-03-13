@@ -45,7 +45,6 @@ CREATE TABLE negocios (
   rfc         TEXT,
   divisa      TEXT NOT NULL DEFAULT 'MXN',
   zona_horaria TEXT NOT NULL DEFAULT 'America/Mexico_City',
-  firebase_project_id TEXT,
   creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   eliminado_en TIMESTAMPTZ
@@ -67,11 +66,10 @@ CREATE TABLE usuarios (
   eliminado_en TIMESTAMPTZ
 );
 
--- ── Clientes (réplica POS de Firebase para JOINs y reportes) ──
+-- ── Clientes ──
 CREATE TABLE clientes (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   negocio_id      UUID NOT NULL REFERENCES negocios(id) ON DELETE CASCADE,
-  firebase_id     TEXT,
   nombre          TEXT NOT NULL,
   telefono        TEXT,
   email           TEXT,
@@ -180,7 +178,6 @@ CREATE TABLE ordenes (
   estado      estado_orden NOT NULL DEFAULT 'nueva',
   origen      origen_orden NOT NULL DEFAULT 'mesa',
   notas       TEXT,
-  cliente_firebase_id TEXT,
   creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   eliminado_en TIMESTAMPTZ
@@ -269,7 +266,6 @@ CREATE TABLE historico_ordenes (
   total       NUMERIC(10,2) NOT NULL DEFAULT 0,
   tipo_pago   tipo_pago,
   origen      origen_orden,
-  cliente_firebase_id TEXT,
   completada_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -391,12 +387,9 @@ CREATE INDEX idx_usuarios_auth ON usuarios(auth_uid);
 
 -- Clientes
 CREATE INDEX idx_clientes_negocio ON clientes(negocio_id) WHERE eliminado_en IS NULL;
-CREATE INDEX idx_clientes_firebase ON clientes(firebase_id) WHERE firebase_id IS NOT NULL;
 CREATE INDEX idx_clientes_telefono ON clientes(negocio_id, telefono) WHERE eliminado_en IS NULL;
 CREATE INDEX idx_clientes_nombre ON clientes(negocio_id, nombre) WHERE eliminado_en IS NULL;
 CREATE INDEX idx_clientes_gastado ON clientes(negocio_id, total_gastado DESC) WHERE eliminado_en IS NULL;
-CREATE UNIQUE INDEX idx_clientes_firebase_unique ON clientes(negocio_id, firebase_id)
-  WHERE firebase_id IS NOT NULL AND eliminado_en IS NULL;
 
 -- Categorías
 CREATE INDEX idx_categorias_negocio ON categorias_menu(negocio_id, orden) WHERE eliminado_en IS NULL;
@@ -415,7 +408,6 @@ CREATE INDEX idx_ordenes_negocio ON ordenes(negocio_id) WHERE eliminado_en IS NU
 CREATE INDEX idx_ordenes_mesa ON ordenes(mesa_id) WHERE eliminado_en IS NULL;
 CREATE INDEX idx_ordenes_estado ON ordenes(negocio_id, estado) WHERE eliminado_en IS NULL;
 CREATE INDEX idx_ordenes_fecha ON ordenes(negocio_id, creado_en DESC) WHERE eliminado_en IS NULL;
-CREATE INDEX idx_ordenes_cliente_firebase ON ordenes(cliente_firebase_id) WHERE cliente_firebase_id IS NOT NULL;
 CREATE INDEX idx_ordenes_cliente_id ON ordenes(cliente_id) WHERE cliente_id IS NOT NULL;
 CREATE UNIQUE INDEX idx_ordenes_folio ON ordenes(negocio_id, folio);
 CREATE INDEX idx_ordenes_negocio_folio ON ordenes(negocio_id, folio DESC);
