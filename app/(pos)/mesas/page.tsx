@@ -11,6 +11,7 @@ import {
   Settings2,
   AlertTriangle,
 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useMesas, useZonas, insertRecord, updateRecord, deleteRecord, subscribeToTable } from "@/hooks/useSupabase";
 import { useAuthStore } from "@/store/auth.store";
@@ -70,11 +71,11 @@ function MesasPageContent() {
 
   // ── Sync fetched data → stores ──
   useEffect(() => {
-    if (mesasData?.length) setMesas(mesasData);
+    if (mesasData) setMesas(mesasData);
   }, [mesasData, setMesas]);
 
   useEffect(() => {
-    if (zonasData?.length) setZonas(zonasData);
+    if (zonasData) setZonas(zonasData);
   }, [zonasData, setZonas]);
 
   // ── Derived ──
@@ -595,83 +596,95 @@ function MesasPageContent() {
       {/* ── Vista: Grid ── */}
       {!loading && vista === "grid" && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filteredMesas.map((mesa) => {
-            const config =
-              ESTADO_MESA_CONFIG[mesa.estado as EstadoMesaKey] ??
-              ESTADO_MESA_CONFIG.disponible;
-            const isStale = mesa.ocupada_desde &&
-              (mesa.estado === "ocupada" || mesa.estado === "reservada") &&
-              getLevel(getMins(mesa.ocupada_desde)) === "err";
-            return (
-              <button
-                key={mesa.id}
-                onClick={() => handleClickMesa(mesa as Mesa)}
-                onContextMenu={(e) => handleRightClick(e, mesa as Mesa)}
-                onTouchStart={(e) => handleTouchStart(mesa as Mesa, e)}
-                onTouchEnd={handleTouchEnd}
-                onTouchMove={handleTouchMove}
-                className={cn(
-                  "relative p-5 rounded-xl bg-surface-2 border border-border text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer min-h-[44px]",
-                  "hover:border-border-hover",
-                  isStale && "mesa-stale-pulse border-status-err"
-                )}
-              >
-                {/* Top color indicator */}
-                <div
-                  className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-b-full"
-                  style={{ backgroundColor: `var(${config.cssVar})` }}
-                />
-
-                {/* Number */}
-                <div
+          <AnimatePresence mode="popLayout">
+            {filteredMesas.map((mesa) => {
+              const config =
+                ESTADO_MESA_CONFIG[mesa.estado as EstadoMesaKey] ??
+                ESTADO_MESA_CONFIG.disponible;
+              const isStale = mesa.ocupada_desde &&
+                (mesa.estado === "ocupada" || mesa.estado === "reservada") &&
+                getLevel(getMins(mesa.ocupada_desde)) === "err";
+              return (
+                <motion.button
+                  key={mesa.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.7, filter: "blur(4px)" }}
+                  transition={{
+                    layout: { type: "spring", stiffness: 350, damping: 30 },
+                    opacity: { duration: 0.25 },
+                    scale: { duration: 0.25 },
+                    filter: { duration: 0.2 },
+                  }}
+                  onClick={() => handleClickMesa(mesa as Mesa)}
+                  onContextMenu={(e) => handleRightClick(e, mesa as Mesa)}
+                  onTouchStart={(e) => handleTouchStart(mesa as Mesa, e)}
+                  onTouchEnd={handleTouchEnd}
+                  onTouchMove={handleTouchMove}
                   className={cn(
-                    "text-3xl font-bold mb-2 tracking-tight tabular-nums",
-                    config.tailwind
+                    "relative p-5 rounded-xl bg-surface-2 border border-border text-center cursor-pointer min-h-[44px]",
+                    "hover:border-border-hover hover:-translate-y-1 hover:shadow-md transition-[border-color,box-shadow,transform] duration-300",
+                    isStale && "mesa-stale-pulse border-status-err"
                   )}
                 >
-                  {mesa.numero}
-                </div>
+                  {/* Top color indicator */}
+                  <div
+                    className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-b-full"
+                    style={{ backgroundColor: `var(${config.cssVar})` }}
+                  />
 
-                {/* Capacity */}
-                <div className="flex items-center justify-center gap-1.5 text-text-45 mb-3">
-                  <Users size={12} />
-                  <span className="text-[11px]">{mesa.capacidad} personas</span>
-                </div>
+                  {/* Number */}
+                  <div
+                    className={cn(
+                      "text-3xl font-bold mb-2 tracking-tight tabular-nums",
+                      config.tailwind
+                    )}
+                  >
+                    {mesa.numero}
+                  </div>
 
-                {/* Timer — solo cuando ocupada/reservada */}
-                {mesa.ocupada_desde &&
-                  (mesa.estado === "ocupada" || mesa.estado === "reservada") && (
-                    <div className="mb-2">
-                      <MesaTimer ocupadaDesde={mesa.ocupada_desde} variant="badge" />
+                  {/* Capacity */}
+                  <div className="flex items-center justify-center gap-1.5 text-text-45 mb-3">
+                    <Users size={12} />
+                    <span className="text-[11px]">{mesa.capacidad} personas</span>
+                  </div>
+
+                  {/* Timer — solo cuando ocupada/reservada */}
+                  {mesa.ocupada_desde &&
+                    (mesa.estado === "ocupada" || mesa.estado === "reservada") && (
+                      <div className="mb-2">
+                        <MesaTimer ocupadaDesde={mesa.ocupada_desde} variant="badge" />
+                      </div>
+                    )}
+
+                  {/* Zona label */}
+                  {selectedZonaId === null && (
+                    <div className="text-[10px] text-text-25 mb-3 uppercase tracking-wider">
+                      {zonas.find((z) => z.id === mesa.zona_id)?.nombre ??
+                        mesa.ubicacion ??
+                        "Sin zona"}
                     </div>
                   )}
 
-                {/* Zona label */}
-                {selectedZonaId === null && (
-                  <div className="text-[10px] text-text-25 mb-3 uppercase tracking-wider">
-                    {zonas.find((z) => z.id === mesa.zona_id)?.nombre ??
-                      mesa.ubicacion ??
-                      "Sin zona"}
+                  {/* Status pill */}
+                  <div
+                    className={cn(
+                      "inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider px-3 py-1 rounded-full",
+                      config.bg,
+                      config.tailwind
+                    )}
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: `var(${config.cssVar})` }}
+                    />
+                    {config.label}
                   </div>
-                )}
-
-                {/* Status pill */}
-                <div
-                  className={cn(
-                    "inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider px-3 py-1 rounded-full",
-                    config.bg,
-                    config.tailwind
-                  )}
-                >
-                  <span
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ backgroundColor: `var(${config.cssVar})` }}
-                  />
-                  {config.label}
-                </div>
-              </button>
-            );
-          })}
+                </motion.button>
+              );
+            })}
+          </AnimatePresence>
         </div>
       )}
 

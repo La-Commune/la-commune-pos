@@ -21,6 +21,7 @@ import { useOrdenes, insertRecord, updateRecord, subscribeToTable } from "@/hook
 import { useAuthStore } from "@/store/auth.store";
 import { showToast } from "@/components/ui/Toast";
 import { deducirInventarioPorOrden } from "@/lib/inventory-deduction";
+import TicketDigital, { type TicketData, type TicketItem, type TicketPago } from "@/components/ui/TicketDigital";
 import type { Orden, OrdenWithMesa, ItemOrdenJSON } from "@/types/database";
 
 type MetodoPago = "efectivo" | "tarjeta" | "transferencia";
@@ -60,6 +61,9 @@ export default function CobrosPage() {
   const [splits, setSplits] = useState<PagoSplit[]>([
     { id: "1", metodo: "efectivo", monto: 0 }
   ]);
+  /* Ticket digital */
+  const [mostrarTicket, setMostrarTicket] = useState(false);
+  const [ticketData, setTicketData] = useState<TicketData | null>(null);
 
   // ── Realtime: refetch cuando cambian ordenes o mesas ──
   useEffect(() => {
@@ -266,6 +270,39 @@ export default function CobrosPage() {
         }
       }
 
+      // 5. Generar datos del ticket digital
+      const itemsOrden = (ordenSeleccionada.items ?? []) as ItemOrdenJSON[];
+      const ticketItems: TicketItem[] = itemsOrden.map((item, idx) => ({
+        id: item.producto_id || `item-${idx}`,
+        nombre: item.nombre,
+        cantidad: item.cantidad,
+        precio_unitario: item.precio_unitario,
+        tamano: item.tamano,
+        notas: item.notas,
+      }));
+
+      const ticketPagos: TicketPago[] = dividirPago
+        ? splits.filter(s => s.monto > 0).map(s => ({ metodo: s.metodo, monto: s.monto }))
+        : [{ metodo: metodoPago, monto: totalConDescuento }];
+
+      setTicketData({
+        folio: ordenSeleccionada.folio,
+        fecha: new Date(),
+        mesaNumero: ordenSeleccionada.mesa_numero ?? null,
+        origen: ordenSeleccionada.origen,
+        items: ticketItems,
+        subtotal: totalOrden,
+        descuento: montoDescuento,
+        descuentoPct: descuento,
+        propina,
+        totalFinal,
+        pagos: ticketPagos,
+        cambio: dividirPago ? cambioSplit : cambio,
+        atendidoPor: user.nombre || "Staff",
+        negocioNombre: "La Commune",
+        negocioDireccion: "Mineral de la Reforma, Hidalgo",
+      });
+
       showToast("Cobro completado", "success");
       setProcesando(false);
       setVerificando(false);
@@ -377,14 +414,18 @@ export default function CobrosPage() {
               </p>
 
               <div className="flex gap-3 justify-center">
-                <button className="flex items-center gap-2 px-5 py-3 rounded-xl btn-secondary text-[13px] min-h-[44px]">
+                <button
+                  onClick={() => setMostrarTicket(true)}
+                  className="flex items-center gap-2 px-5 py-3 rounded-xl btn-secondary text-[13px] min-h-[44px]"
+                >
                   <Receipt size={14} />
-                  Imprimir ticket
+                  Ver ticket
                 </button>
                 <button
                   onClick={() => {
                     setOrdenSeleccionada(null);
                     resetCobro();
+                    setTicketData(null);
                   }}
                   className="flex items-center gap-2 px-5 py-3 rounded-xl btn-primary text-[13px] min-h-[44px]"
                 >
@@ -878,6 +919,14 @@ export default function CobrosPage() {
           </div>
         )}
       </div>
+
+      {/* ── Ticket Digital Modal ── */}
+      {mostrarTicket && ticketData && (
+        <TicketDigital
+          ticket={ticketData}
+          onClose={() => setMostrarTicket(false)}
+        />
+      )}
     </div>
   );
 }
