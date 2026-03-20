@@ -279,7 +279,7 @@ export default function OrdenesPage() {
       refetchOrdenes();
     } catch (err) {
       showToast("Error inesperado al crear orden", "error");
-      console.error(err);
+      if (process.env.NODE_ENV === "development") console.error(err);
     } finally {
       setEnviandoOrden(false);
     }
@@ -325,7 +325,7 @@ export default function OrdenesPage() {
       refetchOrdenes();
     } catch (err) {
       showToast("Error al confirmar orden", "error");
-      console.error(err);
+      if (process.env.NODE_ENV === "development") console.error(err);
     } finally {
       setConfirmandoOrden(false);
     }
@@ -359,7 +359,7 @@ export default function OrdenesPage() {
       refetchOrdenes();
     } catch (err) {
       showToast("Error al cancelar", "error");
-      console.error(err);
+      if (process.env.NODE_ENV === "development") console.error(err);
     }
   };
 
@@ -382,7 +382,7 @@ export default function OrdenesPage() {
       refetchOrdenes();
     } catch (err) {
       showToast("Error al enviar a cocina", "error");
-      console.error(err);
+      if (process.env.NODE_ENV === "development") console.error(err);
     }
   };
 

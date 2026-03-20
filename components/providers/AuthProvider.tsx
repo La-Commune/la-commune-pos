@@ -48,7 +48,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       try {
         await checkSession();
       } catch (error) {
-        console.error("Error verificando sesión:", error);
+        if (process.env.NODE_ENV === "development") console.error("Error verificando sesión:", error);
         useAuthStore.setState({
           isAuthenticated: false,
           user: null,
