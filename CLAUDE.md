@@ -124,7 +124,7 @@ Acciones se encolan cuando no hay conexión y se sincronizan vía `/api/sync`.
 - **Idioma**: UI en español
 - **Enums**: definidos en `lib/validators.ts` como Zod enums
 - **CSS vars**: en `globals.css`, mapeadas a Tailwind en `tailwind.config.ts`
-- **Console.logs**: envueltos en `process.env.NODE_ENV === "development"` — no loguear en producción
+- **Console.logs**: API routes usan `logger` de `lib/logger.ts`; client-side envueltos en `process.env.NODE_ENV === "development"` — 0 logs sensibles en producción
 - **Componentes**: `"use client"` explícito requerido
 
 ## Variables de entorno
@@ -168,6 +168,43 @@ Ambos proyectos (POS y frontend de fidelidad) comparten la misma instancia de Su
 - Framework: Playwright (chromium)
 - Modo: mock (sin Supabase) — el AuthProvider auto-logea como "David (Dev)" admin
 - Comandos: `npm run test:e2e`, `npm run test:e2e:ui`, `npm run test:e2e:headed`
+
+## Auditoría de Seguridad (Marzo 2026) ✅
+
+### PIN Login Fix ✅
+- `login_por_pin()` necesitaba `GRANT EXECUTE` a `service_role` y `anon`
+- Ejecutado directamente en Supabase y actualizado en `schema.sql` + `remove-anon-policies.sql`
+
+### Admin Menu Fix ✅
+- RLS policies de `productos` y `categorias_menu` para `anon` filtraban `disponible=true`/`activo=true` a nivel BD
+- Eliminadas esas condiciones — ahora el filtrado es en JS (`getFullMenu({ forAdmin: true })` retorna todo)
+
+### A1: API Routes sin autenticación ✅
+- Creado `lib/api-auth.ts` — helper centralizado `verifyApiAuth(request, requiredRoles?)`
+  - Extrae JWT del header Authorization, valida con `supabase.auth.getUser()`
+  - Busca usuario en tabla `usuarios`, retorna `{ userId, rol, negocioId }`
+  - Soporta filtro por roles (ej: `["admin"]`)
+- Creado `lib/auth-fetch.ts` — wrapper client-side que inyecta Bearer token automáticamente
+- Protegidos: `/api/auth/pin`, `/api/upload-logo`, `/api/usuarios`, `/api/sync`
+
+### A2: Upload-logo sin validación de propiedad ✅
+- `verifyApiAuth(req, ["admin"])` + ownership check (`negocioId !== auth.negocioId` → 403)
+- Cache buster `?v=${Date.now()}` en URLs de Storage para evitar cache del navegador
+- Custom event `"negocio-updated"` para refrescar logo/nombre en Sidebar sin reload
+- `useNegocio()` escucha el evento y re-fetcha datos del negocio
+
+### A3: Console.logs exponiendo datos sensibles ✅
+- Creado `lib/logger.ts` — logger centralizado:
+  - Dev: imprime todo (contexto + mensaje + datos)
+  - Producción: solo `console.error(context, message)` sin datos sensibles
+- API Routes (`/api/auth/pin`, `/api/upload-logo`, `/api/usuarios`) usan `logger`
+- Client-side: todos los `console.log/warn/error` envueltos en `process.env.NODE_ENV === "development"`
+- Archivos actualizados: `AuthProvider`, `ErrorBoundary`, `useSW`, `ordenes/page`, `inventory-deduction`, `supabase-admin`
+
+### Archivos nuevos de la auditoría:
+- `lib/api-auth.ts` — verificación JWT server-side
+- `lib/auth-fetch.ts` — fetch wrapper client-side con Bearer token
+- `lib/logger.ts` — logger centralizado (dev vs producción)
 
 ## Pendiente
 
