@@ -156,9 +156,10 @@ CREATE POLICY "anon_recompensas_select"
 -- ══════════════════════════════════════════════════════════════
 
 REVOKE SELECT ON usuarios FROM anon;
-REVOKE EXECUTE ON FUNCTION login_por_pin(TEXT) FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION login_por_pin(TEXT) FROM anon;
-GRANT EXECUTE ON FUNCTION login_por_pin(TEXT) TO authenticated;
+REVOKE EXECUTE ON FUNCTION login_por_pin(TEXT, TEXT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION login_por_pin(TEXT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION login_por_pin(TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION login_por_pin(TEXT, TEXT) TO service_role;
 
 
 -- ══════════════════════════════════════════════════════════════

@@ -43,6 +43,13 @@ export async function POST(request: Request) {
 
     const { pin } = body;
 
+    // Obtener IP del cliente para rate limiting en BD
+    // Vercel: x-real-ip (más confiable) > x-forwarded-for > fallback
+    const clientIp =
+      request.headers.get("x-real-ip")?.trim() ||
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      "0.0.0.0";
+
     // 1. Validar PIN con service role (bypasea RLS)
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -50,7 +57,7 @@ export async function POST(request: Request) {
 
     const { data: pinResult, error: pinError } = await supabaseAdmin.rpc(
       "login_por_pin",
-      { pin_input: pin },
+      { pin_input: pin, client_ip: clientIp },
     );
 
     if (pinError) {
@@ -65,10 +72,18 @@ export async function POST(request: Request) {
       typeof pinResult === "string" ? JSON.parse(pinResult) : pinResult;
 
     if (!userData?.success) {
-      return NextResponse.json(
-        { error: userData?.error ?? "PIN inválido" },
-        { status: 401 },
-      );
+      // Incluir info de rate limiting si aplica
+      const status = userData?.rate_limited ? 429 : 401;
+      const response: Record<string, unknown> = {
+        error: userData?.error ?? "PIN inválido",
+      };
+      if (userData?.intentos_restantes !== undefined) {
+        response.intentos_restantes = userData.intentos_restantes;
+      }
+      if (userData?.bloqueado_hasta) {
+        response.bloqueado_hasta = userData.bloqueado_hasta;
+      }
+      return NextResponse.json(response, { status });
     }
 
     // 2. Obtener email real de Auth (puede diferir del de la tabla usuarios)
@@ -138,26 +153,22 @@ export async function POST(request: Request) {
         expires_at: retryData.session!.expires_at,
         user: {
           id: userData.id,
-          auth_uid: userData.auth_uid,
           negocio_id: userData.negocio_id,
           nombre: userData.nombre,
-          email: userData.email,
           rol: userData.rol,
         },
       });
     }
 
-    // 3. Retornar tokens + datos del usuario
+    // 3. Retornar tokens + datos del usuario (sin auth_uid ni email)
     return NextResponse.json({
       access_token: authData.session!.access_token,
       refresh_token: authData.session!.refresh_token,
       expires_at: authData.session!.expires_at,
       user: {
         id: userData.id,
-        auth_uid: userData.auth_uid,
         negocio_id: userData.negocio_id,
         nombre: userData.nombre,
-        email: userData.email,
         rol: userData.rol,
       },
     });

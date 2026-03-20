@@ -376,6 +376,16 @@ CREATE TABLE configuracion_sync (
   UNIQUE(negocio_id, tabla)
 );
 
+-- ── Intentos de PIN (rate limiting a nivel BD) ──
+CREATE TABLE intentos_pin (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  ip              TEXT NOT NULL,
+  intentos        INTEGER NOT NULL DEFAULT 0,
+  bloqueado_hasta TIMESTAMPTZ,
+  creado_en       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  actualizado_en  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 
 -- ┌─────────────────────────────────────┐
 -- │  4. ÍNDICES                          │
@@ -473,6 +483,11 @@ CREATE INDEX idx_recetas_inventario ON recetas(inventario_id);
 CREATE INDEX idx_historico_negocio_fecha ON historico_ordenes(negocio_id, completada_en DESC);
 CREATE INDEX idx_historico_tipo_pago ON historico_ordenes(negocio_id, tipo_pago);
 
+-- Intentos PIN
+CREATE UNIQUE INDEX idx_intentos_pin_ip ON intentos_pin(ip);
+CREATE INDEX idx_intentos_pin_bloqueado ON intentos_pin(bloqueado_hasta)
+  WHERE bloqueado_hasta IS NOT NULL;
+
 
 -- ┌─────────────────────────────────────┐
 -- │  5. FUNCIONES Y TRIGGERS            │
@@ -504,6 +519,7 @@ CREATE TRIGGER trg_cortes_updated BEFORE UPDATE ON cortes_caja FOR EACH ROW EXEC
 CREATE TRIGGER trg_gastos_updated BEFORE UPDATE ON gastos FOR EACH ROW EXECUTE FUNCTION actualizar_timestamp();
 CREATE TRIGGER trg_inventario_updated BEFORE UPDATE ON inventario FOR EACH ROW EXECUTE FUNCTION actualizar_timestamp();
 CREATE TRIGGER trg_recetas_updated BEFORE UPDATE ON recetas FOR EACH ROW EXECUTE FUNCTION actualizar_timestamp();
+CREATE TRIGGER trg_intentos_pin_updated BEFORE UPDATE ON intentos_pin FOR EACH ROW EXECUTE FUNCTION actualizar_timestamp();
 
 -- ── Folio auto-incremental por negocio ──
 CREATE OR REPLACE FUNCTION get_next_folio_orden(p_negocio_id UUID)
@@ -620,6 +636,8 @@ ALTER TABLE inventario ENABLE ROW LEVEL SECURITY;
 ALTER TABLE movimientos_inventario ENABLE ROW LEVEL SECURITY;
 ALTER TABLE recetas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE configuracion_sync ENABLE ROW LEVEL SECURITY;
+ALTER TABLE intentos_pin ENABLE ROW LEVEL SECURITY;
+-- (intentos_pin no necesita políticas — solo la función SECURITY DEFINER accede)
 
 -- ── Funciones helper ──
 CREATE OR REPLACE FUNCTION get_mi_negocio_id()
@@ -874,14 +892,52 @@ CREATE POLICY "sync_update" ON configuracion_sync
 -- │  7. LOGIN POR PIN (RPC)             │
 -- └─────────────────────────────────────┘
 -- El POS usa login por PIN (no Supabase Auth directo).
--- Esta función permite autenticar sin sesión activa.
+-- Esta función incluye rate limiting por IP a nivel de BD.
+-- Bloquea después de 5 intentos fallidos durante 15 minutos.
 
-CREATE OR REPLACE FUNCTION login_por_pin(pin_input TEXT)
+-- Eliminar versión vieja sin rate limiting (si existe)
+DROP FUNCTION IF EXISTS login_por_pin(TEXT);
+
+CREATE OR REPLACE FUNCTION login_por_pin(pin_input TEXT, client_ip TEXT DEFAULT '0.0.0.0')
 RETURNS JSON AS $$
 DECLARE
   usr RECORD;
+  intento RECORD;
+  max_intentos CONSTANT INTEGER := 5;
+  bloqueo_minutos CONSTANT INTEGER := 15;
 BEGIN
-  SELECT id, negocio_id, auth_uid, nombre, email, rol
+  -- ── 1. Verificar rate limit por IP ──
+  SELECT * INTO intento
+  FROM intentos_pin
+  WHERE ip = client_ip;
+
+  -- Si está bloqueado y el bloqueo no ha expirado
+  IF intento.id IS NOT NULL
+    AND intento.bloqueado_hasta IS NOT NULL
+    AND intento.bloqueado_hasta > NOW()
+  THEN
+    RETURN json_build_object(
+      'success', false,
+      'error', 'Demasiados intentos. Intenta en ' || bloqueo_minutos || ' minutos.',
+      'bloqueado_hasta', intento.bloqueado_hasta,
+      'rate_limited', true
+    );
+  END IF;
+
+  -- Si el bloqueo ya expiró, resetear contador
+  IF intento.id IS NOT NULL
+    AND intento.bloqueado_hasta IS NOT NULL
+    AND intento.bloqueado_hasta <= NOW()
+  THEN
+    UPDATE intentos_pin
+    SET intentos = 0, bloqueado_hasta = NULL
+    WHERE ip = client_ip;
+    intento.intentos := 0;
+    intento.bloqueado_hasta := NULL;
+  END IF;
+
+  -- ── 2. Buscar usuario por PIN ──
+  SELECT id, negocio_id, auth_uid, nombre, rol
   INTO usr
   FROM usuarios
   WHERE pin = pin_input
@@ -889,27 +945,61 @@ BEGIN
     AND eliminado_en IS NULL
   LIMIT 1;
 
+  -- ── 3. PIN incorrecto → registrar intento fallido ──
   IF usr.id IS NULL THEN
-    RETURN json_build_object('success', false, 'error', 'PIN inválido');
+    IF intento.id IS NULL THEN
+      INSERT INTO intentos_pin (ip, intentos)
+      VALUES (client_ip, 1);
+    ELSE
+      UPDATE intentos_pin
+      SET intentos = intento.intentos + 1,
+          bloqueado_hasta = CASE
+            WHEN intento.intentos + 1 >= max_intentos
+            THEN NOW() + (bloqueo_minutos || ' minutes')::INTERVAL
+            ELSE NULL
+          END
+      WHERE ip = client_ip;
+    END IF;
+
+    RETURN json_build_object(
+      'success', false,
+      'error', 'PIN inválido',
+      'intentos_restantes', GREATEST(max_intentos - COALESCE(intento.intentos, 0) - 1, 0)
+    );
+  END IF;
+
+  -- ── 4. PIN correcto → limpiar intentos y retornar datos mínimos ──
+  IF intento.id IS NOT NULL THEN
+    DELETE FROM intentos_pin WHERE ip = client_ip;
   END IF;
 
   UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = usr.id;
 
+  -- auth_uid se necesita internamente para derivar password, pero NO email
   RETURN json_build_object(
     'success', true,
     'id', usr.id,
     'negocio_id', usr.negocio_id,
     'auth_uid', usr.auth_uid,
     'nombre', usr.nombre,
-    'email', usr.email,
     'rol', usr.rol
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- IMPORTANTE: No otorgar a anon ni PUBLIC — el endpoint /api/auth/pin usa service_role
-REVOKE EXECUTE ON FUNCTION login_por_pin(TEXT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION login_por_pin(TEXT) TO authenticated;
+-- Función de limpieza de intentos viejos (ejecutar con cron o manualmente)
+CREATE OR REPLACE FUNCTION limpiar_intentos_pin_viejos()
+RETURNS void AS $$
+BEGIN
+  DELETE FROM intentos_pin
+  WHERE actualizado_en < NOW() - INTERVAL '24 hours';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- IMPORTANTE: service_role necesita acceso porque /api/auth/pin y verifyAdminPin lo usan
+REVOKE EXECUTE ON FUNCTION login_por_pin(TEXT, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION login_por_pin(TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION login_por_pin(TEXT, TEXT) TO service_role;
 
 
 -- ┌─────────────────────────────────────┐
