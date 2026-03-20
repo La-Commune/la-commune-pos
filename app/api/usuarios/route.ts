@@ -92,7 +92,24 @@ export async function POST(request: Request) {
       logger.warn("usuarios/create", "Password update error");
     }
 
-    // 3. Insertar en tabla usuarios
+    // 3. Hashear PIN si se envió (bcrypt via pgcrypto)
+    let pinHash: string | null = null;
+    if (body.pin) {
+      const { data: hashData, error: hashError } = await supabaseAdmin.rpc(
+        "hash_pin",
+        { pin_raw: body.pin },
+      );
+      if (hashError) {
+        logger.error("usuarios/create", "PIN hash error");
+        return NextResponse.json(
+          { error: "Error al procesar PIN" },
+          { status: 500 },
+        );
+      }
+      pinHash = hashData;
+    }
+
+    // 4. Insertar en tabla usuarios
     const { data: usuario, error: insertError } = await supabaseAdmin
       .from("usuarios")
       .insert({
@@ -101,7 +118,7 @@ export async function POST(request: Request) {
         nombre: body.nombre,
         email: body.email,
         rol: body.rol,
-        pin: body.pin || null,
+        pin_hash: pinHash,
         activo: true,
       })
       .select()
@@ -179,8 +196,27 @@ export async function PUT(request: Request) {
     if (body.nombre !== undefined) updateData.nombre = body.nombre;
     if (body.email !== undefined) updateData.email = body.email;
     if (body.rol !== undefined) updateData.rol = body.rol;
-    if (body.pin !== undefined) updateData.pin = body.pin;
     if (body.activo !== undefined) updateData.activo = body.activo;
+
+    // Hashear PIN si se envió (bcrypt via pgcrypto)
+    if (body.pin !== undefined) {
+      if (body.pin) {
+        const { data: hashData, error: hashError } = await supabaseAdmin.rpc(
+          "hash_pin",
+          { pin_raw: body.pin },
+        );
+        if (hashError) {
+          logger.error("usuarios/update", "PIN hash error");
+          return NextResponse.json(
+            { error: "Error al procesar PIN" },
+            { status: 500 },
+          );
+        }
+        updateData.pin_hash = hashData;
+      } else {
+        updateData.pin_hash = null; // Limpiar PIN si se envía vacío
+      }
+    }
 
     // Update tabla usuarios (scoped al negocio del admin)
     const { error: updateError } = await supabaseAdmin

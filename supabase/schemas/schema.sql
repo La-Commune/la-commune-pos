@@ -58,7 +58,7 @@ CREATE TABLE usuarios (
   nombre      TEXT NOT NULL,
   email       TEXT NOT NULL,
   rol         rol_usuario NOT NULL DEFAULT 'barista',
-  pin         TEXT,
+  pin_hash    TEXT,  -- bcrypt hash via pgcrypto crypt(pin, gen_salt('bf'))
   activo      BOOLEAN NOT NULL DEFAULT TRUE,
   ultimo_acceso TIMESTAMPTZ,
   creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -939,11 +939,12 @@ BEGIN
     intento.bloqueado_hasta := NULL;
   END IF;
 
-  -- ── 2. Buscar usuario por PIN ──
+  -- ── 2. Buscar usuario por PIN hasheado (bcrypt via pgcrypto) ──
   SELECT id, negocio_id, auth_uid, nombre, rol
   INTO usr
   FROM usuarios
-  WHERE pin = pin_input
+  WHERE pin_hash IS NOT NULL
+    AND crypt(pin_input, pin_hash) = pin_hash
     AND activo = TRUE
     AND eliminado_en IS NULL
   LIMIT 1;
@@ -988,7 +989,16 @@ BEGIN
     'rol', usr.rol
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
+
+-- Función helper para hashear PIN (solo service_role)
+CREATE OR REPLACE FUNCTION hash_pin(pin_raw TEXT)
+RETURNS TEXT AS $$
+  SELECT crypt(pin_raw, gen_salt('bf'));
+$$ LANGUAGE sql SECURITY DEFINER SET search_path = public, extensions;
+
+REVOKE EXECUTE ON FUNCTION hash_pin(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION hash_pin(TEXT) TO service_role;
 
 -- Función de limpieza de intentos viejos (ejecutar con cron o manualmente)
 CREATE OR REPLACE FUNCTION limpiar_intentos_pin_viejos()

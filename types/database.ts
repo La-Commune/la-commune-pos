@@ -1555,7 +1555,7 @@ export type Database = {
           id: string
           negocio_id: string
           nombre: string
-          pin: string | null
+          pin_hash: string | null
           rol: Database["public"]["Enums"]["rol_usuario"]
           ultimo_acceso: string | null
         }
@@ -1569,7 +1569,7 @@ export type Database = {
           id?: string
           negocio_id: string
           nombre: string
-          pin?: string | null
+          pin_hash?: string | null
           rol?: Database["public"]["Enums"]["rol_usuario"]
           ultimo_acceso?: string | null
         }
@@ -1583,7 +1583,7 @@ export type Database = {
           id?: string
           negocio_id?: string
           nombre?: string
-          pin?: string | null
+          pin_hash?: string | null
           rol?: Database["public"]["Enums"]["rol_usuario"]
           ultimo_acceso?: string | null
         }
