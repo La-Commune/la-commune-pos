@@ -206,16 +206,25 @@ Ambos proyectos (POS y frontend de fidelidad) comparten la misma instancia de Su
 - Recreada con `security_invoker = true` → ahora respeta las políticas RLS del usuario que consulta
 - Actualizado `supabase/schemas/schema.sql` + nuevo script `supabase/scripts/m1-fix-security-invoker.sql`
 
+### M2: Funciones SECURITY DEFINER sin search_path fijo ✅
+- 7 funciones ejecutaban como `postgres` pero usaban el `search_path` del caller → schema injection
+- Fix: `ALTER FUNCTION ... SET search_path = public` en las 7 funciones
+- Funciones: `get_mi_negocio_id`, `get_mi_rol`, `agregar_sello_a_tarjeta`, `_otorgar_bono_referido`, `deshacer_sello`, `canjear_tarjeta`, `swap_mesa_numeros`
+- Ya tenían fix: `login_por_pin`, `limpiar_intentos_pin_viejos`
+- Actualizado `schema.sql` + `migration-fidelidad-frontend.sql` + nuevo script `supabase/scripts/a3-fix-search-path.sql`
+
 ### SQL ejecutado en Supabase (19-Mar-2026):
 - `GRANT EXECUTE ON FUNCTION login_por_pin(TEXT, TEXT) TO service_role, anon`
 - RLS policies `anon` en `productos`/`categorias_menu`: eliminado filtro `disponible`/`activo`
 - `CREATE OR REPLACE VIEW vista_productos_margen WITH (security_invoker = true)`
+- `ALTER FUNCTION ... SET search_path = public` en 7 funciones SECURITY DEFINER
 
 ### Archivos nuevos de la auditoría:
 - `lib/api-auth.ts` — verificación JWT server-side
 - `lib/auth-fetch.ts` — fetch wrapper client-side con Bearer token
 - `lib/logger.ts` — logger centralizado (dev vs producción)
 - `supabase/scripts/m1-fix-security-invoker.sql` — script del fix M1
+- `supabase/scripts/a3-fix-search-path.sql` — script del fix M2
 
 ## Pendiente
 
