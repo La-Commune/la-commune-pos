@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/logger";
 
 // ── Clientes Supabase (server-side only) ──
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
     );
 
     if (pinError) {
-      console.error("[pin-login] RPC error:", pinError.message);
+      logger.error("pin-login", "RPC error", pinError.message);
       return NextResponse.json(
         { error: "Error al verificar PIN" },
         { status: 500 },
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
       await supabaseAdmin.auth.admin.getUserById(userData.auth_uid);
 
     if (authUserError || !authUser?.user?.email) {
-      console.error("[pin-login] No se encontró usuario Auth:", authUserError?.message);
+      logger.error("pin-login", "Usuario Auth no encontrado");
       return NextResponse.json(
         { error: "Usuario Auth no encontrado. Contacta al administrador." },
         { status: 500 },
@@ -117,7 +118,7 @@ export async function POST(request: Request) {
     if (authError) {
       // Si el password no matchea, puede ser un usuario nuevo que no tiene el password determinístico
       // Intentar actualizarlo con admin
-      console.warn("[pin-login] signIn failed, updating password...");
+      logger.warn("pin-login", "signIn failed, updating password");
 
       const { error: updateError } =
         await supabaseAdmin.auth.admin.updateUserById(userData.auth_uid, {
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
         });
 
       if (updateError) {
-        console.error("[pin-login] Password update failed:", updateError.message);
+        logger.error("pin-login", "Password update failed");
         return NextResponse.json(
           { error: "Error configurando sesión. Contacta al administrador." },
           { status: 500 },
@@ -140,7 +141,7 @@ export async function POST(request: Request) {
         });
 
       if (retryError) {
-        console.error("[pin-login] Retry failed:", retryError.message);
+        logger.error("pin-login", "Retry failed");
         return NextResponse.json(
           { error: "Error de autenticación. Intenta de nuevo." },
           { status: 500 },
@@ -173,7 +174,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
-    console.error("[pin-login] Unexpected error:", err);
+    logger.error("pin-login", "Unexpected error", err);
     return NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 },

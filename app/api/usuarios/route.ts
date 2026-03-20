@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verifyApiAuth } from "@/lib/api-auth";
+import { logger } from "@/lib/logger";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -63,16 +64,15 @@ export async function POST(request: Request) {
       });
 
     if (authError) {
-      // Si el email ya existe, buscar el auth_uid existente
       if (authError.message.includes("already been registered")) {
         return NextResponse.json(
           { error: "Ya existe un usuario con ese email" },
           { status: 409 },
         );
       }
-      console.error("[usuarios/create] Auth error:", authError.message);
+      logger.error("usuarios/create", "Auth error");
       return NextResponse.json(
-        { error: authError.message },
+        { error: "Error al crear usuario" },
         { status: 500 },
       );
     }
@@ -81,13 +81,15 @@ export async function POST(request: Request) {
 
     // 2. Setear password determinístico para login por PIN
     const detPassword = derivePinPassword(authUid);
-    const { error: pwError } =
-      await supabaseAdmin.auth.admin.updateUserById(authUid, {
+    const { error: pwError } = await supabaseAdmin.auth.admin.updateUserById(
+      authUid,
+      {
         password: detPassword,
-      });
+      },
+    );
 
     if (pwError) {
-      console.error("[usuarios/create] Password update error:", pwError.message);
+      logger.warn("usuarios/create", "Password update error");
     }
 
     // 3. Insertar en tabla usuarios
@@ -106,18 +108,18 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError) {
-      console.error("[usuarios/create] Insert error:", insertError.message);
+      logger.error("usuarios/create", "Insert error");
       // Cleanup: eliminar Auth user si falla el insert
       await supabaseAdmin.auth.admin.deleteUser(authUid);
       return NextResponse.json(
-        { error: insertError.message },
+        { error: "Error al registrar usuario" },
         { status: 500 },
       );
     }
 
     return NextResponse.json({ success: true, usuario });
   } catch (err) {
-    console.error("[usuarios/create] Unexpected error:", err);
+    logger.error("usuarios/create", "Unexpected error", err);
     return NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 },
@@ -187,9 +189,9 @@ export async function PUT(request: Request) {
       .eq("id", body.id);
 
     if (updateError) {
-      console.error("[usuarios/update] Error:", updateError.message);
+      logger.error("usuarios/update", "Update error");
       return NextResponse.json(
-        { error: updateError.message },
+        { error: "Error al actualizar usuario" },
         { status: 500 },
       );
     }
@@ -201,13 +203,13 @@ export async function PUT(request: Request) {
           email: body.email,
         });
       if (authUpdateError) {
-        console.warn("[usuarios/update] Auth email update error:", authUpdateError.message);
+        logger.warn("usuarios/update", "Auth email update error");
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("[usuarios/update] Unexpected error:", err);
+    logger.error("usuarios/update", "Unexpected error", err);
     return NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 },

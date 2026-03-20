@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { verifyApiAuth } from "@/lib/api-auth";
+import { logger } from "@/lib/logger";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -63,19 +64,10 @@ export async function POST(req: NextRequest) {
     const inputBuffer = Buffer.from(arrayBuffer);
 
     // Resize + convertir a webp con sharp
-    let outputBuffer: Buffer;
-    if (file.type === "image/svg+xml") {
-      // SVG: convertir directo a webp
-      outputBuffer = await sharp(inputBuffer)
-        .resize(OUTPUT_SIZE, OUTPUT_SIZE, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
-        .webp({ quality: OUTPUT_QUALITY })
-        .toBuffer();
-    } else {
-      outputBuffer = await sharp(inputBuffer)
-        .resize(OUTPUT_SIZE, OUTPUT_SIZE, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
-        .webp({ quality: OUTPUT_QUALITY })
-        .toBuffer();
-    }
+    const outputBuffer = await sharp(inputBuffer)
+      .resize(OUTPUT_SIZE, OUTPUT_SIZE, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .webp({ quality: OUTPUT_QUALITY })
+      .toBuffer();
 
     // Subir a Supabase Storage
     const supabase = createClient(supabaseUrl, serviceRoleKey);
@@ -85,13 +77,13 @@ export async function POST(req: NextRequest) {
       .from("logos")
       .upload(filePath, outputBuffer, {
         contentType: "image/webp",
-        upsert: true, // Reemplazar si ya existe
+        upsert: true,
       });
 
     if (uploadError) {
-      console.error("[upload-logo] Storage error:", uploadError);
+      logger.error("upload-logo", "Storage error", uploadError.message);
       return NextResponse.json(
-        { error: "Error al subir imagen: " + uploadError.message },
+        { error: "Error al subir imagen" },
         { status: 500 }
       );
     }
@@ -107,8 +99,7 @@ export async function POST(req: NextRequest) {
       .eq("id", negocioId);
 
     if (updateError) {
-      console.error("[upload-logo] Update error:", updateError);
-      // No fallar — la imagen ya se subió
+      logger.warn("upload-logo", "Error actualizando logo_url en BD");
     }
 
     return NextResponse.json({
@@ -116,11 +107,10 @@ export async function POST(req: NextRequest) {
       size: outputBuffer.length,
       dimensions: `${OUTPUT_SIZE}x${OUTPUT_SIZE}`,
     });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[upload-logo] Error:", message, err);
+  } catch (err) {
+    logger.error("upload-logo", "Unexpected error", err);
     return NextResponse.json(
-      { error: "Error procesando imagen: " + message },
+      { error: "Error procesando imagen" },
       { status: 500 }
     );
   }

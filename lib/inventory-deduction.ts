@@ -9,6 +9,7 @@
  */
 
 import { supabase, USE_MOCK } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 import type { ItemOrdenJSON } from "@/types/database";
 
 interface DeductionResult {
@@ -30,9 +31,7 @@ export async function deducirInventarioPorOrden(
   folio?: string,
 ): Promise<DeductionResult> {
   if (USE_MOCK || !supabase) {
-    if (process.env.NODE_ENV === "development") {
-      console.log("[MOCK] Deducción de inventario para orden:", ordenId, items);
-    }
+    logger.info("inventory", "MOCK deducción para orden:", ordenId, items);
     return { success: true, deducted: 0, errors: [], lowStock: [] };
   }
 
