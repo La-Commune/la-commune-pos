@@ -14,9 +14,13 @@ import {
   UserPlus,
   Loader2,
   Mail,
+  Bell,
+  Send,
+  Megaphone,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import { useClientes, insertRecordReturning, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
+import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth.store";
 import { showToast } from "@/components/ui/Toast";
 import Modal from "@/components/ui/Modal";
@@ -60,6 +64,8 @@ function FidelidadPageContent() {
   const [modalEditarCliente, setModalEditarCliente] = useState(false);
   const [modalCanjear, setModalCanjear] = useState<{ nombre: string; puntos: number } | null>(null);
   const [canjeando, setCanjando] = useState(false);
+  const [modalNotificacion, setModalNotificacion] = useState<"individual" | "broadcast" | null>(null);
+  const [enviandoNotif, setEnviandoNotif] = useState(false);
 
   const clientesList = clientes as unknown as Cliente[];
 
@@ -163,6 +169,43 @@ function FidelidadPageContent() {
     }
   };
 
+  // Enviar notificación push
+  const handleEnviarNotificacion = async (datos: { titulo: string; mensaje: string }) => {
+    setEnviandoNotif(true);
+    try {
+      const payload: Record<string, unknown> = {
+        title: datos.titulo,
+        body: datos.mensaje,
+        tipo: modalNotificacion === "broadcast" ? "manual_broadcast" : "manual_individual",
+        enviadoPor: user?.id,
+      };
+      if (modalNotificacion === "individual" && clienteSeleccionado) {
+        payload.clienteId = clienteSeleccionado.id;
+      }
+
+      const { data, error } = await supabase.functions.invoke("send-push", {
+        body: payload,
+      });
+
+      if (error) {
+        showToast("Error al enviar notificación", "error");
+      } else {
+        const env = data?.enviadas ?? 0;
+        const fall = data?.fallidas ?? 0;
+        if (env > 0) {
+          showToast(`Notificación enviada a ${env} dispositivo${env !== 1 ? "s" : ""}${fall > 0 ? ` (${fall} fallida${fall !== 1 ? "s" : ""})` : ""}`, "success");
+        } else {
+          showToast("No hay suscripciones activas para enviar", "info");
+        }
+      }
+    } catch {
+      showToast("Error de conexión", "error");
+    } finally {
+      setEnviandoNotif(false);
+      setModalNotificacion(null);
+    }
+  };
+
   return (
     <div className="h-[calc(100vh-3.5rem-4rem)] flex flex-col">
       {/* Header */}
@@ -173,13 +216,22 @@ function FidelidadPageContent() {
             Programa de puntos
           </span>
         </div>
-        <button
-          onClick={() => setModalNuevoCliente(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl btn-primary text-[13px] min-h-[44px]"
-        >
-          <UserPlus size={16} />
-          Nuevo cliente
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setModalNotificacion("broadcast")}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl btn-ghost text-[13px] min-h-[44px] border border-border"
+          >
+            <Megaphone size={16} />
+            Notificar a todos
+          </button>
+          <button
+            onClick={() => setModalNuevoCliente(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl btn-primary text-[13px] min-h-[44px]"
+          >
+            <UserPlus size={16} />
+            Nuevo cliente
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -415,12 +467,21 @@ function FidelidadPageContent() {
               </div>
 
               {/* Acciones */}
-              <button
-                onClick={() => setModalEditarCliente(true)}
-                className="w-full py-2.5 rounded-xl btn-ghost text-xs min-h-[44px]"
-              >
-                Editar datos del cliente
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={() => setModalNotificacion("individual")}
+                  className="w-full py-2.5 rounded-xl btn-ghost text-xs min-h-[44px] flex items-center justify-center gap-2 border border-border"
+                >
+                  <Bell size={14} />
+                  Enviar notificación
+                </button>
+                <button
+                  onClick={() => setModalEditarCliente(true)}
+                  className="w-full py-2.5 rounded-xl btn-ghost text-xs min-h-[44px]"
+                >
+                  Editar datos del cliente
+                </button>
+              </div>
             </div>
           ) : (
             <div className="flex-shrink-0 flex items-center justify-center bg-surface-2 border-l border-border rounded-2xl" style={{ width: "var(--panel-xl)" }}>
@@ -452,6 +513,23 @@ function FidelidadPageContent() {
           onCancel={() => setModalEditarCliente(false)}
         />
       </Modal>
+
+      {/* Modal enviar notificación */}
+      {modalNotificacion && (
+        <Modal
+          open={true}
+          onClose={() => setModalNotificacion(null)}
+          title={modalNotificacion === "broadcast" ? "Notificar a todos los clientes" : `Notificar a ${clienteSeleccionado?.nombre ?? "cliente"}`}
+        >
+          <NotificacionForm
+            tipo={modalNotificacion}
+            clienteNombre={clienteSeleccionado?.nombre}
+            onSend={handleEnviarNotificacion}
+            onCancel={() => setModalNotificacion(null)}
+            loading={enviandoNotif}
+          />
+        </Modal>
+      )}
 
       {/* Confirm canje */}
       {modalCanjear && (
@@ -486,6 +564,116 @@ function FidelidadPageContent() {
         </Modal>
       )}
     </div>
+  );
+}
+
+const PLANTILLAS_NOTIFICACION = [
+  { titulo: "Promoción especial", mensaje: "Hoy tenemos una promoción especial para ti. ¡Visítanos!" },
+  { titulo: "Nuevo en el menú", mensaje: "Descubre nuestras nuevas creaciones. ¡Te van a encantar!" },
+  { titulo: "Te extrañamos", mensaje: "Hace tiempo que no te vemos. Tu próximo café te acerca a tu cortesía." },
+  { titulo: "Happy Hour", mensaje: "Happy Hour de 3 a 5 PM. ¡Bebidas con descuento especial!" },
+];
+
+function NotificacionForm({
+  tipo,
+  clienteNombre,
+  onSend,
+  onCancel,
+  loading,
+}: {
+  tipo: "individual" | "broadcast";
+  clienteNombre?: string;
+  onSend: (datos: { titulo: string; mensaje: string }) => Promise<void>;
+  onCancel: () => void;
+  loading: boolean;
+}) {
+  const [titulo, setTitulo] = useState("");
+  const [mensaje, setMensaje] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!titulo.trim() || !mensaje.trim()) return;
+    await onSend({ titulo: titulo.trim(), mensaje: mensaje.trim() });
+  };
+
+  const aplicarPlantilla = (p: typeof PLANTILLAS_NOTIFICACION[0]) => {
+    setTitulo(p.titulo);
+    setMensaje(p.mensaje);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {tipo === "broadcast" && (
+        <div className="p-3 rounded-xl bg-status-warn-bg border border-status-warn/20">
+          <p className="text-xs text-status-warn">
+            <Megaphone size={12} className="inline mr-1" />
+            Se enviará a todos los clientes con notificaciones activas.
+          </p>
+        </div>
+      )}
+
+      {/* Plantillas rápidas */}
+      <div>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-2">Plantillas</label>
+        <div className="flex flex-wrap gap-1.5">
+          {PLANTILLAS_NOTIFICACION.map((p) => (
+            <button
+              key={p.titulo}
+              type="button"
+              onClick={() => aplicarPlantilla(p)}
+              className="text-[11px] px-2.5 py-1.5 rounded-lg bg-surface-3 text-text-45 hover:text-text-100 hover:bg-surface-2 transition-all border border-transparent hover:border-border"
+            >
+              {p.titulo}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">Título *</label>
+        <input
+          type="text"
+          value={titulo}
+          onChange={(e) => setTitulo(e.target.value)}
+          required
+          maxLength={60}
+          placeholder="Ej: Promoción especial"
+          className="w-full px-3 py-2.5 rounded-xl bg-surface-3 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 min-h-[44px]"
+        />
+        <p className="text-[10px] text-text-25 mt-1 text-right">{titulo.length}/60</p>
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">Mensaje *</label>
+        <textarea
+          value={mensaje}
+          onChange={(e) => setMensaje(e.target.value)}
+          required
+          maxLength={200}
+          rows={3}
+          placeholder="Escribe tu mensaje..."
+          className="w-full px-3 py-2.5 rounded-xl bg-surface-3 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 resize-none"
+        />
+        <p className="text-[10px] text-text-25 mt-1 text-right">{mensaje.length}/200</p>
+      </div>
+      <div className="flex items-center gap-3 pt-3 border-t border-border">
+        <button
+          type="submit"
+          disabled={loading || !titulo.trim() || !mensaje.trim()}
+          className="flex-1 py-3 rounded-xl btn-primary text-[13px] min-h-[44px] flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {loading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+          {loading ? "Enviando..." : "Enviar notificación"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={loading}
+          className="flex-1 py-3 rounded-xl btn-ghost text-[13px] min-h-[44px]"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
   );
 }
 
