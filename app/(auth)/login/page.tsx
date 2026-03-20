@@ -125,44 +125,78 @@ function PinView({
 
   return (
     <div className="login-panel-enter flex flex-col items-center">
-      {/* PIN dots */}
-      <div className="flex gap-4 mb-8">
+      {/* Indicadores editorial: dot + línea base */}
+      <div
+        className={`flex gap-6 mb-4 ${error ? "login-shake" : ""}`}
+      >
         {[0, 1, 2, 3].map((i) => {
           const filled = i < pin.length;
+          const isError = error;
+          const isSuccess = success;
           return (
-            <div
-              key={i}
-              className={[
-                "pin-dot",
-                success && "pin-dot--success",
-                error && filled && "pin-dot--error",
-                verifying && "pin-dot--verifying",
-                !success && !error && !verifying && filled && "pin-dot--filled",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              style={
-                verifying
-                  ? { animationDelay: `${i * 0.15}s` }
-                  : undefined
-              }
-            />
+            <div key={i} className="flex flex-col items-center gap-1.5">
+              {/* Dot */}
+              <div
+                className="pin-indicator-dot"
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  transform: filled ? "scale(1)" : "scale(0)",
+                  opacity: filled ? 1 : 0,
+                  background: isSuccess
+                    ? "var(--ok)"
+                    : isError
+                    ? "var(--err)"
+                    : "var(--text-100)",
+                  transition: "transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.15s, background 0.2s",
+                  ...(verifying ? {
+                    animation: "login-verifying-dot 1.2s ease-in-out infinite",
+                    animationDelay: `${i * 0.15}s`,
+                    transform: "scale(1)",
+                    opacity: 1,
+                    background: "var(--accent)",
+                  } : {}),
+                }}
+              />
+              {/* Línea base */}
+              <div
+                style={{
+                  width: 32,
+                  height: 2,
+                  borderRadius: 1,
+                  background: isSuccess
+                    ? "var(--ok)"
+                    : isError
+                    ? "var(--err)"
+                    : filled
+                    ? "var(--text-100)"
+                    : "var(--border)",
+                  transform: filled ? "scaleX(1)" : "scaleX(0.5)",
+                  opacity: isError ? 0.8 : 1,
+                  transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s, opacity 0.2s",
+                }}
+              />
+            </div>
           );
         })}
       </div>
 
-      {/* Status text */}
+      {/* Status */}
       <p
-        className="text-text-45 mb-6 h-5 transition-all duration-300"
+        className="mb-8 h-5 transition-all duration-300"
         style={{
           fontFamily: "'Sora', sans-serif",
-          fontSize: "0.78rem",
-          fontWeight: 300,
+          fontSize: "0.75rem",
+          fontWeight: 400,
+          letterSpacing: "0.08em",
           color: success
             ? "var(--ok)"
             : error
             ? "var(--err)"
-            : "var(--text-45)",
+            : verifying
+            ? "var(--text-45)"
+            : "var(--text-25)",
         }}
       >
         {success
@@ -174,41 +208,39 @@ function PinView({
           : "Ingresa tu PIN"}
       </p>
 
-      {/* Numpad */}
-      <div className="grid grid-cols-3 gap-3" style={{ width: 280 }}>
+      {/* Numpad — sin bordes, bold, tablet-friendly */}
+      <div
+        className="grid grid-cols-3"
+        style={{ width: 320, gap: 6 }}
+      >
         {keys.map((key) => {
           const isAction = key === "del" || key === "ok";
+          if (key === "ok") {
+            return <div key={key} style={{ height: 76 }} />;
+          }
           return (
             <button
               key={key}
               type="button"
-              onClick={(e) => {
-                if (key === "ok") return; // no-op, auto-submit at 4
-                handleKey(key, e);
-              }}
+              onClick={(e) => handleKey(key, e)}
               disabled={success || verifying}
-              className="login-pin-key flex items-center justify-center rounded-2xl border cursor-pointer select-none transition-all duration-200 hover:scale-[1.03] active:scale-95 disabled:opacity-40"
+              className="login-pin-key flex items-center justify-center rounded-full cursor-pointer select-none active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
               style={{
-                height: 68,
-                background: isAction ? "transparent" : "var(--surface-1)",
-                borderColor: isAction ? "transparent" : "var(--glass-border)",
+                height: 76,
+                background: "transparent",
+                border: "none",
                 fontFamily: isAction
                   ? "'Sora', sans-serif"
                   : "'Cormorant Garamond', serif",
-                fontSize: isAction ? "0.7rem" : "1.6rem",
-                fontWeight: isAction ? 500 : 400,
-                color: isAction ? "var(--text-45)" : "var(--text-100)",
-                letterSpacing: isAction ? "0" : "-0.01em",
+                fontSize: isAction ? "0.7rem" : "2rem",
+                fontWeight: isAction ? 400 : 500,
+                color: isAction ? "var(--text-25)" : "var(--text-100)",
+                letterSpacing: "-0.01em",
+                transition: "transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.1s",
               }}
             >
               {key === "del" ? (
-                <Delete size={22} className="text-text-45" strokeWidth={1.5} />
-              ) : key === "ok" ? (
-                <Check
-                  size={22}
-                  className="text-accent"
-                  strokeWidth={2}
-                />
+                <Delete size={24} className="text-text-35" strokeWidth={1.5} />
               ) : (
                 key
               )}
@@ -221,7 +253,7 @@ function PinView({
       <button
         type="button"
         onClick={onSwitchToCredentials}
-        className="mt-8 flex items-center gap-2 text-text-25 hover:text-accent transition-colors duration-300 group"
+        className="mt-10 flex items-center gap-2 text-text-25 hover:text-accent transition-colors duration-300 group"
         style={{
           fontFamily: "'Sora', sans-serif",
           fontSize: "0.78rem",
