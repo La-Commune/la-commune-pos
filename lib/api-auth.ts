@@ -5,7 +5,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
 type AuthResult =
-  | { ok: true; userId: string; rol: string }
+  | { ok: true; userId: string; rol: string; negocioId: string }
   | { ok: false; response: NextResponse };
 
 /**
@@ -66,16 +66,17 @@ export async function verifyApiAuth(
     };
   }
 
-  // Buscar rol del usuario en la tabla usuarios
+  // Buscar rol y negocio del usuario en la tabla usuarios
   const { data: usuario } = await supabase
     .from("usuarios")
-    .select("rol")
+    .select("rol, negocio_id")
     .eq("auth_uid", user.id)
     .eq("activo", true)
     .is("eliminado_en", null)
     .single();
 
   const rol = usuario?.rol ?? "unknown";
+  const negocioId = usuario?.negocio_id ?? "";
 
   // Verificar rol si se requiere
   if (requiredRoles && !requiredRoles.includes(rol)) {
@@ -88,5 +89,5 @@ export async function verifyApiAuth(
     };
   }
 
-  return { ok: true, userId: user.id, rol };
+  return { ok: true, userId: user.id, rol, negocioId };
 }
