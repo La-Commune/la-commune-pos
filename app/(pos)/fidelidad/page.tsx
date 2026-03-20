@@ -183,6 +183,11 @@ function FidelidadPageContent() {
         payload.clienteId = clienteSeleccionado.id;
       }
 
+      if (!supabase) {
+        showToast("Supabase no configurado", "error");
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("send-push", {
         body: payload,
       });
