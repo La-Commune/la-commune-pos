@@ -592,7 +592,10 @@ RETURNS NUMERIC(10,2) AS $$
 $$ LANGUAGE sql STABLE;
 
 -- ── Vista: Productos con costo y margen ──
-CREATE OR REPLACE VIEW vista_productos_margen AS
+-- security_invoker = true → respeta RLS del usuario que consulta (no bypasea como SECURITY DEFINER)
+CREATE OR REPLACE VIEW vista_productos_margen
+WITH (security_invoker = true)
+AS
 SELECT
   p.id,
   p.negocio_id,
