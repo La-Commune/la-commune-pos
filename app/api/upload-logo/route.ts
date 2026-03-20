@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
+import { verifyApiAuth } from "@/lib/api-auth";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -12,16 +13,14 @@ const OUTPUT_QUALITY = 85; // webp quality
 /**
  * POST /api/upload-logo
  * Body: FormData con campo "file" (image) y "negocio_id" (string)
- *
- * 1. Recibe imagen (png/jpg/webp)
- * 2. Resize a 512x512 con sharp
- * 3. Convierte a webp (menor peso)
- * 4. Sube a Supabase Storage bucket "logos"
- * 5. Actualiza logo_url en tabla negocios
- * 6. Retorna { url }
+ * Requiere: JWT válido con rol admin
  */
 export async function POST(req: NextRequest) {
   try {
+    // Verificar que el caller sea admin autenticado
+    const auth = await verifyApiAuth(req, ["admin"]);
+    if (!auth.ok) return auth.response;
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const negocioId = formData.get("negocio_id") as string | null;
@@ -89,9 +88,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Obtener URL pública
+    // Obtener URL pública con cache buster para forzar refresh en el navegador
     const { data: urlData } = supabase.storage.from("logos").getPublicUrl(filePath);
-    const logoUrl = urlData.publicUrl;
+    const logoUrl = `${urlData.publicUrl}?v=${Date.now()}`;
 
     // Actualizar logo_url en negocios
     const { error: updateError } = await supabase

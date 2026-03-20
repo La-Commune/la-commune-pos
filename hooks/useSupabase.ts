@@ -222,6 +222,7 @@ const MOCK_NEGOCIO: NegocioInfo = { id: "dev-negocio-1", nombre: "La Commune", l
 
 export function useNegocio() {
   const [negocio, setNegocio] = useState<NegocioInfo>(MOCK_NEGOCIO);
+  const [refreshKey, setRefreshKey] = useState(0);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const negocioId = useAuthStore((s) => s.user?.negocio_id);
 
@@ -236,7 +237,14 @@ export function useNegocio() {
       .then(({ data }) => {
         if (data) setNegocio(data);
       });
-  }, [isAuthenticated, negocioId]);
+  }, [isAuthenticated, negocioId, refreshKey]);
+
+  // Escuchar evento custom para refrescar cuando configuración guarda cambios
+  useEffect(() => {
+    const handler = () => setRefreshKey((k) => k + 1);
+    window.addEventListener("negocio-updated", handler);
+    return () => window.removeEventListener("negocio-updated", handler);
+  }, []);
 
   return negocio;
 }
