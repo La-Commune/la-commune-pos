@@ -1015,14 +1015,18 @@ GRANT EXECUTE ON FUNCTION login_por_pin(TEXT, TEXT) TO service_role;
 -- NUNCA usar USING(true) en políticas de escritura anon.
 -- Ejecutado en producción: 2026-03-19
 
--- ── Menú público (solo lectura, filtrado) ──
+-- ── Menú público (solo lectura) ──
+-- No filtramos por disponible/activo en RLS porque:
+-- 1. El menú público filtra en código JS (getFullMenu sin forAdmin)
+-- 2. El admin del frontend necesita ver TODO (getFullMenu con forAdmin: true)
+-- 3. Ambos usan anon key desde el cliente
 CREATE POLICY "anon_productos_select_public"
   ON productos FOR SELECT TO anon
-  USING (eliminado_en IS NULL AND disponible = TRUE);
+  USING (eliminado_en IS NULL);
 
 CREATE POLICY "anon_categorias_select_public"
   ON categorias_menu FOR SELECT TO anon
-  USING (eliminado_en IS NULL AND activo = TRUE);
+  USING (eliminado_en IS NULL);
 
 CREATE POLICY "anon_tamanos_select_public"
   ON opciones_tamano FOR SELECT TO anon

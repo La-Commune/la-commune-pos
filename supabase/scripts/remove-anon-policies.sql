@@ -94,14 +94,14 @@ DROP POLICY IF EXISTS "promociones_select_anon"   ON promociones;
 -- Solo lo mínimo necesario para la app de fidelidad.
 -- ══════════════════════════════════════════════════════════════
 
--- Menú público (solo lectura, filtrado)
+-- Menú público (solo lectura — filtrado de disponible/activo se hace en código JS)
 CREATE POLICY "anon_productos_select_public"
   ON productos FOR SELECT TO anon
-  USING (eliminado_en IS NULL AND disponible = TRUE);
+  USING (eliminado_en IS NULL);
 
 CREATE POLICY "anon_categorias_select_public"
   ON categorias_menu FOR SELECT TO anon
-  USING (eliminado_en IS NULL AND activo = TRUE);
+  USING (eliminado_en IS NULL);
 
 CREATE POLICY "anon_tamanos_select_public"
   ON opciones_tamano FOR SELECT TO anon
