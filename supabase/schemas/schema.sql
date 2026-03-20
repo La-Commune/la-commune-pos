@@ -650,7 +650,7 @@ RETURNS UUID AS $$
   AND eliminado_en IS NULL
   AND activo = TRUE
   LIMIT 1;
-$$ LANGUAGE sql SECURITY DEFINER STABLE;
+$$ LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public;
 
 CREATE OR REPLACE FUNCTION get_mi_rol()
 RETURNS rol_usuario AS $$
@@ -659,7 +659,7 @@ RETURNS rol_usuario AS $$
   AND eliminado_en IS NULL
   AND activo = TRUE
   LIMIT 1;
-$$ LANGUAGE sql SECURITY DEFINER STABLE;
+$$ LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public;
 
 -- ── NEGOCIOS ──
 CREATE POLICY "negocios_select" ON negocios
