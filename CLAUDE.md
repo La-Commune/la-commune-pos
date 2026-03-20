@@ -201,10 +201,21 @@ Ambos proyectos (POS y frontend de fidelidad) comparten la misma instancia de Su
 - Client-side: todos los `console.log/warn/error` envueltos en `process.env.NODE_ENV === "development"`
 - Archivos actualizados: `AuthProvider`, `ErrorBoundary`, `useSW`, `ordenes/page`, `inventory-deduction`, `supabase-admin`
 
+### M1: Vista SECURITY DEFINER (`vista_productos_margen`) ✅
+- La vista ejecutaba como `postgres` (owner), bypaseando RLS completamente
+- Recreada con `security_invoker = true` → ahora respeta las políticas RLS del usuario que consulta
+- Actualizado `supabase/schemas/schema.sql` + nuevo script `supabase/scripts/m1-fix-security-invoker.sql`
+
+### SQL ejecutado en Supabase (19-Mar-2026):
+- `GRANT EXECUTE ON FUNCTION login_por_pin(TEXT, TEXT) TO service_role, anon`
+- RLS policies `anon` en `productos`/`categorias_menu`: eliminado filtro `disponible`/`activo`
+- `CREATE OR REPLACE VIEW vista_productos_margen WITH (security_invoker = true)`
+
 ### Archivos nuevos de la auditoría:
 - `lib/api-auth.ts` — verificación JWT server-side
 - `lib/auth-fetch.ts` — fetch wrapper client-side con Bearer token
 - `lib/logger.ts` — logger centralizado (dev vs producción)
+- `supabase/scripts/m1-fix-security-invoker.sql` — script del fix M1
 
 ## Pendiente
 
