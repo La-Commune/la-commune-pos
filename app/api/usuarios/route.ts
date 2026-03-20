@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { verifyApiAuth } from "@/lib/api-auth";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -17,9 +18,14 @@ function derivePinPassword(authUid: string): string {
  * POST /api/usuarios
  * Crea Auth user + registro en tabla usuarios
  * Body: { nombre, email, rol, pin, negocio_id }
+ * Requiere: JWT válido con rol admin
  */
 export async function POST(request: Request) {
   try {
+    // Verificar que el caller sea admin autenticado
+    const auth = await verifyApiAuth(request, ["admin"]);
+    if (!auth.ok) return auth.response;
+
     if (!supabaseUrl || !serviceRoleKey) {
       return NextResponse.json(
         { error: "Configuración de Supabase incompleta" },
@@ -115,9 +121,14 @@ export async function POST(request: Request) {
  * PUT /api/usuarios
  * Actualiza datos del usuario (tabla + Auth si cambia email)
  * Body: { id, auth_uid, nombre?, email?, rol?, pin?, activo? }
+ * Requiere: JWT válido con rol admin
  */
 export async function PUT(request: Request) {
   try {
+    // Verificar que el caller sea admin autenticado
+    const auth = await verifyApiAuth(request, ["admin"]);
+    if (!auth.ok) return auth.response;
+
     if (!supabaseUrl || !serviceRoleKey) {
       return NextResponse.json(
         { error: "Configuración de Supabase incompleta" },

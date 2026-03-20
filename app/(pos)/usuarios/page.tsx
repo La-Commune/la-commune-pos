@@ -18,6 +18,7 @@ import {
   ToggleLeft,
   ToggleRight,
 } from "lucide-react";
+import { authFetch } from "@/lib/auth-fetch";
 import { cn } from "@/lib/utils";
 import { useUsuarios, subscribeToTable } from "@/hooks/useSupabase";
 import { useAuthStore } from "@/store/auth.store";
@@ -132,7 +133,7 @@ function UsuariosPageContent() {
     setDesactivando(true);
     try {
       const nuevoEstado = !usuarioADesactivar.activo;
-      const res = await fetch("/api/usuarios", {
+      const res = await authFetch("/api/usuarios", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -169,7 +170,7 @@ function UsuariosPageContent() {
   }) => {
     if (usuarioEditando) {
       // EDIT
-      const res = await fetch("/api/usuarios", {
+      const res = await authFetch("/api/usuarios", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -190,7 +191,7 @@ function UsuariosPageContent() {
       }
     } else {
       // CREATE
-      const res = await fetch("/api/usuarios", {
+      const res = await authFetch("/api/usuarios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
