@@ -907,60 +907,79 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-GRANT EXECUTE ON FUNCTION login_por_pin(TEXT) TO anon;
+-- IMPORTANTE: No otorgar a anon ni PUBLIC — el endpoint /api/auth/pin usa service_role
+REVOKE EXECUTE ON FUNCTION login_por_pin(TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION login_por_pin(TEXT) TO authenticated;
 
 
 -- ┌─────────────────────────────────────┐
--- │  8. POLÍTICAS ANON (POS sin Auth)   │
+-- │  8. POLÍTICAS ANON (Frontend)       │
 -- └─────────────────────────────────────┘
--- El POS opera con login por PIN, no con Supabase Auth session.
--- Estas políticas permiten que el rol anon lea/escriba las tablas del POS.
+-- El POS usa sesiones Auth reales (authenticated) — NO necesita políticas anon.
+-- Solo el frontend de fidelidad necesita acceso anon, y solo lo mínimo:
+--   • Lectura pública del menú (productos, categorías, tamaños, promos)
+--   • CRUD limitado de clientes (registro, lookup, actualización)
+--   • Lectura + creación de tarjetas de fidelidad
+--   • Lectura de eventos de sello y recompensas
+--
+-- NUNCA usar USING(true) en políticas de escritura anon.
+-- Ejecutado en producción: 2026-03-19
 
--- Lectura anon
-CREATE POLICY "anon_select_negocios"      ON negocios       FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_usuarios"      ON usuarios       FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_categorias"    ON categorias_menu FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_productos"     ON productos      FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_tamanos"       ON opciones_tamano FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_mesas"         ON mesas          FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_ordenes"       ON ordenes        FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_items_orden"   ON items_orden    FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_tickets"       ON tickets_kds    FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_pagos"         ON pagos          FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_modificadores" ON modificadores   FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_prod_mod"      ON productos_modificadores FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_cortes"        ON cortes_caja    FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_gastos"        ON gastos         FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_clientes"      ON clientes       FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_inventario"    ON inventario     FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_promos"        ON promociones    FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_historico"     ON historico_ordenes FOR SELECT TO anon USING (true);
+-- ── Menú público (solo lectura, filtrado) ──
+CREATE POLICY "anon_productos_select_public"
+  ON productos FOR SELECT TO anon
+  USING (eliminado_en IS NULL AND disponible = TRUE);
 
--- Escritura anon (operaciones del POS)
-CREATE POLICY "anon_insert_ordenes"       ON ordenes        FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_update_ordenes"       ON ordenes        FOR UPDATE TO anon USING (true);
-CREATE POLICY "anon_insert_items_orden"   ON items_orden    FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_update_items_orden"   ON items_orden    FOR UPDATE TO anon USING (true);
-CREATE POLICY "anon_update_mesas"         ON mesas          FOR UPDATE TO anon USING (true);
-CREATE POLICY "anon_insert_tickets"       ON tickets_kds    FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_update_tickets"       ON tickets_kds    FOR UPDATE TO anon USING (true);
-CREATE POLICY "anon_insert_pagos"         ON pagos          FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_update_usuarios"      ON usuarios       FOR UPDATE TO anon USING (true);
-CREATE POLICY "anon_insert_cortes"        ON cortes_caja    FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_update_cortes"        ON cortes_caja    FOR UPDATE TO anon USING (true);
-CREATE POLICY "anon_insert_gastos"        ON gastos         FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_insert_historico"     ON historico_ordenes FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_insert_audit"         ON audit_log      FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_insert_clientes"      ON clientes       FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_update_clientes"      ON clientes       FOR UPDATE TO anon USING (true);
-CREATE POLICY "anon_insert_mov_inv"       ON movimientos_inventario FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_select_mov_inv"      ON movimientos_inventario FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_update_inventario"    ON inventario     FOR UPDATE TO anon USING (true);
-CREATE POLICY "anon_select_recetas"      ON recetas         FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_insert_recetas"      ON recetas         FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_update_recetas"      ON recetas         FOR UPDATE TO anon USING (true);
-CREATE POLICY "anon_delete_recetas"      ON recetas         FOR DELETE TO anon USING (true);
+CREATE POLICY "anon_categorias_select_public"
+  ON categorias_menu FOR SELECT TO anon
+  USING (eliminado_en IS NULL AND activo = TRUE);
+
+CREATE POLICY "anon_tamanos_select_public"
+  ON opciones_tamano FOR SELECT TO anon
+  USING (
+    EXISTS (
+      SELECT 1 FROM productos p
+      WHERE p.id = producto_id
+        AND p.eliminado_en IS NULL
+        AND p.disponible = TRUE
+    )
+  );
+
+CREATE POLICY "anon_promociones_select_public"
+  ON promociones FOR SELECT TO anon
+  USING (eliminado_en IS NULL AND activo = TRUE);
+
+-- ── Clientes (registro y lookup desde app fidelidad) ──
+CREATE POLICY "anon_clientes_select_restricted"
+  ON clientes FOR SELECT TO anon
+  USING (eliminado_en IS NULL AND activo = TRUE);
+
+CREATE POLICY "anon_clientes_insert_restricted"
+  ON clientes FOR INSERT TO anon
+  WITH CHECK (activo = TRUE);
+
+CREATE POLICY "anon_clientes_update_restricted"
+  ON clientes FOR UPDATE TO anon
+  USING (eliminado_en IS NULL AND activo = TRUE);
+
+-- ── Tarjetas de fidelidad ──
+CREATE POLICY "anon_tarjetas_select"
+  ON tarjetas FOR SELECT TO anon
+  USING (true);
+
+CREATE POLICY "anon_tarjetas_insert"
+  ON tarjetas FOR INSERT TO anon
+  WITH CHECK (true);
+
+-- ── Eventos de sello (solo lectura — inserts vía RPC SECURITY DEFINER) ──
+CREATE POLICY "anon_eventos_sello_select"
+  ON eventos_sello FOR SELECT TO anon
+  USING (true);
+
+-- ── Recompensas (solo lectura de activas) ──
+CREATE POLICY "anon_recompensas_select"
+  ON recompensas FOR SELECT TO anon
+  USING (activa = TRUE);
 
 
 -- ┌─────────────────────────────────────┐
