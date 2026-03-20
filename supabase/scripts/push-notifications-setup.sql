@@ -16,7 +16,7 @@ CREATE TABLE push_subscriptions (
   cliente_id uuid REFERENCES clientes(id) ON DELETE CASCADE,
   endpoint text NOT NULL UNIQUE,
   p256dh text NOT NULL,
-  auth text NOT NULL,
+  auth_key text NOT NULL,  -- renombrada de 'auth' para evitar conflicto con schema auth de Supabase
   user_agent text,
   activa boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),
