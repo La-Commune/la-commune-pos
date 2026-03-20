@@ -297,7 +297,7 @@ function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef:
                     <Icon size={15} className="text-text-45 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <span className="text-[12px] font-medium block">{item.label}</span>
-                      <span className="text-[10px] text-text-25">{item.desc}</span>
+                      <span className="text-xs text-text-25">{item.desc}</span>
                     </div>
                     <ChevronRight size={14} className="text-text-25" />
                   </button>
@@ -310,7 +310,7 @@ function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef:
           {section === "apariencia" && (
             <div className="space-y-4 pt-1">
               <div>
-                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Tema</p>
+                <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-2">Tema</p>
                 <div className="space-y-0.5 max-h-[300px] overflow-y-auto">
                   {themeOptions.map((opt) => {
                     const Icon = opt.icon;
@@ -340,7 +340,7 @@ function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef:
               </div>
 
               <div>
-                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Tamaño de fuente</p>
+                <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-2">Tamaño de fuente</p>
                 <SegmentedControl options={fontScaleOptions} value={store.fontScale} onChange={store.setFontScale} />
               </div>
             </div>
@@ -350,7 +350,7 @@ function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef:
           {section === "layout" && (
             <div className="space-y-4 pt-1">
               <div>
-                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Sidebar</p>
+                <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-2">Sidebar</p>
                 <div className="grid grid-cols-4 gap-1">
                   {sidebarOptions.map((opt) => {
                     const Icon = opt.icon;
@@ -375,17 +375,17 @@ function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef:
               </div>
 
               <div>
-                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Densidad</p>
+                <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-2">Densidad</p>
                 <SegmentedControl options={densityOptions} value={store.density} onChange={store.setDensity} />
               </div>
 
               <div>
-                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Ancho paneles</p>
+                <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-2">Ancho paneles</p>
                 <SegmentedControl options={panelOptions} value={store.panelWidth} onChange={store.setPanelWidth} />
               </div>
 
               <div>
-                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Vista productos</p>
+                <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-2">Vista productos</p>
                 <div className="flex gap-1">
                   <button
                     onClick={() => store.setMenuViewMode("grid")}
@@ -410,7 +410,7 @@ function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef:
 
               {store.menuViewMode === "grid" && (
                 <div>
-                  <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Tamaño tiles</p>
+                  <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-2">Tamaño tiles</p>
                   <SegmentedControl
                     options={[
                       { id: "sm" as const, label: "Pequeño" },
@@ -444,7 +444,7 @@ function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef:
                 onChange={store.setLargeTouchTargets}
               />
               <div className="pt-2 border-t border-border mt-2">
-                <p className="text-[10px] text-text-25 leading-relaxed">
+                <p className="text-xs text-text-25 leading-relaxed">
                   &quot;Reducir movimiento&quot; desactiva animaciones y transiciones.
                   &quot;Alto contraste&quot; elimina transparencias glass y usa bordes sólidos.
                   &quot;Targets grandes&quot; agranda botones a mínimo 48px.
@@ -457,9 +457,9 @@ function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef:
           {section === "kds" && (
             <div className="space-y-4 pt-1">
               <div>
-                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Modo de display</p>
+                <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-2">Modo de display</p>
                 <SegmentedControl options={kdsDisplayOptions} value={store.kdsDisplayMode} onChange={store.setKDSDisplayMode} />
-                <p className="text-[10px] text-text-25 mt-1.5">
+                <p className="text-xs text-text-25 mt-1.5">
                   {store.kdsDisplayMode === "classic" && "Vista kanban con 3 columnas (nueva, preparando, lista)"}
                   {store.kdsDisplayMode === "tiled" && "Grid compacto que muestra más tickets a la vez"}
                   {store.kdsDisplayMode === "split" && "Dividido: mesa arriba, para llevar abajo"}
@@ -481,7 +481,7 @@ function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef:
 
               {store.kdsSoundEnabled && (
                 <div>
-                  <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Volumen</p>
+                  <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-2">Volumen</p>
                   <div className="flex items-center gap-3">
                     <VolumeX size={14} className="text-text-25 flex-shrink-0" />
                     <input
@@ -512,7 +512,7 @@ function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef:
                 {Object.values(SHORTCUTS).map((s) => (
                   <div key={s.key} className="flex items-center justify-between py-1.5">
                     <span className="text-[11px] text-text-70">{s.label}</span>
-                    <kbd className="text-[10px] font-mono bg-surface-2 text-text-45 px-2 py-0.5 rounded border border-border">
+                    <kbd className="text-xs font-mono bg-surface-2 text-text-45 px-2 py-0.5 rounded border border-border">
                       {s.key}
                     </kbd>
                   </div>
@@ -533,10 +533,10 @@ function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef:
               {store.autoDarkMode && (
                 <>
                   <div>
-                    <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Horario oscuro</p>
+                    <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-2">Horario oscuro</p>
                     <div className="flex items-center gap-2">
                       <div className="flex-1">
-                        <label className="text-[10px] text-text-45 block mb-1">Inicia</label>
+                        <label className="text-xs text-text-45 block mb-1">Inicia</label>
                         <select
                           value={store.autoDarkStart}
                           onChange={(e) => store.setAutoDarkStart(Number(e.target.value))}
@@ -549,7 +549,7 @@ function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef:
                       </div>
                       <span className="text-text-25 text-xs mt-4">→</span>
                       <div className="flex-1">
-                        <label className="text-[10px] text-text-45 block mb-1">Termina</label>
+                        <label className="text-xs text-text-45 block mb-1">Termina</label>
                         <select
                           value={store.autoDarkEnd}
                           onChange={(e) => store.setAutoDarkEnd(Number(e.target.value))}
@@ -564,7 +564,7 @@ function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef:
                   </div>
 
                   <div>
-                    <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Tema de día</p>
+                    <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-2">Tema de día</p>
                     <select
                       value={store.autoDarkLightTheme}
                       onChange={(e) => store.setAutoDarkLightTheme(e.target.value)}
@@ -577,7 +577,7 @@ function SettingsPanel({ onClose, anchorRef }: { onClose: () => void; anchorRef:
                   </div>
 
                   <div>
-                    <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Tema de noche</p>
+                    <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-2">Tema de noche</p>
                     <select
                       value={store.autoDarkDarkTheme}
                       onChange={(e) => store.setAutoDarkDarkTheme(e.target.value)}

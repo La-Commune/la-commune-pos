@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { verifyApiAuth } from "@/lib/api-auth";
+import { logger } from "@/lib/logger";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -17,9 +19,14 @@ function derivePinPassword(authUid: string): string {
  * POST /api/usuarios
  * Crea Auth user + registro en tabla usuarios
  * Body: { nombre, email, rol, pin, negocio_id }
+ * Requiere: JWT válido con rol admin
  */
 export async function POST(request: Request) {
   try {
+    // Verificar que el caller sea admin autenticado
+    const auth = await verifyApiAuth(request, ["admin"]);
+    if (!auth.ok) return auth.response;
+
     if (!supabaseUrl || !serviceRoleKey) {
       return NextResponse.json(
         { error: "Configuración de Supabase incompleta" },
@@ -32,6 +39,14 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Campos requeridos: nombre, email, rol, negocio_id" },
         { status: 400 },
+      );
+    }
+
+    // Validar que solo pueda crear usuarios en su propio negocio
+    if (body.negocio_id !== auth.negocioId) {
+      return NextResponse.json(
+        { error: "No puedes crear usuarios en otro negocio" },
+        { status: 403 },
       );
     }
 
@@ -49,16 +64,15 @@ export async function POST(request: Request) {
       });
 
     if (authError) {
-      // Si el email ya existe, buscar el auth_uid existente
       if (authError.message.includes("already been registered")) {
         return NextResponse.json(
           { error: "Ya existe un usuario con ese email" },
           { status: 409 },
         );
       }
-      console.error("[usuarios/create] Auth error:", authError.message);
+      logger.error("usuarios/create", "Auth error");
       return NextResponse.json(
-        { error: authError.message },
+        { error: "Error al crear usuario" },
         { status: 500 },
       );
     }
@@ -67,16 +81,35 @@ export async function POST(request: Request) {
 
     // 2. Setear password determinístico para login por PIN
     const detPassword = derivePinPassword(authUid);
-    const { error: pwError } =
-      await supabaseAdmin.auth.admin.updateUserById(authUid, {
+    const { error: pwError } = await supabaseAdmin.auth.admin.updateUserById(
+      authUid,
+      {
         password: detPassword,
-      });
+      },
+    );
 
     if (pwError) {
-      console.error("[usuarios/create] Password update error:", pwError.message);
+      logger.warn("usuarios/create", "Password update error");
     }
 
-    // 3. Insertar en tabla usuarios
+    // 3. Hashear PIN si se envió (bcrypt via pgcrypto)
+    let pinHash: string | null = null;
+    if (body.pin) {
+      const { data: hashData, error: hashError } = await supabaseAdmin.rpc(
+        "hash_pin",
+        { pin_raw: body.pin },
+      );
+      if (hashError) {
+        logger.error("usuarios/create", "PIN hash error");
+        return NextResponse.json(
+          { error: "Error al procesar PIN" },
+          { status: 500 },
+        );
+      }
+      pinHash = hashData;
+    }
+
+    // 4. Insertar en tabla usuarios
     const { data: usuario, error: insertError } = await supabaseAdmin
       .from("usuarios")
       .insert({
@@ -85,25 +118,25 @@ export async function POST(request: Request) {
         nombre: body.nombre,
         email: body.email,
         rol: body.rol,
-        pin: body.pin || null,
+        pin_hash: pinHash,
         activo: true,
       })
       .select()
       .single();
 
     if (insertError) {
-      console.error("[usuarios/create] Insert error:", insertError.message);
+      logger.error("usuarios/create", "Insert error");
       // Cleanup: eliminar Auth user si falla el insert
       await supabaseAdmin.auth.admin.deleteUser(authUid);
       return NextResponse.json(
-        { error: insertError.message },
+        { error: "Error al registrar usuario" },
         { status: 500 },
       );
     }
 
     return NextResponse.json({ success: true, usuario });
   } catch (err) {
-    console.error("[usuarios/create] Unexpected error:", err);
+    logger.error("usuarios/create", "Unexpected error", err);
     return NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 },
@@ -115,9 +148,14 @@ export async function POST(request: Request) {
  * PUT /api/usuarios
  * Actualiza datos del usuario (tabla + Auth si cambia email)
  * Body: { id, auth_uid, nombre?, email?, rol?, pin?, activo? }
+ * Requiere: JWT válido con rol admin
  */
 export async function PUT(request: Request) {
   try {
+    // Verificar que el caller sea admin autenticado
+    const auth = await verifyApiAuth(request, ["admin"]);
+    if (!auth.ok) return auth.response;
+
     if (!supabaseUrl || !serviceRoleKey) {
       return NextResponse.json(
         { error: "Configuración de Supabase incompleta" },
@@ -137,6 +175,20 @@ export async function PUT(request: Request) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    // Verificar que el usuario a editar pertenezca al mismo negocio
+    const { data: target } = await supabaseAdmin
+      .from("usuarios")
+      .select("negocio_id")
+      .eq("id", body.id)
+      .single();
+
+    if (!target || target.negocio_id !== auth.negocioId) {
+      return NextResponse.json(
+        { error: "No puedes editar usuarios de otro negocio" },
+        { status: 403 },
+      );
+    }
+
     // Construir update payload para tabla usuarios
     const updateData: Record<string, unknown> = {
       actualizado_en: new Date().toISOString(),
@@ -144,19 +196,38 @@ export async function PUT(request: Request) {
     if (body.nombre !== undefined) updateData.nombre = body.nombre;
     if (body.email !== undefined) updateData.email = body.email;
     if (body.rol !== undefined) updateData.rol = body.rol;
-    if (body.pin !== undefined) updateData.pin = body.pin;
     if (body.activo !== undefined) updateData.activo = body.activo;
 
-    // Update tabla usuarios
+    // Hashear PIN si se envió (bcrypt via pgcrypto)
+    if (body.pin !== undefined) {
+      if (body.pin) {
+        const { data: hashData, error: hashError } = await supabaseAdmin.rpc(
+          "hash_pin",
+          { pin_raw: body.pin },
+        );
+        if (hashError) {
+          logger.error("usuarios/update", "PIN hash error");
+          return NextResponse.json(
+            { error: "Error al procesar PIN" },
+            { status: 500 },
+          );
+        }
+        updateData.pin_hash = hashData;
+      } else {
+        updateData.pin_hash = null; // Limpiar PIN si se envía vacío
+      }
+    }
+
+    // Update tabla usuarios (scoped al negocio del admin)
     const { error: updateError } = await supabaseAdmin
       .from("usuarios")
       .update(updateData)
       .eq("id", body.id);
 
     if (updateError) {
-      console.error("[usuarios/update] Error:", updateError.message);
+      logger.error("usuarios/update", "Update error");
       return NextResponse.json(
-        { error: updateError.message },
+        { error: "Error al actualizar usuario" },
         { status: 500 },
       );
     }
@@ -168,13 +239,13 @@ export async function PUT(request: Request) {
           email: body.email,
         });
       if (authUpdateError) {
-        console.warn("[usuarios/update] Auth email update error:", authUpdateError.message);
+        logger.warn("usuarios/update", "Auth email update error");
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("[usuarios/update] Unexpected error:", err);
+    logger.error("usuarios/update", "Unexpected error", err);
     return NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 },

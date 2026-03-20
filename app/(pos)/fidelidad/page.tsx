@@ -14,9 +14,13 @@ import {
   UserPlus,
   Loader2,
   Mail,
+  Bell,
+  Send,
+  Megaphone,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import { useClientes, insertRecordReturning, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
+import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth.store";
 import { showToast } from "@/components/ui/Toast";
 import Modal from "@/components/ui/Modal";
@@ -60,6 +64,8 @@ function FidelidadPageContent() {
   const [modalEditarCliente, setModalEditarCliente] = useState(false);
   const [modalCanjear, setModalCanjear] = useState<{ nombre: string; puntos: number } | null>(null);
   const [canjeando, setCanjando] = useState(false);
+  const [modalNotificacion, setModalNotificacion] = useState<"individual" | "broadcast" | null>(null);
+  const [enviandoNotif, setEnviandoNotif] = useState(false);
 
   const clientesList = clientes as unknown as Cliente[];
 
@@ -163,6 +169,48 @@ function FidelidadPageContent() {
     }
   };
 
+  // Enviar notificación push
+  const handleEnviarNotificacion = async (datos: { titulo: string; mensaje: string }) => {
+    setEnviandoNotif(true);
+    try {
+      const payload: Record<string, unknown> = {
+        title: datos.titulo,
+        body: datos.mensaje,
+        tipo: modalNotificacion === "broadcast" ? "manual_broadcast" : "manual_individual",
+        enviadoPor: user?.id,
+      };
+      if (modalNotificacion === "individual" && clienteSeleccionado) {
+        payload.clienteId = clienteSeleccionado.id;
+      }
+
+      if (!supabase) {
+        showToast("Supabase no configurado", "error");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("send-push", {
+        body: payload,
+      });
+
+      if (error) {
+        showToast("Error al enviar notificación", "error");
+      } else {
+        const env = data?.enviadas ?? 0;
+        const fall = data?.fallidas ?? 0;
+        if (env > 0) {
+          showToast(`Notificación enviada a ${env} dispositivo${env !== 1 ? "s" : ""}${fall > 0 ? ` (${fall} fallida${fall !== 1 ? "s" : ""})` : ""}`, "success");
+        } else {
+          showToast("No hay suscripciones activas para enviar", "info");
+        }
+      }
+    } catch {
+      showToast("Error de conexión", "error");
+    } finally {
+      setEnviandoNotif(false);
+      setModalNotificacion(null);
+    }
+  };
+
   return (
     <div className="h-[calc(100vh-3.5rem-4rem)] flex flex-col">
       {/* Header */}
@@ -173,20 +221,29 @@ function FidelidadPageContent() {
             Programa de puntos
           </span>
         </div>
-        <button
-          onClick={() => setModalNuevoCliente(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl btn-primary text-[13px] min-h-[44px]"
-        >
-          <UserPlus size={16} />
-          Nuevo cliente
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setModalNotificacion("broadcast")}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl btn-ghost text-[13px] min-h-[44px] border border-border"
+          >
+            <Megaphone size={16} />
+            Notificar a todos
+          </button>
+          <button
+            onClick={() => setModalNuevoCliente(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl btn-primary text-[13px] min-h-[44px]"
+          >
+            <UserPlus size={16} />
+            Nuevo cliente
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         <div className="p-4 rounded-xl bg-surface-2 border border-border">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Clientes</span>
+            <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Clientes</span>
             <Users size={14} className="text-text-25 opacity-40" />
           </div>
           <p className="text-xl font-semibold text-text-100 tabular-nums">{stats.totalClientes}</p>
@@ -194,7 +251,7 @@ function FidelidadPageContent() {
         </div>
         <div className="p-4 rounded-xl bg-surface-2 border border-border">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Puntos en circulación</span>
+            <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Puntos en circulación</span>
             <Star size={14} className="text-text-25 opacity-40" />
           </div>
           <p className="text-xl font-semibold text-text-100 tabular-nums">{stats.puntosEmitidos.toLocaleString("es-MX")}</p>
@@ -202,7 +259,7 @@ function FidelidadPageContent() {
         </div>
         <div className="p-4 rounded-xl bg-surface-2 border border-border">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Niveles</span>
+            <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Niveles</span>
             <Award size={14} className="text-text-25 opacity-40" />
           </div>
           <div className="flex items-center gap-2 mt-1">
@@ -210,7 +267,7 @@ function FidelidadPageContent() {
               const count = clientesList.filter((c) => c.nivel === n).length;
               const conf = nivelConfig[n];
               return (
-                <span key={n} className={cn("text-[10px] font-medium px-2 py-0.5 rounded-lg", conf.bg, conf.color)}>
+                <span key={n} className={cn("text-xs font-medium px-2 py-0.5 rounded-lg", conf.bg, conf.color)}>
                   {count} {conf.label}
                 </span>
               );
@@ -262,12 +319,12 @@ function FidelidadPageContent() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
-                      <span className={cn("text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg", nivel.bg, nivel.color)}>
+                      <span className={cn("text-xs font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg", nivel.bg, nivel.color)}>
                         {nivel.label}
                       </span>
                       <div className="text-right">
                         <p className="text-xs font-semibold text-text-100 tabular-nums">{cliente.puntos.toLocaleString("es-MX")}</p>
-                        <p className="text-[10px] text-text-25">puntos</p>
+                        <p className="text-xs text-text-25">puntos</p>
                       </div>
                       <ChevronRight size={14} className="text-text-25" />
                     </div>
@@ -315,7 +372,7 @@ function FidelidadPageContent() {
                   </p>
                 )}
                 <span className={cn(
-                  "inline-flex items-center gap-1 mt-2 text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg",
+                  "inline-flex items-center gap-1 mt-2 text-xs font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg",
                   (nivelConfig[clienteSeleccionado.nivel] ?? nivelConfig.bronce).bg,
                   (nivelConfig[clienteSeleccionado.nivel] ?? nivelConfig.bronce).color,
                 )}>
@@ -326,11 +383,11 @@ function FidelidadPageContent() {
               <div className="grid grid-cols-2 gap-2.5 mb-5">
                 <div className="p-3 rounded-xl bg-surface-3 text-center">
                   <p className="text-lg font-semibold text-text-100 tabular-nums">{clienteSeleccionado.puntos.toLocaleString("es-MX")}</p>
-                  <p className="text-[10px] text-text-25 uppercase tracking-widest">Puntos</p>
+                  <p className="text-xs text-text-25 uppercase tracking-widest">Puntos</p>
                 </div>
                 <div className="p-3 rounded-xl bg-surface-3 text-center">
                   <p className="text-lg font-semibold text-text-100 tabular-nums">{clienteSeleccionado.total_visitas}</p>
-                  <p className="text-[10px] text-text-25 uppercase tracking-widest">Visitas</p>
+                  <p className="text-xs text-text-25 uppercase tracking-widest">Visitas</p>
                 </div>
               </div>
 
@@ -360,7 +417,7 @@ function FidelidadPageContent() {
               {/* Progreso de nivel */}
               <div className="mb-5">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Progreso al siguiente nivel</span>
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Progreso al siguiente nivel</span>
                 </div>
                 {clienteSeleccionado.nivel !== "oro" ? (
                   <>
@@ -372,20 +429,20 @@ function FidelidadPageContent() {
                         }}
                       />
                     </div>
-                    <p className="text-[10px] text-text-25">
+                    <p className="text-xs text-text-25">
                       {clienteSeleccionado.nivel === "bronce"
                         ? `${Math.max(0, 500 - clienteSeleccionado.puntos)} puntos para Plata`
                         : `${Math.max(0, 1000 - clienteSeleccionado.puntos)} puntos para Oro`}
                     </p>
                   </>
                 ) : (
-                  <p className="text-[10px] text-accent font-medium">Nivel máximo alcanzado</p>
+                  <p className="text-xs text-accent font-medium">Nivel máximo alcanzado</p>
                 )}
               </div>
 
               {/* Recompensas */}
               <div className="mb-5">
-                <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">Recompensas disponibles</span>
+                <span className="text-xs font-medium text-text-25 uppercase tracking-widest block mb-2">Recompensas disponibles</span>
                 <div className="space-y-1.5">
                   {RECOMPENSAS.map((r) => (
                     <div key={r.nombre} className="flex items-center justify-between p-2.5 rounded-xl bg-surface-3">
@@ -401,7 +458,7 @@ function FidelidadPageContent() {
                         }}
                         disabled={clienteSeleccionado.puntos < r.puntos}
                         className={cn(
-                          "text-[10px] font-medium px-2.5 py-1.5 rounded-lg transition-all duration-300 min-h-[32px]",
+                          "text-xs font-medium px-2.5 py-1.5 rounded-lg transition-all duration-300 min-h-[32px]",
                           clienteSeleccionado.puntos >= r.puntos
                             ? "bg-accent-soft text-accent hover:opacity-80"
                             : "bg-surface-2 text-text-25 cursor-not-allowed",
@@ -415,12 +472,21 @@ function FidelidadPageContent() {
               </div>
 
               {/* Acciones */}
-              <button
-                onClick={() => setModalEditarCliente(true)}
-                className="w-full py-2.5 rounded-xl btn-ghost text-xs min-h-[44px]"
-              >
-                Editar datos del cliente
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={() => setModalNotificacion("individual")}
+                  className="w-full py-2.5 rounded-xl btn-ghost text-xs min-h-[44px] flex items-center justify-center gap-2 border border-border"
+                >
+                  <Bell size={14} />
+                  Enviar notificación
+                </button>
+                <button
+                  onClick={() => setModalEditarCliente(true)}
+                  className="w-full py-2.5 rounded-xl btn-ghost text-xs min-h-[44px]"
+                >
+                  Editar datos del cliente
+                </button>
+              </div>
             </div>
           ) : (
             <div className="flex-shrink-0 flex items-center justify-center bg-surface-2 border-l border-border rounded-2xl" style={{ width: "var(--panel-xl)" }}>
@@ -452,6 +518,23 @@ function FidelidadPageContent() {
           onCancel={() => setModalEditarCliente(false)}
         />
       </Modal>
+
+      {/* Modal enviar notificación */}
+      {modalNotificacion && (
+        <Modal
+          open={true}
+          onClose={() => setModalNotificacion(null)}
+          title={modalNotificacion === "broadcast" ? "Notificar a todos los clientes" : `Notificar a ${clienteSeleccionado?.nombre ?? "cliente"}`}
+        >
+          <NotificacionForm
+            tipo={modalNotificacion}
+            clienteNombre={clienteSeleccionado?.nombre}
+            onSend={handleEnviarNotificacion}
+            onCancel={() => setModalNotificacion(null)}
+            loading={enviandoNotif}
+          />
+        </Modal>
+      )}
 
       {/* Confirm canje */}
       {modalCanjear && (
@@ -489,6 +572,116 @@ function FidelidadPageContent() {
   );
 }
 
+const PLANTILLAS_NOTIFICACION = [
+  { titulo: "Promoción especial", mensaje: "Hoy tenemos una promoción especial para ti. ¡Visítanos!" },
+  { titulo: "Nuevo en el menú", mensaje: "Descubre nuestras nuevas creaciones. ¡Te van a encantar!" },
+  { titulo: "Te extrañamos", mensaje: "Hace tiempo que no te vemos. Tu próximo café te acerca a tu cortesía." },
+  { titulo: "Happy Hour", mensaje: "Happy Hour de 3 a 5 PM. ¡Bebidas con descuento especial!" },
+];
+
+function NotificacionForm({
+  tipo,
+  clienteNombre,
+  onSend,
+  onCancel,
+  loading,
+}: {
+  tipo: "individual" | "broadcast";
+  clienteNombre?: string;
+  onSend: (datos: { titulo: string; mensaje: string }) => Promise<void>;
+  onCancel: () => void;
+  loading: boolean;
+}) {
+  const [titulo, setTitulo] = useState("");
+  const [mensaje, setMensaje] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!titulo.trim() || !mensaje.trim()) return;
+    await onSend({ titulo: titulo.trim(), mensaje: mensaje.trim() });
+  };
+
+  const aplicarPlantilla = (p: typeof PLANTILLAS_NOTIFICACION[0]) => {
+    setTitulo(p.titulo);
+    setMensaje(p.mensaje);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {tipo === "broadcast" && (
+        <div className="p-3 rounded-xl bg-status-warn-bg border border-status-warn/20">
+          <p className="text-xs text-status-warn">
+            <Megaphone size={12} className="inline mr-1" />
+            Se enviará a todos los clientes con notificaciones activas.
+          </p>
+        </div>
+      )}
+
+      {/* Plantillas rápidas */}
+      <div>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-2">Plantillas</label>
+        <div className="flex flex-wrap gap-1.5">
+          {PLANTILLAS_NOTIFICACION.map((p) => (
+            <button
+              key={p.titulo}
+              type="button"
+              onClick={() => aplicarPlantilla(p)}
+              className="text-[11px] px-2.5 py-1.5 rounded-lg bg-surface-3 text-text-45 hover:text-text-100 hover:bg-surface-2 transition-all border border-transparent hover:border-border"
+            >
+              {p.titulo}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">Título *</label>
+        <input
+          type="text"
+          value={titulo}
+          onChange={(e) => setTitulo(e.target.value)}
+          required
+          maxLength={60}
+          placeholder="Ej: Promoción especial"
+          className="w-full px-3 py-2.5 rounded-xl bg-surface-3 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 min-h-[44px]"
+        />
+        <p className="text-[10px] text-text-25 mt-1 text-right">{titulo.length}/60</p>
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">Mensaje *</label>
+        <textarea
+          value={mensaje}
+          onChange={(e) => setMensaje(e.target.value)}
+          required
+          maxLength={200}
+          rows={3}
+          placeholder="Escribe tu mensaje..."
+          className="w-full px-3 py-2.5 rounded-xl bg-surface-3 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 resize-none"
+        />
+        <p className="text-[10px] text-text-25 mt-1 text-right">{mensaje.length}/200</p>
+      </div>
+      <div className="flex items-center gap-3 pt-3 border-t border-border">
+        <button
+          type="submit"
+          disabled={loading || !titulo.trim() || !mensaje.trim()}
+          className="flex-1 py-3 rounded-xl btn-primary text-[13px] min-h-[44px] flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {loading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+          {loading ? "Enviando..." : "Enviar notificación"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={loading}
+          className="flex-1 py-3 rounded-xl btn-ghost text-[13px] min-h-[44px]"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function ClienteForm({
   cliente,
   onSave,
@@ -514,7 +707,7 @@ function ClienteForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">Nombre completo *</label>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">Nombre completo *</label>
         <input
           type="text"
           value={nombre}
@@ -525,7 +718,7 @@ function ClienteForm({
         />
       </div>
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">Teléfono</label>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">Teléfono</label>
         <input
           type="tel"
           value={telefono}
@@ -535,7 +728,7 @@ function ClienteForm({
         />
       </div>
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">Email (opcional)</label>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">Email (opcional)</label>
         <input
           type="email"
           value={email}

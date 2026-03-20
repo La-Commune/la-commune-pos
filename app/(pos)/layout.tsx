@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Sidebar from "@/components/layouts/Sidebar";
 import Navbar from "@/components/layouts/Navbar";
 import ToastContainer from "@/components/ui/Toast";
@@ -35,9 +35,16 @@ export default function POSLayout({
     return sidebarCollapsed ? "ml-[72px]" : "ml-[240px]";
   };
 
+  // Prevent flash: don't render layout chrome until mounted (hydration-safe)
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-surface-0" />
+    );
+  }
+
   return (
     <div
-      className="min-h-screen bg-surface-0"
+      className="min-h-screen bg-surface-0 pos-page-enter"
       data-density={density !== "comfortable" ? density : undefined}
       data-panel={panelWidth !== "default" ? panelWidth : undefined}
       data-font-scale={fontScale !== 100 ? fontScale : undefined}
@@ -50,7 +57,7 @@ export default function POSLayout({
       <div
         className={cn(
           "transition-all duration-200 ease-smooth",
-          mounted ? getMarginClass() : "ml-[240px]"
+          getMarginClass()
         )}
       >
         <Navbar />

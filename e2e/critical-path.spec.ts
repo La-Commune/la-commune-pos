@@ -11,7 +11,7 @@ test.describe("POS — Flujo Crítico Completo (mock mode)", () => {
   test("navega por todos los módulos del flujo principal", async ({ page }) => {
     // 1. Dashboard carga correctamente
     await page.goto("/");
-    await expect(page.locator("text=Dashboard")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Dashboard")).toBeVisible({ timeout: 15_000 });
 
     // 2. Navegar a Caja — pantalla de abrir turno
     await page.goto("/caja");
@@ -26,19 +26,19 @@ test.describe("POS — Flujo Crítico Completo (mock mode)", () => {
 
     // 3. Navegar a Órdenes — catálogo de productos
     await page.goto("/ordenes");
-    await expect(page.locator("text=Nueva orden")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Nueva orden")).toBeVisible({ timeout: 10_000 });
 
     // Verificar que hay productos mock disponibles
-    await expect(page.locator("text=Americano").first()).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator("text=Latte").first()).toBeVisible();
+    await expect(page.getByText("Americano").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Latte").first()).toBeVisible();
 
     // Verificar categorías
-    await expect(page.locator("text=Café Caliente").first()).toBeVisible();
+    await expect(page.getByText("Café Caliente").first()).toBeVisible();
 
     // 4. Navegar a Cobros — lista de órdenes por cobrar
     await page.goto("/cobros");
-    await expect(page.locator("text=Cobros")).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator("text=Órdenes por cobrar")).toBeVisible();
+    await expect(page.getByText("Cobros")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Órdenes por cobrar")).toBeVisible();
 
     // Seleccionar una orden si hay
     const ordenes = page.locator(".rounded-xl.bg-surface-2.border");
@@ -47,8 +47,8 @@ test.describe("POS — Flujo Crítico Completo (mock mode)", () => {
       await ordenes.first().click();
 
       // Verificar que se muestran métodos de pago
-      await expect(page.locator("text=Efectivo")).toBeVisible();
-      await expect(page.locator("text=Tarjeta")).toBeVisible();
+      await expect(page.getByText("Efectivo")).toBeVisible();
+      await expect(page.getByText("Tarjeta")).toBeVisible();
 
       // Click en Tarjeta y luego Cobrar → Verificación
       await page.locator("button:has-text('Tarjeta')").first().click();
@@ -56,8 +56,8 @@ test.describe("POS — Flujo Crítico Completo (mock mode)", () => {
       const btnCobrar = page.locator("button:has-text('Cobrar')").first();
       if (await btnCobrar.isEnabled()) {
         await btnCobrar.click();
-        await expect(page.locator("text=Confirme con el cliente")).toBeVisible();
-        await expect(page.locator("text=Confirmar cobro")).toBeVisible();
+        await expect(page.getByText("Confirme con el cliente")).toBeVisible();
+        await expect(page.getByText("Confirmar cobro")).toBeVisible();
       }
     }
 

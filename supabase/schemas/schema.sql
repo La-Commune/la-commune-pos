@@ -45,7 +45,6 @@ CREATE TABLE negocios (
   rfc         TEXT,
   divisa      TEXT NOT NULL DEFAULT 'MXN',
   zona_horaria TEXT NOT NULL DEFAULT 'America/Mexico_City',
-  firebase_project_id TEXT,
   creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   eliminado_en TIMESTAMPTZ
@@ -59,7 +58,7 @@ CREATE TABLE usuarios (
   nombre      TEXT NOT NULL,
   email       TEXT NOT NULL,
   rol         rol_usuario NOT NULL DEFAULT 'barista',
-  pin         TEXT,
+  pin_hash    TEXT,  -- bcrypt hash via pgcrypto crypt(pin, gen_salt('bf'))
   activo      BOOLEAN NOT NULL DEFAULT TRUE,
   ultimo_acceso TIMESTAMPTZ,
   creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -67,11 +66,10 @@ CREATE TABLE usuarios (
   eliminado_en TIMESTAMPTZ
 );
 
--- ── Clientes (réplica POS de Firebase para JOINs y reportes) ──
+-- ── Clientes ──
 CREATE TABLE clientes (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   negocio_id      UUID NOT NULL REFERENCES negocios(id) ON DELETE CASCADE,
-  firebase_id     TEXT,
   nombre          TEXT NOT NULL,
   telefono        TEXT,
   email           TEXT,
@@ -180,7 +178,6 @@ CREATE TABLE ordenes (
   estado      estado_orden NOT NULL DEFAULT 'nueva',
   origen      origen_orden NOT NULL DEFAULT 'mesa',
   notas       TEXT,
-  cliente_firebase_id TEXT,
   creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   eliminado_en TIMESTAMPTZ
@@ -269,7 +266,6 @@ CREATE TABLE historico_ordenes (
   total       NUMERIC(10,2) NOT NULL DEFAULT 0,
   tipo_pago   tipo_pago,
   origen      origen_orden,
-  cliente_firebase_id TEXT,
   completada_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   creado_en   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -355,6 +351,7 @@ CREATE TABLE movimientos_inventario (
   costo_total     NUMERIC(10,2),
   referencia      TEXT,
   orden_id        UUID REFERENCES ordenes(id) ON DELETE SET NULL,
+  motivo          TEXT,
   notas           TEXT,
   creado_en       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -379,6 +376,16 @@ CREATE TABLE configuracion_sync (
   UNIQUE(negocio_id, tabla)
 );
 
+-- ── Intentos de PIN (rate limiting a nivel BD) ──
+CREATE TABLE intentos_pin (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  ip              TEXT NOT NULL,
+  intentos        INTEGER NOT NULL DEFAULT 0,
+  bloqueado_hasta TIMESTAMPTZ,
+  creado_en       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  actualizado_en  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 
 -- ┌─────────────────────────────────────┐
 -- │  4. ÍNDICES                          │
@@ -390,12 +397,9 @@ CREATE INDEX idx_usuarios_auth ON usuarios(auth_uid);
 
 -- Clientes
 CREATE INDEX idx_clientes_negocio ON clientes(negocio_id) WHERE eliminado_en IS NULL;
-CREATE INDEX idx_clientes_firebase ON clientes(firebase_id) WHERE firebase_id IS NOT NULL;
 CREATE INDEX idx_clientes_telefono ON clientes(negocio_id, telefono) WHERE eliminado_en IS NULL;
 CREATE INDEX idx_clientes_nombre ON clientes(negocio_id, nombre) WHERE eliminado_en IS NULL;
 CREATE INDEX idx_clientes_gastado ON clientes(negocio_id, total_gastado DESC) WHERE eliminado_en IS NULL;
-CREATE UNIQUE INDEX idx_clientes_firebase_unique ON clientes(negocio_id, firebase_id)
-  WHERE firebase_id IS NOT NULL AND eliminado_en IS NULL;
 
 -- Categorías
 CREATE INDEX idx_categorias_negocio ON categorias_menu(negocio_id, orden) WHERE eliminado_en IS NULL;
@@ -414,7 +418,6 @@ CREATE INDEX idx_ordenes_negocio ON ordenes(negocio_id) WHERE eliminado_en IS NU
 CREATE INDEX idx_ordenes_mesa ON ordenes(mesa_id) WHERE eliminado_en IS NULL;
 CREATE INDEX idx_ordenes_estado ON ordenes(negocio_id, estado) WHERE eliminado_en IS NULL;
 CREATE INDEX idx_ordenes_fecha ON ordenes(negocio_id, creado_en DESC) WHERE eliminado_en IS NULL;
-CREATE INDEX idx_ordenes_cliente_firebase ON ordenes(cliente_firebase_id) WHERE cliente_firebase_id IS NOT NULL;
 CREATE INDEX idx_ordenes_cliente_id ON ordenes(cliente_id) WHERE cliente_id IS NOT NULL;
 CREATE UNIQUE INDEX idx_ordenes_folio ON ordenes(negocio_id, folio);
 CREATE INDEX idx_ordenes_negocio_folio ON ordenes(negocio_id, folio DESC);
@@ -480,6 +483,11 @@ CREATE INDEX idx_recetas_inventario ON recetas(inventario_id);
 CREATE INDEX idx_historico_negocio_fecha ON historico_ordenes(negocio_id, completada_en DESC);
 CREATE INDEX idx_historico_tipo_pago ON historico_ordenes(negocio_id, tipo_pago);
 
+-- Intentos PIN
+CREATE UNIQUE INDEX idx_intentos_pin_ip ON intentos_pin(ip);
+CREATE INDEX idx_intentos_pin_bloqueado ON intentos_pin(bloqueado_hasta)
+  WHERE bloqueado_hasta IS NOT NULL;
+
 
 -- ┌─────────────────────────────────────┐
 -- │  5. FUNCIONES Y TRIGGERS            │
@@ -511,6 +519,7 @@ CREATE TRIGGER trg_cortes_updated BEFORE UPDATE ON cortes_caja FOR EACH ROW EXEC
 CREATE TRIGGER trg_gastos_updated BEFORE UPDATE ON gastos FOR EACH ROW EXECUTE FUNCTION actualizar_timestamp();
 CREATE TRIGGER trg_inventario_updated BEFORE UPDATE ON inventario FOR EACH ROW EXECUTE FUNCTION actualizar_timestamp();
 CREATE TRIGGER trg_recetas_updated BEFORE UPDATE ON recetas FOR EACH ROW EXECUTE FUNCTION actualizar_timestamp();
+CREATE TRIGGER trg_intentos_pin_updated BEFORE UPDATE ON intentos_pin FOR EACH ROW EXECUTE FUNCTION actualizar_timestamp();
 
 -- ── Folio auto-incremental por negocio ──
 CREATE OR REPLACE FUNCTION get_next_folio_orden(p_negocio_id UUID)
@@ -583,7 +592,10 @@ RETURNS NUMERIC(10,2) AS $$
 $$ LANGUAGE sql STABLE;
 
 -- ── Vista: Productos con costo y margen ──
-CREATE OR REPLACE VIEW vista_productos_margen AS
+-- security_invoker = true → respeta RLS del usuario que consulta (no bypasea como SECURITY DEFINER)
+CREATE OR REPLACE VIEW vista_productos_margen
+WITH (security_invoker = true)
+AS
 SELECT
   p.id,
   p.negocio_id,
@@ -627,6 +639,8 @@ ALTER TABLE inventario ENABLE ROW LEVEL SECURITY;
 ALTER TABLE movimientos_inventario ENABLE ROW LEVEL SECURITY;
 ALTER TABLE recetas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE configuracion_sync ENABLE ROW LEVEL SECURITY;
+ALTER TABLE intentos_pin ENABLE ROW LEVEL SECURITY;
+-- (intentos_pin no necesita políticas — solo la función SECURITY DEFINER accede)
 
 -- ── Funciones helper ──
 CREATE OR REPLACE FUNCTION get_mi_negocio_id()
@@ -636,7 +650,7 @@ RETURNS UUID AS $$
   AND eliminado_en IS NULL
   AND activo = TRUE
   LIMIT 1;
-$$ LANGUAGE sql SECURITY DEFINER STABLE;
+$$ LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public;
 
 CREATE OR REPLACE FUNCTION get_mi_rol()
 RETURNS rol_usuario AS $$
@@ -645,7 +659,7 @@ RETURNS rol_usuario AS $$
   AND eliminado_en IS NULL
   AND activo = TRUE
   LIMIT 1;
-$$ LANGUAGE sql SECURITY DEFINER STABLE;
+$$ LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public;
 
 -- ── NEGOCIOS ──
 CREATE POLICY "negocios_select" ON negocios
@@ -881,88 +895,198 @@ CREATE POLICY "sync_update" ON configuracion_sync
 -- │  7. LOGIN POR PIN (RPC)             │
 -- └─────────────────────────────────────┘
 -- El POS usa login por PIN (no Supabase Auth directo).
--- Esta función permite autenticar sin sesión activa.
+-- Esta función incluye rate limiting por IP a nivel de BD.
+-- Bloquea después de 5 intentos fallidos durante 15 minutos.
 
-CREATE OR REPLACE FUNCTION login_por_pin(pin_input TEXT)
+-- Eliminar versión vieja sin rate limiting (si existe)
+DROP FUNCTION IF EXISTS login_por_pin(TEXT);
+
+CREATE OR REPLACE FUNCTION login_por_pin(pin_input TEXT, client_ip TEXT DEFAULT '0.0.0.0')
 RETURNS JSON AS $$
 DECLARE
   usr RECORD;
+  intento RECORD;
+  max_intentos CONSTANT INTEGER := 5;
+  bloqueo_minutos CONSTANT INTEGER := 15;
 BEGIN
-  SELECT id, negocio_id, auth_uid, nombre, email, rol
+  -- ── 1. Verificar rate limit por IP ──
+  SELECT * INTO intento
+  FROM intentos_pin
+  WHERE ip = client_ip;
+
+  -- Si está bloqueado y el bloqueo no ha expirado
+  IF intento.id IS NOT NULL
+    AND intento.bloqueado_hasta IS NOT NULL
+    AND intento.bloqueado_hasta > NOW()
+  THEN
+    RETURN json_build_object(
+      'success', false,
+      'error', 'Demasiados intentos. Intenta en ' || bloqueo_minutos || ' minutos.',
+      'bloqueado_hasta', intento.bloqueado_hasta,
+      'rate_limited', true
+    );
+  END IF;
+
+  -- Si el bloqueo ya expiró, resetear contador
+  IF intento.id IS NOT NULL
+    AND intento.bloqueado_hasta IS NOT NULL
+    AND intento.bloqueado_hasta <= NOW()
+  THEN
+    UPDATE intentos_pin
+    SET intentos = 0, bloqueado_hasta = NULL
+    WHERE ip = client_ip;
+    intento.intentos := 0;
+    intento.bloqueado_hasta := NULL;
+  END IF;
+
+  -- ── 2. Buscar usuario por PIN hasheado (bcrypt via pgcrypto) ──
+  SELECT id, negocio_id, auth_uid, nombre, rol
   INTO usr
   FROM usuarios
-  WHERE pin = pin_input
+  WHERE pin_hash IS NOT NULL
+    AND crypt(pin_input, pin_hash) = pin_hash
     AND activo = TRUE
     AND eliminado_en IS NULL
   LIMIT 1;
 
+  -- ── 3. PIN incorrecto → registrar intento fallido ──
   IF usr.id IS NULL THEN
-    RETURN json_build_object('success', false, 'error', 'PIN inválido');
+    IF intento.id IS NULL THEN
+      INSERT INTO intentos_pin (ip, intentos)
+      VALUES (client_ip, 1);
+    ELSE
+      UPDATE intentos_pin
+      SET intentos = intento.intentos + 1,
+          bloqueado_hasta = CASE
+            WHEN intento.intentos + 1 >= max_intentos
+            THEN NOW() + (bloqueo_minutos || ' minutes')::INTERVAL
+            ELSE NULL
+          END
+      WHERE ip = client_ip;
+    END IF;
+
+    RETURN json_build_object(
+      'success', false,
+      'error', 'PIN inválido',
+      'intentos_restantes', GREATEST(max_intentos - COALESCE(intento.intentos, 0) - 1, 0)
+    );
+  END IF;
+
+  -- ── 4. PIN correcto → limpiar intentos y retornar datos mínimos ──
+  IF intento.id IS NOT NULL THEN
+    DELETE FROM intentos_pin WHERE ip = client_ip;
   END IF;
 
   UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = usr.id;
 
+  -- auth_uid se necesita internamente para derivar password, pero NO email
   RETURN json_build_object(
     'success', true,
     'id', usr.id,
     'negocio_id', usr.negocio_id,
     'auth_uid', usr.auth_uid,
     'nombre', usr.nombre,
-    'email', usr.email,
     'rol', usr.rol
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
-GRANT EXECUTE ON FUNCTION login_por_pin(TEXT) TO anon;
-GRANT EXECUTE ON FUNCTION login_por_pin(TEXT) TO authenticated;
+-- Función helper para hashear PIN (solo service_role)
+CREATE OR REPLACE FUNCTION hash_pin(pin_raw TEXT)
+RETURNS TEXT AS $$
+  SELECT crypt(pin_raw, gen_salt('bf'));
+$$ LANGUAGE sql SECURITY DEFINER SET search_path = public, extensions;
+
+REVOKE EXECUTE ON FUNCTION hash_pin(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION hash_pin(TEXT) TO service_role;
+
+-- Función de limpieza de intentos viejos (ejecutar con cron o manualmente)
+CREATE OR REPLACE FUNCTION limpiar_intentos_pin_viejos()
+RETURNS void AS $$
+BEGIN
+  DELETE FROM intentos_pin
+  WHERE actualizado_en < NOW() - INTERVAL '24 hours';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- IMPORTANTE: service_role necesita acceso porque /api/auth/pin y verifyAdminPin lo usan
+REVOKE EXECUTE ON FUNCTION login_por_pin(TEXT, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION login_por_pin(TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION login_por_pin(TEXT, TEXT) TO service_role;
 
 
 -- ┌─────────────────────────────────────┐
--- │  8. POLÍTICAS ANON (POS sin Auth)   │
+-- │  8. POLÍTICAS ANON (Frontend)       │
 -- └─────────────────────────────────────┘
--- El POS opera con login por PIN, no con Supabase Auth session.
--- Estas políticas permiten que el rol anon lea/escriba las tablas del POS.
+-- El POS usa sesiones Auth reales (authenticated) — NO necesita políticas anon.
+-- Solo el frontend de fidelidad necesita acceso anon, y solo lo mínimo:
+--   • Lectura pública del menú (productos, categorías, tamaños, promos)
+--   • CRUD limitado de clientes (registro, lookup, actualización)
+--   • Lectura + creación de tarjetas de fidelidad
+--   • Lectura de eventos de sello y recompensas
+--
+-- NUNCA usar USING(true) en políticas de escritura anon.
+-- Ejecutado en producción: 2026-03-19
 
--- Lectura anon
-CREATE POLICY "anon_select_negocios"      ON negocios       FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_usuarios"      ON usuarios       FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_categorias"    ON categorias_menu FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_productos"     ON productos      FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_tamanos"       ON opciones_tamano FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_mesas"         ON mesas          FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_ordenes"       ON ordenes        FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_items_orden"   ON items_orden    FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_tickets"       ON tickets_kds    FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_pagos"         ON pagos          FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_modificadores" ON modificadores   FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_prod_mod"      ON productos_modificadores FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_cortes"        ON cortes_caja    FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_gastos"        ON gastos         FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_clientes"      ON clientes       FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_inventario"    ON inventario     FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_promos"        ON promociones    FOR SELECT TO anon USING (true);
-CREATE POLICY "anon_select_historico"     ON historico_ordenes FOR SELECT TO anon USING (true);
+-- ── Menú público (solo lectura) ──
+-- No filtramos por disponible/activo en RLS porque:
+-- 1. El menú público filtra en código JS (getFullMenu sin forAdmin)
+-- 2. El admin del frontend necesita ver TODO (getFullMenu con forAdmin: true)
+-- 3. Ambos usan anon key desde el cliente
+CREATE POLICY "anon_productos_select_public"
+  ON productos FOR SELECT TO anon
+  USING (eliminado_en IS NULL);
 
--- Escritura anon (operaciones del POS)
-CREATE POLICY "anon_insert_ordenes"       ON ordenes        FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_update_ordenes"       ON ordenes        FOR UPDATE TO anon USING (true);
-CREATE POLICY "anon_insert_items_orden"   ON items_orden    FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_update_items_orden"   ON items_orden    FOR UPDATE TO anon USING (true);
-CREATE POLICY "anon_update_mesas"         ON mesas          FOR UPDATE TO anon USING (true);
-CREATE POLICY "anon_insert_tickets"       ON tickets_kds    FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_update_tickets"       ON tickets_kds    FOR UPDATE TO anon USING (true);
-CREATE POLICY "anon_insert_pagos"         ON pagos          FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_update_usuarios"      ON usuarios       FOR UPDATE TO anon USING (true);
-CREATE POLICY "anon_insert_cortes"        ON cortes_caja    FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_update_cortes"        ON cortes_caja    FOR UPDATE TO anon USING (true);
-CREATE POLICY "anon_insert_gastos"        ON gastos         FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_insert_historico"     ON historico_ordenes FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_insert_audit"         ON audit_log      FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_insert_clientes"      ON clientes       FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_update_clientes"      ON clientes       FOR UPDATE TO anon USING (true);
-CREATE POLICY "anon_insert_mov_inv"       ON movimientos_inventario FOR INSERT TO anon WITH CHECK (true);
-CREATE POLICY "anon_update_inventario"    ON inventario     FOR UPDATE TO anon USING (true);
+CREATE POLICY "anon_categorias_select_public"
+  ON categorias_menu FOR SELECT TO anon
+  USING (eliminado_en IS NULL);
+
+CREATE POLICY "anon_tamanos_select_public"
+  ON opciones_tamano FOR SELECT TO anon
+  USING (
+    EXISTS (
+      SELECT 1 FROM productos p
+      WHERE p.id = producto_id
+        AND p.eliminado_en IS NULL
+        AND p.disponible = TRUE
+    )
+  );
+
+CREATE POLICY "anon_promociones_select_public"
+  ON promociones FOR SELECT TO anon
+  USING (eliminado_en IS NULL AND activo = TRUE);
+
+-- ── Clientes (registro y lookup desde app fidelidad) ──
+CREATE POLICY "anon_clientes_select_restricted"
+  ON clientes FOR SELECT TO anon
+  USING (eliminado_en IS NULL AND activo = TRUE);
+
+CREATE POLICY "anon_clientes_insert_restricted"
+  ON clientes FOR INSERT TO anon
+  WITH CHECK (activo = TRUE);
+
+CREATE POLICY "anon_clientes_update_restricted"
+  ON clientes FOR UPDATE TO anon
+  USING (eliminado_en IS NULL AND activo = TRUE);
+
+-- ── Tarjetas de fidelidad ──
+CREATE POLICY "anon_tarjetas_select"
+  ON tarjetas FOR SELECT TO anon
+  USING (true);
+
+CREATE POLICY "anon_tarjetas_insert"
+  ON tarjetas FOR INSERT TO anon
+  WITH CHECK (true);
+
+-- ── Eventos de sello (solo lectura — inserts vía RPC SECURITY DEFINER) ──
+CREATE POLICY "anon_eventos_sello_select"
+  ON eventos_sello FOR SELECT TO anon
+  USING (true);
+
+-- ── Recompensas (solo lectura de activas) ──
+CREATE POLICY "anon_recompensas_select"
+  ON recompensas FOR SELECT TO anon
+  USING (activa = TRUE);
 
 
 -- ┌─────────────────────────────────────┐

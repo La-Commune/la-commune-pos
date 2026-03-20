@@ -14,9 +14,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test --project=chromium",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:staging": "playwright test --project=staging",
+    "test:e2e:staging:headed": "playwright test --project=staging --headed"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -31,7 +33,6 @@
     "@supabase/supabase-js": "^2.98.0",
     "clsx": "^2.1.1",
     "dexie": "^4.3.0",
-    "firebase": "^12.10.0",
     "framer-motion": "^12.35.0",
     "lucide-react": "^0.577.0",
     "next": "14.2.35",

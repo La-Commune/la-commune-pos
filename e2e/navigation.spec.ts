@@ -7,22 +7,22 @@ test.describe("POS — Navegación (mock mode)", () => {
   test("carga el dashboard en modo mock", async ({ page }) => {
     await page.goto("/");
     // Dashboard muestra KPIs del día
-    await expect(page.locator("text=Dashboard")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Dashboard")).toBeVisible({ timeout: 10_000 });
   });
 
   test("navega al módulo de mesas", async ({ page }) => {
     await page.goto("/mesas");
-    await expect(page.locator("text=Mesas")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Mesas")).toBeVisible({ timeout: 10_000 });
   });
 
   test("navega al módulo de órdenes", async ({ page }) => {
     await page.goto("/ordenes");
-    await expect(page.locator("text=Nueva orden")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Nueva orden")).toBeVisible({ timeout: 10_000 });
   });
 
   test("navega al módulo de cobros", async ({ page }) => {
     await page.goto("/cobros");
-    await expect(page.locator("text=Cobros")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Cobros")).toBeVisible({ timeout: 10_000 });
   });
 
   test("navega al módulo de caja", async ({ page }) => {
@@ -35,11 +35,11 @@ test.describe("POS — Navegación (mock mode)", () => {
 
   test("navega al módulo de menú", async ({ page }) => {
     await page.goto("/menu");
-    await expect(page.locator("text=Menú")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Menú")).toBeVisible({ timeout: 10_000 });
   });
 
   test("navega al módulo de reportes", async ({ page }) => {
     await page.goto("/reportes");
-    await expect(page.locator("text=Reportes")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Reportes")).toBeVisible({ timeout: 10_000 });
   });
 });

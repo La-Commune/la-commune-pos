@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
+import { verifyApiAuth } from "@/lib/api-auth";
+import { logger } from "@/lib/logger";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -12,16 +14,14 @@ const OUTPUT_QUALITY = 85; // webp quality
 /**
  * POST /api/upload-logo
  * Body: FormData con campo "file" (image) y "negocio_id" (string)
- *
- * 1. Recibe imagen (png/jpg/webp)
- * 2. Resize a 512x512 con sharp
- * 3. Convierte a webp (menor peso)
- * 4. Sube a Supabase Storage bucket "logos"
- * 5. Actualiza logo_url en tabla negocios
- * 6. Retorna { url }
+ * Requiere: JWT válido con rol admin
  */
 export async function POST(req: NextRequest) {
   try {
+    // Verificar que el caller sea admin autenticado
+    const auth = await verifyApiAuth(req, ["admin"]);
+    if (!auth.ok) return auth.response;
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const negocioId = formData.get("negocio_id") as string | null;
@@ -32,6 +32,14 @@ export async function POST(req: NextRequest) {
 
     if (!negocioId) {
       return NextResponse.json({ error: "Falta negocio_id" }, { status: 400 });
+    }
+
+    // Validar que el admin solo pueda modificar el logo de su propio negocio
+    if (negocioId !== auth.negocioId) {
+      return NextResponse.json(
+        { error: "No puedes modificar el logo de otro negocio" },
+        { status: 403 }
+      );
     }
 
     // Validar tipo
@@ -56,19 +64,10 @@ export async function POST(req: NextRequest) {
     const inputBuffer = Buffer.from(arrayBuffer);
 
     // Resize + convertir a webp con sharp
-    let outputBuffer: Buffer;
-    if (file.type === "image/svg+xml") {
-      // SVG: convertir directo a webp
-      outputBuffer = await sharp(inputBuffer)
-        .resize(OUTPUT_SIZE, OUTPUT_SIZE, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
-        .webp({ quality: OUTPUT_QUALITY })
-        .toBuffer();
-    } else {
-      outputBuffer = await sharp(inputBuffer)
-        .resize(OUTPUT_SIZE, OUTPUT_SIZE, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
-        .webp({ quality: OUTPUT_QUALITY })
-        .toBuffer();
-    }
+    const outputBuffer = await sharp(inputBuffer)
+      .resize(OUTPUT_SIZE, OUTPUT_SIZE, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .webp({ quality: OUTPUT_QUALITY })
+      .toBuffer();
 
     // Subir a Supabase Storage
     const supabase = createClient(supabaseUrl, serviceRoleKey);
@@ -78,20 +77,20 @@ export async function POST(req: NextRequest) {
       .from("logos")
       .upload(filePath, outputBuffer, {
         contentType: "image/webp",
-        upsert: true, // Reemplazar si ya existe
+        upsert: true,
       });
 
     if (uploadError) {
-      console.error("[upload-logo] Storage error:", uploadError);
+      logger.error("upload-logo", "Storage error", uploadError.message);
       return NextResponse.json(
-        { error: "Error al subir imagen: " + uploadError.message },
+        { error: "Error al subir imagen" },
         { status: 500 }
       );
     }
 
-    // Obtener URL pública
+    // Obtener URL pública con cache buster para forzar refresh en el navegador
     const { data: urlData } = supabase.storage.from("logos").getPublicUrl(filePath);
-    const logoUrl = urlData.publicUrl;
+    const logoUrl = `${urlData.publicUrl}?v=${Date.now()}`;
 
     // Actualizar logo_url en negocios
     const { error: updateError } = await supabase
@@ -100,8 +99,7 @@ export async function POST(req: NextRequest) {
       .eq("id", negocioId);
 
     if (updateError) {
-      console.error("[upload-logo] Update error:", updateError);
-      // No fallar — la imagen ya se subió
+      logger.warn("upload-logo", "Error actualizando logo_url en BD");
     }
 
     return NextResponse.json({
@@ -109,11 +107,10 @@ export async function POST(req: NextRequest) {
       size: outputBuffer.length,
       dimensions: `${OUTPUT_SIZE}x${OUTPUT_SIZE}`,
     });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[upload-logo] Error:", message, err);
+  } catch (err) {
+    logger.error("upload-logo", "Unexpected error", err);
     return NextResponse.json(
-      { error: "Error procesando imagen: " + message },
+      { error: "Error procesando imagen" },
       { status: 500 }
     );
   }

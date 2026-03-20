@@ -16,13 +16,13 @@ test.describe("POS — Flujo de Caja (mock mode)", () => {
     ).toBeVisible({ timeout: 10_000 });
 
     await expect(
-      page.locator("text=Ingresa el fondo inicial en caja para comenzar")
+      page.getByText("Ingresa el fondo inicial en caja para comenzar")
     ).toBeVisible();
   });
 
   test("muestra campo de fondo inicial y quick amounts", async ({ page }) => {
     await expect(
-      page.locator("text=Fondo inicial")
+      page.getByText("Fondo inicial")
     ).toBeVisible({ timeout: 10_000 });
 
     await expect(page.locator("button:has-text('$100')")).toBeVisible();
@@ -63,7 +63,7 @@ test.describe("POS — Flujo de Caja (mock mode)", () => {
 
     // El ConfirmDialog debe aparecer
     await expect(
-      page.locator("text=¿Abrir con fondo inicial de")
+      page.getByText("¿Abrir con fondo inicial de")
     ).toBeVisible({ timeout: 5_000 });
 
     // Botón "Abrir" en el diálogo
@@ -72,12 +72,12 @@ test.describe("POS — Flujo de Caja (mock mode)", () => {
 
   test("historial muestra panel lateral", async ({ page }) => {
     await expect(
-      page.locator("text=Histórico")
+      page.getByText("Histórico")
     ).toBeVisible({ timeout: 10_000 });
 
     // En mock mode sin cortes previos
     await expect(
-      page.locator("text=Sin cortes anteriores")
+      page.getByText("Sin cortes anteriores")
     ).toBeVisible();
   });
 });
