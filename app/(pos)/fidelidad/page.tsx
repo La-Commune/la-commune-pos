@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Heart,
   Search,
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import { useClientes, insertRecordReturning, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
+import { supabase } from "@/lib/supabase";
 import { authFetch } from "@/lib/auth-fetch";
 import { useAuthStore } from "@/store/auth.store";
 import { showToast } from "@/components/ui/Toast";
@@ -66,6 +67,9 @@ function FidelidadPageContent() {
   const [canjeando, setCanjando] = useState(false);
   const [modalNotificacion, setModalNotificacion] = useState<"individual" | "broadcast" | null>(null);
   const [enviandoNotif, setEnviandoNotif] = useState(false);
+  // Push subscriptions: mapa de cliente_id → cantidad de dispositivos activos
+  const [pushSubs, setPushSubs] = useState<Record<string, number>>({});
+  const [totalPushSubs, setTotalPushSubs] = useState(0);
 
   const clientesList = clientes as unknown as Cliente[];
 
@@ -80,6 +84,33 @@ function FidelidadPageContent() {
     const sub = subscribeToTable("clientes", () => refetch());
     return () => sub.unsubscribe();
   }, [refetch]);
+
+  // Cargar estado de push subscriptions
+  const fetchPushSubs = useCallback(async () => {
+    if (!supabase) return;
+    // push_subscriptions aún no está en los tipos generados — usar query directa
+    const { data: subs } = await supabase
+      .from("push_subscriptions" as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+      .select("cliente_id")
+      .eq("activa", true) as { data: { cliente_id: string | null }[] | null };
+    if (subs) {
+      const map: Record<string, number> = {};
+      for (const s of subs) {
+        if (s.cliente_id) {
+          map[s.cliente_id] = (map[s.cliente_id] || 0) + 1;
+        }
+      }
+      setPushSubs(map);
+      setTotalPushSubs(subs.length);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPushSubs();
+    // Refrescar cuando cambian las suscripciones (tabla no está en tipos generados)
+    const sub = subscribeToTable("push_subscriptions" as any, () => fetchPushSubs());
+    return () => sub.unsubscribe();
+  }, [fetchPushSubs]);
 
   // Sync selected client with realtime data
   useEffect(() => {
@@ -227,6 +258,11 @@ function FidelidadPageContent() {
           >
             <Megaphone size={16} />
             Notificar a todos
+            {totalPushSubs > 0 && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-accent-soft text-accent tabular-nums">
+                {totalPushSubs}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setModalNuevoCliente(true)}
@@ -318,6 +354,9 @@ function FidelidadPageContent() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
+                      {pushSubs[cliente.id] && (
+                        <Bell size={12} className="text-accent opacity-60" aria-label="Push activo" />
+                      )}
                       <span className={cn("text-xs font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg", nivel.bg, nivel.color)}>
                         {nivel.label}
                       </span>
@@ -410,6 +449,17 @@ function FidelidadPageContent() {
                 <div className="flex justify-between text-xs">
                   <span className="text-text-45">Miembro desde</span>
                   <span className="text-text-100 font-medium">{new Date(clienteSeleccionado.creado_en).toLocaleDateString("es-MX")}</span>
+                </div>
+                <div className="flex justify-between text-xs items-center">
+                  <span className="text-text-45">Notificaciones push</span>
+                  {pushSubs[clienteSeleccionado.id] ? (
+                    <span className="flex items-center gap-1 text-status-ok font-medium">
+                      <Bell size={11} />
+                      Activas ({pushSubs[clienteSeleccionado.id]} {pushSubs[clienteSeleccionado.id] === 1 ? "dispositivo" : "dispositivos"})
+                    </span>
+                  ) : (
+                    <span className="text-text-25">No activadas</span>
+                  )}
                 </div>
               </div>
 
