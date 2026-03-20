@@ -41,6 +41,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validar que solo pueda crear usuarios en su propio negocio
+    if (body.negocio_id !== auth.negocioId) {
+      return NextResponse.json(
+        { error: "No puedes crear usuarios en otro negocio" },
+        { status: 403 },
+      );
+    }
+
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
@@ -148,6 +156,20 @@ export async function PUT(request: Request) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    // Verificar que el usuario a editar pertenezca al mismo negocio
+    const { data: target } = await supabaseAdmin
+      .from("usuarios")
+      .select("negocio_id")
+      .eq("id", body.id)
+      .single();
+
+    if (!target || target.negocio_id !== auth.negocioId) {
+      return NextResponse.json(
+        { error: "No puedes editar usuarios de otro negocio" },
+        { status: 403 },
+      );
+    }
+
     // Construir update payload para tabla usuarios
     const updateData: Record<string, unknown> = {
       actualizado_en: new Date().toISOString(),
@@ -158,7 +180,7 @@ export async function PUT(request: Request) {
     if (body.pin !== undefined) updateData.pin = body.pin;
     if (body.activo !== undefined) updateData.activo = body.activo;
 
-    // Update tabla usuarios
+    // Update tabla usuarios (scoped al negocio del admin)
     const { error: updateError } = await supabaseAdmin
       .from("usuarios")
       .update(updateData)

@@ -33,6 +33,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Falta negocio_id" }, { status: 400 });
     }
 
+    // Validar que el admin solo pueda modificar el logo de su propio negocio
+    if (negocioId !== auth.negocioId) {
+      return NextResponse.json(
+        { error: "No puedes modificar el logo de otro negocio" },
+        { status: 403 }
+      );
+    }
+
     // Validar tipo
     const allowedTypes = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
     if (!allowedTypes.includes(file.type)) {
