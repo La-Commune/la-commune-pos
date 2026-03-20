@@ -234,6 +234,33 @@ export type Database = {
           },
         ]
       }
+      intentos_pin: {
+        Row: {
+          id: string
+          ip: string
+          intentos: number
+          bloqueado_hasta: string | null
+          creado_en: string
+          actualizado_en: string
+        }
+        Insert: {
+          id?: string
+          ip: string
+          intentos?: number
+          bloqueado_hasta?: string | null
+          creado_en?: string
+          actualizado_en?: string
+        }
+        Update: {
+          id?: string
+          ip?: string
+          intentos?: number
+          bloqueado_hasta?: string | null
+          creado_en?: string
+          actualizado_en?: string
+        }
+        Relationships: []
+      }
       cortes_caja: {
         Row: {
           abierto_en: string
@@ -1690,7 +1717,8 @@ export type Database = {
         Returns: Database["public"]["Enums"]["rol_usuario"]
       }
       get_next_folio_orden: { Args: { p_negocio_id: string }; Returns: number }
-      login_por_pin: { Args: { pin_input: string }; Returns: Json }
+      limpiar_intentos_pin_viejos: { Args: Record<string, never>; Returns: undefined }
+      login_por_pin: { Args: { pin_input: string; client_ip?: string }; Returns: Json }
       swap_mesa_numeros: {
         Args: {
           mesa_a_id: string
