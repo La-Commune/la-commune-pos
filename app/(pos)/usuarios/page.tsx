@@ -36,7 +36,7 @@ interface Usuario {
   nombre: string;
   email: string;
   rol: Rol;
-  pin: string | null;
+  pin_hash: string | null;
   activo: boolean;
   ultimo_acceso: string | null;
   creado_en: string;
@@ -313,7 +313,7 @@ function UsuariosPageContent() {
                   </div>
                   <div className="flex items-center">
                     <span className="text-xs text-text-25 font-mono">
-                      {usuario.pin ? `${usuario.pin.slice(0, 2)}••` : "—"}
+                      {usuario.pin_hash ? "••••" : "—"}
                     </span>
                   </div>
                   <div className="flex items-center">
@@ -425,7 +425,7 @@ function UsuarioForm({
   const [nombre, setNombre] = useState(usuario?.nombre ?? "");
   const [email, setEmail] = useState(usuario?.email ?? "");
   const [rol, setRol] = useState<Rol>(usuario?.rol ?? "barista");
-  const [pin, setPin] = useState(usuario?.pin ?? "");
+  const [pin, setPin] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

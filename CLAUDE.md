@@ -213,18 +213,32 @@ Ambos proyectos (POS y frontend de fidelidad) comparten la misma instancia de Su
 - Ya tenían fix: `login_por_pin`, `limpiar_intentos_pin_viejos`
 - Actualizado `schema.sql` + `migration-fidelidad-frontend.sql` + nuevo script `supabase/scripts/a3-fix-search-path.sql`
 
+### M3: PIN almacenado en texto plano ✅
+- Columna `pin TEXT` guardaba PIN en texto plano → visible si se accede a la tabla
+- Migración: `pin_hash = crypt(pin, gen_salt('bf'))` (bcrypt via pgcrypto)
+- `login_por_pin()` actualizada: `WHERE crypt(pin_input, pin_hash) = pin_hash`
+- Nueva función `hash_pin(pin_raw)` (solo `service_role`) para hashear desde API routes
+- API route `/api/usuarios` (POST/PUT): hashea PIN via `rpc('hash_pin')` antes de guardar
+- Frontend `usuarios/page.tsx`: muestra "••••" en vez de caracteres reales, PIN no pre-llenado al editar
+- Columna `pin` eliminada de la BD, `pin_hash` es la única columna
+- `search_path = public, extensions` en `login_por_pin` y `hash_pin` (pgcrypto está en schema `extensions`)
+- Actualizado `schema.sql`, `types/database.ts`, nuevo script `supabase/scripts/m2-pin-hash-bcrypt.sql`
+
 ### SQL ejecutado en Supabase (19-Mar-2026):
 - `GRANT EXECUTE ON FUNCTION login_por_pin(TEXT, TEXT) TO service_role, anon`
 - RLS policies `anon` en `productos`/`categorias_menu`: eliminado filtro `disponible`/`activo`
 - `CREATE OR REPLACE VIEW vista_productos_margen WITH (security_invoker = true)`
 - `ALTER FUNCTION ... SET search_path = public` en 7 funciones SECURITY DEFINER
+- `ALTER TABLE usuarios ADD COLUMN pin_hash TEXT` + migración bcrypt + `DROP COLUMN pin`
+- `CREATE FUNCTION hash_pin()` + `CREATE OR REPLACE FUNCTION login_por_pin()` con `crypt()`
 
 ### Archivos nuevos de la auditoría:
 - `lib/api-auth.ts` — verificación JWT server-side
 - `lib/auth-fetch.ts` — fetch wrapper client-side con Bearer token
 - `lib/logger.ts` — logger centralizado (dev vs producción)
 - `supabase/scripts/m1-fix-security-invoker.sql` — script del fix M1
-- `supabase/scripts/a3-fix-search-path.sql` — script del fix M2
+- `supabase/scripts/a3-fix-search-path.sql` — script del fix M2 (search_path)
+- `supabase/scripts/m2-pin-hash-bcrypt.sql` — script del fix M3 (PIN bcrypt)
 
 ## Pendiente
 
