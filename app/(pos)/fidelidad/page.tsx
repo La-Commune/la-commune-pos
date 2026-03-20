@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import { useClientes, insertRecordReturning, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
-import { supabase } from "@/lib/supabase";
+import { authFetch } from "@/lib/auth-fetch";
 import { useAuthStore } from "@/store/auth.store";
 import { showToast } from "@/components/ui/Toast";
 import Modal from "@/components/ui/Modal";
@@ -183,17 +183,16 @@ function FidelidadPageContent() {
         payload.clienteId = clienteSeleccionado.id;
       }
 
-      if (!supabase) {
-        showToast("Supabase no configurado", "error");
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke("send-push", {
-        body: payload,
+      const res = await authFetch("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
-      if (error) {
-        showToast("Error al enviar notificación", "error");
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast(data?.error || "Error al enviar notificación", "error");
       } else {
         const env = data?.enviadas ?? 0;
         const fall = data?.fallidas ?? 0;
