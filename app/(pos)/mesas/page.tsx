@@ -455,56 +455,97 @@ function MesasPageContent() {
 
   return (
     <div>
-      {/* ── Row 1: Title + admin actions ── */}
-      <div className="flex items-center justify-between mb-4">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-xl font-semibold text-text-100 tracking-tight">Mesas</h1>
-          <p className="text-sm text-text-45 mt-0.5">
-            {loading
-              ? "Cargando..."
-              : selectedZonaId
-                ? `${filteredMesas.length} mesas en ${currentZona?.nombre ?? "zona"}`
-                : `${mesas.length} mesas configuradas`}
-          </p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold text-text-100 tracking-[-0.02em]">Mesas</h1>
+            {!loading && (
+              <span className="text-[11px] font-medium text-text-45 bg-surface-2 px-2 py-0.5 rounded-md tabular-nums">
+                {selectedZonaId
+                  ? `${filteredMesas.length} en ${currentZona?.nombre ?? "zona"}`
+                  : `${mesas.length} total`}
+              </span>
+            )}
+          </div>
           {error && <p className="text-xs text-status-err mt-1">{error}</p>}
         </div>
 
-        {isAdmin && (
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          {/* Vista toggle */}
+          <div className="flex items-center gap-0.5 p-1 bg-surface-1 border border-border rounded-lg">
             <button
-              onClick={handleAddMesa}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg btn-primary text-[12px]"
+              onClick={() => setVista("grid")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all",
+                vista === "grid"
+                  ? "bg-surface-3 text-text-100 shadow-sm"
+                  : "text-text-45 hover:text-text-70"
+              )}
             >
-              <Plus size={15} />
-              Nueva mesa
+              <LayoutGrid size={13} />
+              Grid
             </button>
             <button
-              onClick={() => setZonaManagerOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-2 text-text-70 hover:bg-surface-3 transition-colors text-[12px]"
+              onClick={() => {
+                if (selectedZonaId === null && zonas.length > 0) {
+                  selectZona(zonas[0].id ?? null);
+                }
+                setVista("plano");
+              }}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all",
+                vista === "plano"
+                  ? "bg-surface-3 text-text-100 shadow-sm"
+                  : "text-text-45 hover:text-text-70"
+              )}
             >
-              <Settings2 size={14} />
-              Zonas
+              <Map size={13} />
+              Plano
             </button>
           </div>
-        )}
+
+          {isAdmin && (
+            <>
+              <button
+                onClick={() => setZonaManagerOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-1 border border-border text-text-70 hover:text-text-100 hover:border-border-hover transition-colors text-[12px] min-h-[36px]"
+              >
+                <Settings2 size={14} />
+                Zonas
+              </button>
+              <button
+                onClick={handleAddMesa}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg btn-primary text-[12px] min-h-[36px]"
+              >
+                <Plus size={14} />
+                Nueva mesa
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* ── Row 2: Zona tabs (izq) + vista toggle (der) ── */}
-      <div className="flex items-center justify-between mb-5">
-        {/* Zona tabs */}
-        <div className="flex items-center gap-1 p-1 bg-surface-2 rounded-xl overflow-x-auto">
-          {/* "Todas" solo en Grid — en Plano no tiene sentido mezclar zonas */}
+      {/* ── Zona filter tabs ── */}
+      {zonas.length > 0 && (
+        <div className="flex items-center gap-1.5 mb-5 overflow-x-auto pb-1 -mb-1">
           {vista === "grid" && (
             <button
               onClick={() => selectZona(null)}
               className={cn(
-                "px-3.5 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap min-h-[36px]",
+                "px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap min-h-[32px]",
                 selectedZonaId === null
-                  ? "bg-surface-4 text-text-100 shadow-sm"
-                  : "text-text-45 hover:text-text-70"
+                  ? "bg-accent-soft text-accent border border-accent/20"
+                  : "text-text-45 hover:text-text-70 hover:bg-surface-2 border border-transparent"
               )}
             >
               Todas
+              <span className={cn(
+                "ml-1.5 tabular-nums",
+                selectedZonaId === null ? "text-accent/70" : "text-text-25"
+              )}>
+                {mesas.length}
+              </span>
             </button>
           )}
           {zonas.map((zona) => {
@@ -515,74 +556,43 @@ function MesasPageContent() {
                 key={zona.id}
                 onClick={() => selectZona(zona.id ?? null)}
                 className={cn(
-                  "flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap min-h-[36px]",
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap min-h-[32px]",
                   isActive
-                    ? "bg-surface-4 text-text-100 shadow-sm"
-                    : "text-text-45 hover:text-text-70"
+                    ? "bg-surface-3 text-text-100 shadow-sm border border-border-hover"
+                    : "text-text-45 hover:text-text-70 hover:bg-surface-2 border border-transparent"
                 )}
-                style={isActive ? { borderBottom: `2px solid ${zona.color ?? "#94a3b8"}` } : undefined}
               >
                 <span
-                  className="w-2 h-2 rounded-full shrink-0"
+                  className="w-2.5 h-2.5 rounded-full shrink-0 ring-1 ring-white/10"
                   style={{ backgroundColor: zona.color ?? "#94a3b8" }}
                 />
                 {zona.nombre}
-                <span className="text-xs text-text-25 ml-0.5">{count}</span>
+                <span className={cn("tabular-nums", isActive ? "text-text-45" : "text-text-25")}>
+                  {count}
+                </span>
               </button>
             );
           })}
         </div>
+      )}
 
-        {/* Vista toggle con labels */}
-        <div className="flex items-center gap-0.5 p-1 bg-surface-2 rounded-lg shrink-0 ml-3">
-          <button
-            onClick={() => setVista("grid")}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all",
-              vista === "grid"
-                ? "bg-surface-4 text-text-100 shadow-sm"
-                : "text-text-45 hover:text-text-70"
-            )}
-          >
-            <LayoutGrid size={14} />
-            Grid
-          </button>
-          <button
-            onClick={() => {
-              // Al cambiar a Plano, forzar una zona si está en "Todas"
-              if (selectedZonaId === null && zonas.length > 0) {
-                selectZona(zonas[0].id ?? null);
-              }
-              setVista("plano");
-            }}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all",
-              vista === "plano"
-                ? "bg-surface-4 text-text-100 shadow-sm"
-                : "text-text-45 hover:text-text-70"
-            )}
-          >
-            <Map size={14} />
-            Plano
-          </button>
-        </div>
-      </div>
-
-      {/* ── Loading ── */}
+      {/* ── Loading skeleton ── */}
       {loading && (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-text-45" />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 animate-pulse">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-[160px] rounded-xl bg-surface-2 border border-border" />
+          ))}
         </div>
       )}
 
       {/* ── Banner: mesas estancadas ── */}
       {!loading && staleMesas.length > 0 && (
         <div
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg mb-4 text-sm"
+          className="flex items-center gap-2.5 px-4 py-3 rounded-xl mb-4 text-sm"
           style={{
-            backgroundColor: "color-mix(in srgb, var(--err) 10%, var(--surface-1))",
+            backgroundColor: "color-mix(in srgb, var(--err) 8%, var(--surface-1))",
             color: "var(--err)",
-            border: "1px solid color-mix(in srgb, var(--err) 25%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--err) 20%, transparent)",
           }}
         >
           <AlertTriangle size={16} className="shrink-0" />
@@ -597,27 +607,28 @@ function MesasPageContent() {
 
       {/* ── Vista: Grid ── */}
       {!loading && vista === "grid" && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           <AnimatePresence mode="popLayout">
-            {filteredMesas.map((mesa) => {
+            {filteredMesas.map((mesa, index) => {
               const config =
                 ESTADO_MESA_CONFIG[mesa.estado as EstadoMesaKey] ??
                 ESTADO_MESA_CONFIG.disponible;
               const isStale = mesa.ocupada_desde &&
                 (mesa.estado === "ocupada" || mesa.estado === "reservada") &&
                 getLevel(getMins(mesa.ocupada_desde)) === "err";
+              const zonaColor = zonas.find((z) => z.id === mesa.zona_id)?.color;
               return (
                 <motion.button
                   key={mesa.id}
                   layout
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.7, filter: "blur(4px)" }}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
                   transition={{
                     layout: { type: "spring", stiffness: 350, damping: 30 },
-                    opacity: { duration: 0.25 },
-                    scale: { duration: 0.25 },
-                    filter: { duration: 0.2 },
+                    opacity: { duration: 0.3, delay: index * 0.03 },
+                    y: { duration: 0.3, delay: index * 0.03, ease: [0.16, 1, 0.3, 1] },
+                    filter: { duration: 0.15 },
                   }}
                   onClick={() => handleClickMesa(mesa as Mesa)}
                   onContextMenu={(e) => handleRightClick(e, mesa as Mesa)}
@@ -625,62 +636,71 @@ function MesasPageContent() {
                   onTouchEnd={handleTouchEnd}
                   onTouchMove={handleTouchMove}
                   className={cn(
-                    "relative p-5 rounded-xl bg-surface-2 border border-border text-center cursor-pointer min-h-[44px]",
-                    "hover:border-border-hover hover:-translate-y-1 hover:shadow-md transition-[border-color,box-shadow,transform] duration-300",
+                    "relative flex flex-col items-center justify-center p-5 rounded-xl",
+                    "bg-surface-1 border border-border cursor-pointer min-h-[160px]",
+                    "hover:border-border-hover hover:-translate-y-0.5 transition-all duration-200 ease-smooth group",
                     isStale && "mesa-stale-pulse border-status-err"
                   )}
+                  style={{
+                    /* Decisión: sombra con tint del color de estado en hover */
+                    boxShadow: isStale
+                      ? `0 0 20px color-mix(in srgb, var(${config.cssVar}) 15%, transparent)`
+                      : undefined,
+                  }}
                 >
-                  {/* Top color indicator */}
+                  {/* Decisión: borde lateral izquierdo grueso = estado visible instantáneamente */}
                   <div
-                    className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-b-full"
+                    className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full"
                     style={{ backgroundColor: `var(${config.cssVar})` }}
                   />
 
-                  {/* Number */}
+                  {/* Zona dot — esquina superior derecha */}
+                  {selectedZonaId === null && zonaColor && (
+                    <div
+                      className="absolute top-3 right-3 w-2 h-2 rounded-full ring-1 ring-white/10"
+                      style={{ backgroundColor: zonaColor }}
+                      title={zonas.find((z) => z.id === mesa.zona_id)?.nombre}
+                    />
+                  )}
+
+                  {/* Stale icon */}
+                  {isStale && (
+                    <div className="absolute top-3 right-3">
+                      <AlertTriangle size={14} className="text-status-err animate-pulse" />
+                    </div>
+                  )}
+
+                  {/* Número — protagonista */}
                   <div
                     className={cn(
-                      "text-3xl font-bold mb-2 tracking-tight tabular-nums",
+                      "text-[2.5rem] font-bold tracking-[-0.04em] leading-none tabular-nums",
+                      "group-hover:scale-105 transition-transform duration-200",
                       config.tailwind
                     )}
                   >
                     {mesa.numero}
                   </div>
 
-                  {/* Capacity */}
-                  <div className="flex items-center justify-center gap-1.5 text-text-45 mb-3">
-                    <Users size={12} />
-                    <span className="text-[11px]">{mesa.capacidad} personas</span>
+                  {/* Capacidad */}
+                  <div className="flex items-center gap-1 mt-2 text-text-45">
+                    <Users size={11} />
+                    <span className="text-[11px] font-medium">{mesa.capacidad}</span>
                   </div>
 
-                  {/* Timer — solo cuando ocupada/reservada */}
+                  {/* Timer — integrado, no como badge suelto */}
                   {mesa.ocupada_desde &&
                     (mesa.estado === "ocupada" || mesa.estado === "reservada") && (
-                      <div className="mb-2">
+                      <div className="mt-2.5">
                         <MesaTimer ocupadaDesde={mesa.ocupada_desde} variant="badge" />
                       </div>
                     )}
 
-                  {/* Zona label */}
-                  {selectedZonaId === null && (
-                    <div className="text-xs text-text-25 mb-3 uppercase tracking-wider">
-                      {zonas.find((z) => z.id === mesa.zona_id)?.nombre ??
-                        mesa.ubicacion ??
-                        "Sin zona"}
-                    </div>
-                  )}
-
-                  {/* Status pill */}
-                  <div
-                    className={cn(
-                      "inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full",
-                      config.bg,
-                      config.tailwind
-                    )}
-                  >
-                    <span
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{ backgroundColor: `var(${config.cssVar})` }}
-                    />
+                  {/* Status label — abajo, sutil */}
+                  <div className={cn(
+                    "mt-auto pt-3 text-[10px] font-semibold uppercase tracking-[0.08em]",
+                    config.tailwind,
+                    "opacity-60 group-hover:opacity-100 transition-opacity"
+                  )}>
                     {config.label}
                   </div>
                 </motion.button>
@@ -708,22 +728,27 @@ function MesasPageContent() {
 
       {/* ── Empty state ── */}
       {!loading && mesas.length === 0 && (
-        <div className="text-center py-20 text-text-45">
-          <p className="text-sm">No hay mesas configuradas</p>
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-surface-2 border border-border flex items-center justify-center mb-4">
+            <LayoutGrid size={24} className="text-text-25" />
+          </div>
+          <p className="text-sm font-medium text-text-70 mb-1">No hay mesas configuradas</p>
+          <p className="text-xs text-text-25 mb-5">Agrega tu primera mesa para empezar</p>
           {isAdmin && (
             <button
               onClick={handleAddMesa}
-              className="mt-2 text-xs text-accent hover:underline"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg btn-primary text-xs"
             >
-              + Agrega tu primera mesa
+              <Plus size={14} />
+              Nueva mesa
             </button>
           )}
         </div>
       )}
 
-      {/* ── Status summary ── */}
+      {/* ── Status summary — pills compactas ── */}
       {!loading && mesas.length > 0 && (
-        <div className="flex items-center gap-6 mt-8 pt-6 border-t border-border">
+        <div className="flex items-center gap-3 mt-6 pt-5 border-t border-border">
           {(
             Object.entries(ESTADO_MESA_CONFIG) as [
               string,
@@ -732,15 +757,16 @@ function MesasPageContent() {
           ).map(([key, config]) => {
             const count = mesas.filter((m) => m.estado === key).length;
             return (
-              <div key={key} className="flex items-center gap-2">
+              <div
+                key={key}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-1 border border-border"
+              >
                 <span
-                  className="w-2.5 h-2.5 rounded-full"
+                  className="w-2 h-2 rounded-full"
                   style={{ backgroundColor: `var(${config.cssVar})` }}
                 />
-                <span className="text-xs text-text-70">
-                  {config.label}:{" "}
-                  <span className="font-semibold text-text-100">{count}</span>
-                </span>
+                <span className="text-[11px] text-text-45">{config.label}</span>
+                <span className="text-[11px] font-semibold text-text-100 tabular-nums">{count}</span>
               </div>
             );
           })}
