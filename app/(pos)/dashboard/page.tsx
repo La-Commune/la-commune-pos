@@ -152,27 +152,26 @@ function AlertBanner({
   if (active.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2 py-1 -my-1">
       {active.map((alert) => (
         <button
           key={alert.label}
           onClick={alert.onClick}
           className={cn(
-            "inline-flex items-center gap-2 px-3.5 py-2 rounded-lg",
+            "inline-flex items-center gap-2 pl-4 pr-3.5 py-2 rounded-lg",
             "border transition-all duration-200 group",
             "hover:scale-[1.02] active:scale-[0.98]",
             alert.color,
           )}
         >
-          {/* Decisión: dot pulsante para urgencia — más sutil que un icono grande */}
-          <span className="relative flex h-2 w-2">
+          <span className="relative flex h-2 w-2 shrink-0">
             <span className={cn(
-              "absolute inset-0 rounded-full opacity-75 animate-ping",
-              alert.count > 3 ? "bg-current" : "bg-transparent",
+              "absolute inset-[-3px] rounded-full opacity-40",
+              alert.count > 3 ? "bg-current animate-ping" : "bg-transparent",
             )} />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-current" />
           </span>
-          <alert.icon size={14} />
+          <alert.icon size={14} className="shrink-0" />
           <span className="text-xs font-semibold">{alert.count}</span>
           <span className="text-xs font-medium opacity-80">{alert.label}</span>
         </button>

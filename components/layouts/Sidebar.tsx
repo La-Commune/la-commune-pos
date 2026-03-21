@@ -50,7 +50,7 @@ export const ROLE_HOME: Record<RolUsuario, string> = {
 };
 
 export const navItems = [
-  { href: "/", label: "Inicio", icon: Home, color: "#A89680" },
+  { href: "/dashboard", label: "Inicio", icon: Home, color: "#A89680" },
   { href: "/mesas", label: "Mesas", icon: LayoutGrid, color: "#7EC8E3" },
   { href: "/ordenes", label: "Órdenes", icon: ClipboardList, color: "#9B8AFB" },
   { href: "/menu", label: "Menú", icon: UtensilsCrossed, color: "#81D4A8" },

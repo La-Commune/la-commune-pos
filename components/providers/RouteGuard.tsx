@@ -8,6 +8,7 @@ import type { RolUsuario } from "@/types/database";
 /* Role-based access: which roles can see which routes */
 const ROLE_ACCESS: Record<string, RolUsuario[]> = {
   "/": ["admin", "camarero", "barista", "cocina"],
+  "/dashboard": ["admin", "camarero", "barista", "cocina"],
   "/mesas": ["admin", "camarero", "barista"],
   "/ordenes": ["admin", "camarero", "barista"],
   "/menu": ["admin"],
@@ -21,9 +22,9 @@ const ROLE_ACCESS: Record<string, RolUsuario[]> = {
 };
 
 const ROLE_HOME: Record<RolUsuario, string> = {
-  admin: "/",
-  camarero: "/",
-  barista: "/",
+  admin: "/dashboard",
+  camarero: "/dashboard",
+  barista: "/dashboard",
   cocina: "/kds",
 };
 
