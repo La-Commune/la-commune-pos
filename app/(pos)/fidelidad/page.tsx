@@ -17,6 +17,8 @@ import {
   Bell,
   Send,
   Megaphone,
+  Palette,
+  Check,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import { useClientes, insertRecordReturning, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
@@ -27,6 +29,22 @@ import { showToast } from "@/components/ui/Toast";
 import Modal from "@/components/ui/Modal";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useSearch } from "@/hooks/useSearch";
+
+/** Catálogo de ilustraciones para la stamp card del cliente */
+const ILUSTRACIONES: { id: string; name: string; category: string; emoji: string }[] = [
+  { id: "flat-white-cenital", name: "Flat White", category: "Tazas", emoji: "☕" },
+  { id: "latte-lateral", name: "Latte Lateral", category: "Tazas", emoji: "☕" },
+  { id: "cappuccino-cenital", name: "Cappuccino", category: "Tazas", emoji: "☕" },
+  { id: "espresso-shot", name: "Espresso Shot", category: "Tazas", emoji: "☕" },
+  { id: "cupcake", name: "Cupcake", category: "Postres", emoji: "🧁" },
+  { id: "rebanada-pastel", name: "Rebanada Pastel", category: "Postres", emoji: "🍰" },
+  { id: "tag-descuento", name: "Tag Descuento", category: "Descuento", emoji: "%" },
+  { id: "monedas", name: "Monedas", category: "Descuento", emoji: "🪙" },
+  { id: "grano-cenital", name: "Grano de Café", category: "Universal", emoji: "🫘" },
+  { id: "grano-aroma", name: "Grano Aroma", category: "Universal", emoji: "🫘" },
+  { id: "cold-brew", name: "Cold Brew", category: "Bebida Especial", emoji: "🧋" },
+  { id: "matcha-latte", name: "Matcha Latte", category: "Bebida Especial", emoji: "🍵" },
+];
 
 interface Cliente {
   id: string;
@@ -67,6 +85,9 @@ function FidelidadPageContent() {
   const [canjeando, setCanjando] = useState(false);
   const [modalNotificacion, setModalNotificacion] = useState<"individual" | "broadcast" | null>(null);
   const [enviandoNotif, setEnviandoNotif] = useState(false);
+  const [modalIlustracion, setModalIlustracion] = useState(false);
+  const [ilustracionActual, setIlustracionActual] = useState("flat-white-cenital");
+  const [guardandoIlustracion, setGuardandoIlustracion] = useState(false);
   // Push subscriptions: mapa de cliente_id → cantidad de dispositivos activos
   const [pushSubs, setPushSubs] = useState<Record<string, number>>({});
   const [totalPushSubs, setTotalPushSubs] = useState(0);
@@ -111,6 +132,45 @@ function FidelidadPageContent() {
     const sub = subscribeToTable("push_subscriptions" as any, () => fetchPushSubs());
     return () => sub.unsubscribe();
   }, [fetchPushSubs]);
+
+  // Cargar ilustración actual de la recompensa default
+  useEffect(() => {
+    if (!supabase || !user?.negocio_id) return;
+    (supabase
+      .from("recompensas")
+      .select("ilustracion")
+      .eq("negocio_id", user.negocio_id)
+      .eq("es_default", true)
+      .limit(1)
+      .maybeSingle() as unknown as Promise<{ data: { ilustracion?: string } | null }>)
+      .then(({ data }) => {
+        if (data?.ilustracion) setIlustracionActual(data.ilustracion);
+      });
+  }, [user?.negocio_id]);
+
+  // Cambiar ilustración de la recompensa default
+  const handleCambiarIlustracion = async (id: string) => {
+    if (!supabase || !user?.negocio_id) return;
+    setGuardandoIlustracion(true);
+    try {
+      const { error } = await supabase
+        .from("recompensas")
+        .update({ ilustracion: id, actualizado_en: new Date().toISOString() })
+        .eq("negocio_id", user.negocio_id)
+        .eq("es_default", true);
+      if (error) {
+        showToast("Error al cambiar ilustración", "error");
+      } else {
+        setIlustracionActual(id);
+        showToast("Ilustración actualizada", "success");
+        setModalIlustracion(false);
+      }
+    } catch {
+      showToast("Error de conexión", "error");
+    } finally {
+      setGuardandoIlustracion(false);
+    }
+  };
 
   // Sync selected client with realtime data
   useEffect(() => {
@@ -263,6 +323,13 @@ function FidelidadPageContent() {
                 {totalPushSubs}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => setModalIlustracion(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl btn-ghost text-[13px] min-h-[44px] border border-border"
+          >
+            <Palette size={16} />
+            Ilustración
           </button>
           <button
             onClick={() => setModalNuevoCliente(true)}
@@ -617,6 +684,59 @@ function FidelidadPageContent() {
           </div>
         </Modal>
       )}
+
+      {/* Modal selector de ilustración */}
+      <Modal open={modalIlustracion} onClose={() => setModalIlustracion(false)} title="Ilustración de la tarjeta">
+        <div className="space-y-4">
+          <p className="text-xs text-text-25">
+            Elige cómo se verá la tarjeta de sellos de tus clientes. El cambio se aplica a todas las tarjetas activas.
+          </p>
+          {/* Agrupado por categoría */}
+          {(() => {
+            const categorias = Array.from(new Set(ILUSTRACIONES.map((i) => i.category)));
+            return categorias.map((cat) => (
+              <div key={cat}>
+                <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">{cat}</span>
+                <div className="grid grid-cols-4 gap-2">
+                  {ILUSTRACIONES.filter((i) => i.category === cat).map((ilu) => {
+                    const isSelected = ilustracionActual === ilu.id;
+                    return (
+                      <button
+                        key={ilu.id}
+                        onClick={() => handleCambiarIlustracion(ilu.id)}
+                        disabled={guardandoIlustracion}
+                        className={cn(
+                          "relative flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-300 min-h-[80px]",
+                          isSelected
+                            ? "border-accent bg-accent-soft ring-2 ring-accent/20"
+                            : "border-border bg-surface-3 hover:border-border-hover hover:bg-surface-2",
+                          guardandoIlustracion && "opacity-50 cursor-not-allowed",
+                        )}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-accent flex items-center justify-center">
+                            <Check size={10} className="text-white" />
+                          </div>
+                        )}
+                        <span className="text-2xl">{ilu.emoji}</span>
+                        <span className="text-[10px] text-text-45 text-center leading-tight">{ilu.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ));
+          })()}
+          <div className="pt-3 border-t border-border">
+            <button
+              onClick={() => setModalIlustracion(false)}
+              className="w-full py-2.5 rounded-xl btn-ghost text-[13px] min-h-[44px]"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
