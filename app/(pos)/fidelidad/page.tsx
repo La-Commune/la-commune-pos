@@ -30,8 +30,14 @@ import Modal from "@/components/ui/Modal";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useSearch } from "@/hooks/useSearch";
 
+/** IDs válidos de ilustración — debe coincidir con el catálogo del frontend */
+type IlustracionId =
+  | "flat-white-cenital" | "latte-lateral" | "cappuccino-cenital" | "espresso-shot"
+  | "cupcake" | "rebanada-pastel" | "tag-descuento" | "monedas"
+  | "grano-cenital" | "grano-aroma" | "cold-brew" | "matcha-latte";
+
 /** Catálogo de ilustraciones para la stamp card del cliente */
-const ILUSTRACIONES: { id: string; name: string; category: string; emoji: string }[] = [
+const ILUSTRACIONES: { id: IlustracionId; name: string; category: string; emoji: string }[] = [
   { id: "flat-white-cenital", name: "Flat White", category: "Tazas", emoji: "☕" },
   { id: "latte-lateral", name: "Latte Lateral", category: "Tazas", emoji: "☕" },
   { id: "cappuccino-cenital", name: "Cappuccino", category: "Tazas", emoji: "☕" },
@@ -45,6 +51,9 @@ const ILUSTRACIONES: { id: string; name: string; category: string; emoji: string
   { id: "cold-brew", name: "Cold Brew", category: "Bebida Especial", emoji: "🧋" },
   { id: "matcha-latte", name: "Matcha Latte", category: "Bebida Especial", emoji: "🍵" },
 ];
+
+/** Categorías pre-calculadas (evita recalcular Set en cada render) */
+const ILUSTRACION_CATEGORIAS = Array.from(new Set(ILUSTRACIONES.map((i) => i.category)));
 
 interface Cliente {
   id: string;
@@ -86,7 +95,7 @@ function FidelidadPageContent() {
   const [modalNotificacion, setModalNotificacion] = useState<"individual" | "broadcast" | null>(null);
   const [enviandoNotif, setEnviandoNotif] = useState(false);
   const [modalIlustracion, setModalIlustracion] = useState(false);
-  const [ilustracionActual, setIlustracionActual] = useState("flat-white-cenital");
+  const [ilustracionActual, setIlustracionActual] = useState<IlustracionId>("flat-white-cenital");
   const [guardandoIlustracion, setGuardandoIlustracion] = useState(false);
   // Push subscriptions: mapa de cliente_id → cantidad de dispositivos activos
   const [pushSubs, setPushSubs] = useState<Record<string, number>>({});
@@ -144,12 +153,14 @@ function FidelidadPageContent() {
       .limit(1)
       .maybeSingle() as unknown as Promise<{ data: { ilustracion?: string } | null }>)
       .then(({ data }) => {
-        if (data?.ilustracion) setIlustracionActual(data.ilustracion);
+        if (data?.ilustracion && ILUSTRACIONES.some((i) => i.id === data.ilustracion)) {
+          setIlustracionActual(data.ilustracion as IlustracionId);
+        }
       });
   }, [user?.negocio_id]);
 
   // Cambiar ilustración de la recompensa default
-  const handleCambiarIlustracion = async (id: string) => {
+  const handleCambiarIlustracion = async (id: IlustracionId) => {
     if (!supabase || !user?.negocio_id) return;
     setGuardandoIlustracion(true);
     try {
@@ -693,8 +704,7 @@ function FidelidadPageContent() {
           </p>
           {/* Agrupado por categoría */}
           {(() => {
-            const categorias = Array.from(new Set(ILUSTRACIONES.map((i) => i.category)));
-            return categorias.map((cat) => (
+            return ILUSTRACION_CATEGORIAS.map((cat) => (
               <div key={cat}>
                 <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">{cat}</span>
                 <div className="grid grid-cols-4 gap-2">
