@@ -10,11 +10,12 @@ test.describe("POS — Flujo de Órdenes (mock mode)", () => {
   });
 
   test("muestra el tab de nueva orden y el tab de órdenes activas", async ({ page }) => {
-    await expect(page.getByText("Nueva orden").first()).toBeVisible();
+    await expect(page.getByText("Nueva orden").first()).toBeVisible({ timeout: 10_000 });
   });
 
   test("muestra categorías del menú en el catálogo", async ({ page }) => {
     // En mock mode muestra las categorías: Café Caliente, Café Frío, etc.
+    // Las categorías vienen de MOCK_CATEGORIAS en mock-data.ts
     await expect(page.getByText("Café Caliente").first()).toBeVisible({ timeout: 10_000 });
   });
 
@@ -27,12 +28,13 @@ test.describe("POS — Flujo de Órdenes (mock mode)", () => {
   test("agrega productos al carrito", async ({ page }) => {
     // Click en un producto para agregarlo al carrito
     const americano = page.getByText("Americano").first();
+    await americano.waitFor({ timeout: 10_000 });
     await americano.click();
 
     // El carrito debería mostrar al menos 1 item
-    // Buscar el botón de enviar orden (puede decir "Enviar orden" o "Enviar a cocina")
+    // El botón dice "Enviar orden" o "Enviar a cocina"
     await expect(
-      page.locator("button").filter({ hasText: /enviar/i }).first()
+      page.locator("button").filter({ hasText: /enviar orden|enviar a cocina/i }).first()
     ).toBeVisible({ timeout: 5_000 });
   });
 

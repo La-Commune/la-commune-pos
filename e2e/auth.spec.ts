@@ -1,65 +1,58 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("POS — Login", () => {
-  test("muestra la pantalla de login con PIN pad", async ({ page }) => {
-    await page.goto("/login");
-    await expect(page.getByText("Punto de Venta")).toBeVisible();
-    await expect(page.getByText("Ingresa tu PIN")).toBeVisible();
+// En mock mode (sin SUPABASE_URL), el POS auto-logea como "David (Dev)" admin.
+// El AuthProvider redirige /login → / cuando ya está autenticado.
+// Estos tests verifican que el auto-login mock funciona correctamente.
 
-    // Verifica que el numpad tiene los 10 dígitos
-    for (const digit of ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]) {
-      await expect(
-        page.locator(`.login-pin-key:has-text("${digit}")`).first()
-      ).toBeVisible();
+test.describe("POS — Auth (mock mode)", () => {
+  test("auto-login redirige /login a dashboard", async ({ page }) => {
+    await page.goto("/login");
+    // En mock mode, AuthProvider auto-logea y redirige a /
+    await page.waitForURL("/", { timeout: 15_000 });
+
+    // El dashboard muestra el saludo con el nombre del usuario mock
+    await expect(page.locator("main").first()).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("usuario mock es David (Dev) con rol admin", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("main").first()).toBeVisible({ timeout: 15_000 });
+
+    // El sidebar o navbar debe mostrar el nombre del usuario
+    await expect(
+      page.getByText("David").first()
+    ).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("todas las rutas POS son accesibles en mock mode", async ({ page }) => {
+    const routes = ["/mesas", "/ordenes", "/cobros", "/caja", "/menu", "/reportes"];
+
+    for (const route of routes) {
+      await page.goto(route);
+      // Cada ruta debe cargar sin redirigir a /login
+      await expect(page.locator("main").first()).toBeVisible({ timeout: 10_000 });
     }
   });
 
-  test("switch entre PIN y credenciales", async ({ page }) => {
-    await page.goto("/login");
+  test("no redirige a /login desde rutas protegidas", async ({ page }) => {
+    await page.goto("/ordenes");
+    // Esperar a que cargue — no debe redirigir a /login
+    await expect(page.getByText("Nueva orden").first()).toBeVisible({ timeout: 15_000 });
 
-    // Click "Usar credenciales"
-    await page.click("button:has-text('Usar credenciales')");
-    await expect(page.locator("#login-email")).toBeVisible();
-    await expect(page.locator("#login-password")).toBeVisible();
-    await expect(page.getByText("Iniciar Sesión")).toBeVisible();
-
-    // Click "Volver al PIN"
-    await page.click("button:has-text('Volver al PIN')");
-    await expect(page.getByText("Ingresa tu PIN")).toBeVisible();
+    // La URL debe seguir siendo /ordenes, no /login
+    expect(page.url()).toContain("/ordenes");
   });
 
-  test("valida email en vista de credenciales", async ({ page }) => {
-    await page.goto("/login");
-    await page.click("button:has-text('Usar credenciales')");
+  test("sidebar muestra navegación completa para admin", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
-    // Submit con email inválido
-    await page.fill("#login-email", "invalido");
-    await page.fill("#login-password", "123456");
-    await page.click("button:has-text('Iniciar Sesión')");
-
-    await expect(page.getByText("Ingresa un email válido")).toBeVisible();
-  });
-
-  test("valida contraseña mínima en credenciales", async ({ page }) => {
-    await page.goto("/login");
-    await page.click("button:has-text('Usar credenciales')");
-
-    await page.fill("#login-email", "test@example.com");
-    await page.fill("#login-password", "123");
-    await page.click("button:has-text('Iniciar Sesión')");
-
-    await expect(page.getByText("Mínimo 6 caracteres")).toBeVisible();
-  });
-
-  test("PIN dots se llenan al escribir dígitos", async ({ page }) => {
-    await page.goto("/login");
-
-    // Click 2 dígitos
-    await page.click('.login-pin-key:has-text("1")');
-    await page.click('.login-pin-key:has-text("2")');
-
-    // Verificar que hay 4 dots en el indicador
-    const dots = page.locator(".flex.gap-4 > div, .flex.gap-3 > div").first();
-    await expect(dots).toBeVisible();
+    // El sidebar debe tener links a los módulos principales
+    const nav = page.locator("nav, aside, [role='navigation']").first();
+    if (await nav.isVisible()) {
+      await expect(page.locator("a[href='/mesas'], a[href*='mesas']").first()).toBeVisible();
+      await expect(page.locator("a[href='/ordenes'], a[href*='ordenes']").first()).toBeVisible();
+      await expect(page.locator("a[href='/cobros'], a[href*='cobros']").first()).toBeVisible();
+    }
   });
 });

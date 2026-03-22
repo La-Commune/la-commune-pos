@@ -6,8 +6,11 @@ import { test, expect } from "@playwright/test";
 test.describe("POS — Navegación (mock mode)", () => {
   test("carga el dashboard en modo mock", async ({ page }) => {
     await page.goto("/");
-    // Dashboard muestra KPIs del día — buscar por heading o contenido principal
-    await expect(page.locator("h1, h2, [role='heading']").filter({ hasText: /inicio|dashboard/i }).first()).toBeVisible({ timeout: 10_000 });
+    // Dashboard muestra un saludo dinámico: "Buenos días/tardes/noches, David"
+    // y la sección de "Accesos rápidos"
+    await expect(
+      page.getByText("Accesos rápidos").first()
+    ).toBeVisible({ timeout: 15_000 });
   });
 
   test("navega al módulo de mesas", async ({ page }) => {
