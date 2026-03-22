@@ -96,7 +96,7 @@ function PinView({
             setVerifying(false);
             if (ok) {
               setSuccess(true);
-              setTimeout(() => router.push("/mesas"), 1200);
+              setTimeout(() => router.push("/"), 1200);
             } else {
               setError(true);
               setTimeout(() => {
@@ -302,7 +302,7 @@ function CredentialsView({ onBack }: { onBack: () => void }) {
     const success = await login(email, password);
     if (success) {
       setSubmitState("success");
-      setTimeout(() => router.push("/mesas"), 1200);
+      setTimeout(() => router.push("/"), 1200);
     } else {
       setSubmitState("idle");
     }

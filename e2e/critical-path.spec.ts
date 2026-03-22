@@ -11,11 +11,6 @@ test.describe("POS — Flujo Crítico Completo (mock mode)", () => {
     // 1. Dashboard carga correctamente — buscar el nombre del usuario mock
     await page.goto("/");
     await expect(page.getByText("David").first()).toBeVisible({ timeout: 15_000 });
-
-    // Diagnóstico: capturar el contenido de main para entender qué se renderiza
-    const mainContent = await page.locator("main").first().textContent().catch(() => "NO MAIN FOUND");
-    console.log("[DIAG] main content:", mainContent?.substring(0, 500));
-
     // KPIs siempre se renderizan (muestran "..." durante carga)
     await expect(page.getByText("Ventas hoy").first()).toBeVisible({ timeout: 10_000 });
 
