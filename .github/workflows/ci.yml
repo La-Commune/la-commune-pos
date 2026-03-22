@@ -11,6 +11,9 @@ name: CI / Deploy
 # Cuando se cree, actualizar NETLIFY_SITE_ID con el ID correcto.
 # ═══════════════════════════════════════════════════════════════
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [main, development]
