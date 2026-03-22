@@ -1,8 +1,11 @@
-name: CI / Deploy — POS
+name: CI / Deploy
 
 # ═══════════════════════════════════════════════════════════════
-# Push/PR a main o development → corre tests automáticamente
-# workflow_dispatch (manual) → corre tests + merge + deploy
+# Automático: Push/PR a main o development → corre tests
+#             Push a main → además mergea main → development
+#
+# Manual:     workflow_dispatch desde development →
+#             Tests → merge development → production → Deploy Netlify
 #
 # NOTA: El POS aún NO tiene sitio de producción en Netlify.
 # Cuando se cree, actualizar NETLIFY_SITE_ID con el ID correcto.
@@ -125,12 +128,12 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
-  # ── 4. Merge main → development (solo deploy manual) ────
-  merge-to-development:
-    name: Merge main → development
+  # ── 4. Auto-merge main → development (solo en push a main)
+  auto-merge-to-development:
+    name: Auto-merge main → development
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.skip_tests == 'true' || (needs.typecheck.result == 'success' && needs.unit-tests.result == 'success' && needs.e2e-tests.result == 'success')) }}
     needs: [typecheck, unit-tests, e2e-tests]
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -142,7 +145,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin
           git checkout development
-          git merge origin/main --no-edit -m "ci: merge main → development (deploy #${{ github.run_number }})"
+          git merge origin/main --no-edit -m "ci: auto-merge main → development (#${{ github.run_number }})"
           git push origin development
 
   # ── 5. Merge development → production (solo deploy manual)
@@ -150,7 +153,7 @@ jobs:
     name: Merge development → production
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' }}
-    needs: [merge-to-development]
+    needs: [typecheck, unit-tests, e2e-tests]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -176,7 +179,7 @@ jobs:
         run: |
           if [ -z "${{ env.NETLIFY_SITE_ID }}" ]; then
             echo "::error::NETLIFY_SITE_ID no está configurado. El POS aún no tiene sitio de producción en Netlify."
-            echo "Tests pasaron ✅ y merges completados (main → development → production), pero no se puede desplegar sin sitio."
+            echo "Tests pasaron ✅ y merge a production completado, pero no se puede desplegar sin sitio."
             exit 1
           fi
       - uses: actions/checkout@v4
