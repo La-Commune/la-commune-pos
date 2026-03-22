@@ -2,9 +2,9 @@ name: CI — POS
 
 on:
   push:
-    branches: [main, develop, production]
+    branches: [main, development]
   pull_request:
-    branches: [main, develop, production]
+    branches: [main, development]
 
 jobs:
   lint-and-typecheck:
@@ -48,7 +48,6 @@ jobs:
   e2e-tests:
     name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/main'
     needs: [lint-and-typecheck, unit-tests]
     steps:
       - uses: actions/checkout@v4
