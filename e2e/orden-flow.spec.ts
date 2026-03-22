@@ -21,6 +21,11 @@ test.describe("POS — Flujo de Órdenes (mock mode)", () => {
     const tabNueva = page.locator("button").filter({ hasText: /nueva orden/i }).first();
     await tabNueva.click();
 
+    // Seleccionar origen "Para llevar" para avanzar al catálogo de productos
+    const paraLlevar = page.locator("button").filter({ hasText: /para llevar/i }).first();
+    await paraLlevar.waitFor({ timeout: 10_000 });
+    await paraLlevar.click();
+
     // En mock mode muestra las categorías: Café Caliente, Café Frío, etc.
     await expect(page.getByText("Café Caliente").first()).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText("Todas").first()).toBeVisible();
@@ -31,6 +36,11 @@ test.describe("POS — Flujo de Órdenes (mock mode)", () => {
     const tabNueva = page.locator("button").filter({ hasText: /nueva orden/i }).first();
     await tabNueva.click();
 
+    // Seleccionar origen "Para llevar" para avanzar al catálogo de productos
+    const paraLlevar = page.locator("button").filter({ hasText: /para llevar/i }).first();
+    await paraLlevar.waitFor({ timeout: 10_000 });
+    await paraLlevar.click();
+
     // Productos mock: Americano, Latte, Cappuccino, etc.
     await expect(page.getByText("Americano").first()).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText("Latte").first()).toBeVisible();
@@ -40,6 +50,11 @@ test.describe("POS — Flujo de Órdenes (mock mode)", () => {
     // Cambiar al tab "Nueva orden"
     const tabNueva = page.locator("button").filter({ hasText: /nueva orden/i }).first();
     await tabNueva.click();
+
+    // Seleccionar origen "Para llevar" para avanzar al catálogo de productos
+    const paraLlevar = page.locator("button").filter({ hasText: /para llevar/i }).first();
+    await paraLlevar.waitFor({ timeout: 10_000 });
+    await paraLlevar.click();
 
     // Click en un producto para agregarlo
     const americano = page.getByText("Americano").first();

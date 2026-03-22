@@ -25,6 +25,11 @@ test.describe("POS — Flujo Crítico Completo (mock mode)", () => {
     const tabNueva = page.locator("button").filter({ hasText: /nueva orden/i }).first();
     await tabNueva.click();
 
+    // Seleccionar origen "Para llevar" para avanzar al catálogo de productos
+    const paraLlevar = page.locator("button").filter({ hasText: /para llevar/i }).first();
+    await paraLlevar.waitFor({ timeout: 10_000 });
+    await paraLlevar.click();
+
     // Verificar que hay productos mock disponibles
     await expect(page.getByText("Americano").first()).toBeVisible({ timeout: 10_000 });
 
