@@ -11,7 +11,7 @@ test.describe("POS — Flujo Crítico Completo (mock mode)", () => {
   test("navega por todos los módulos del flujo principal", async ({ page }) => {
     // 1. Dashboard carga correctamente
     await page.goto("/");
-    await expect(page.locator("main").first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Accesos rápidos").first()).toBeVisible({ timeout: 15_000 });
 
     // 2. Navegar a Caja — pantalla de abrir turno
     await page.goto("/caja");
