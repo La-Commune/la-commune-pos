@@ -131,7 +131,7 @@ function DashboardContent() {
   const { data: inventario } = useInventario();
   const [ventasHoy, setVentasHoy] = useState(0);
   const [ordenesHoyCount, setOrdenesHoyCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!USE_MOCK);
 
   // Cargar ventas de hoy desde pagos
   const cargarVentas = async () => {
