@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { verifyApiAuth } from "@/lib/api-auth";
 
 // Schema de validación para acciones de sync
 const SyncActionSchema = z.object({
@@ -19,8 +20,13 @@ const SyncRequestSchema = z.object({
 });
 
 // POST /api/sync — procesa acciones offline pendientes
+// Requiere: JWT válido (cualquier rol autenticado)
 export async function POST(request: Request) {
   try {
+    // Verificar que el caller esté autenticado
+    const auth = await verifyApiAuth(request);
+    if (!auth.ok) return auth.response;
+
     const body = await request.json();
 
     // Validar estructura del request

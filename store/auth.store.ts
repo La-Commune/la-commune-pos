@@ -67,7 +67,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
 
         // Establecer sesión Auth real en el cliente Supabase
-        const { error: sessionError } = await supabase!.auth.setSession({
+        const { data: sessionData, error: sessionError } = await supabase!.auth.setSession({
           access_token: data.access_token,
           refresh_token: data.refresh_token,
         });
@@ -77,13 +77,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           return false;
         }
 
+        // auth_uid y email vienen de la sesión Auth, no del response
+        const authUid = sessionData.session?.user?.id ?? "";
+        const authEmail = sessionData.session?.user?.email ?? "";
+
         set({
           user: {
             id: data.user.id,
-            auth_uid: data.user.auth_uid,
+            auth_uid: authUid,
             negocio_id: data.user.negocio_id,
             nombre: data.user.nombre,
-            email: data.user.email,
+            email: authEmail,
             rol: data.user.rol as RolUsuario,
           },
           isAuthenticated: true,

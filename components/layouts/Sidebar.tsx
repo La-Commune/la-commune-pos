@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Vault,
   Settings,
+  Package,
 } from "lucide-react";
 import { useUIStore } from "@/store/ui.store";
 import { useAuthStore } from "@/store/auth.store";
@@ -36,6 +37,7 @@ const ROLE_ACCESS: Record<string, RolUsuario[]> = {
   "/reportes": ["admin"],
   "/usuarios": ["admin"],
   "/fidelidad": ["admin", "camarero"],
+  "/inventario": ["admin"],
   "/configuracion": ["admin"],
 };
 
@@ -58,6 +60,7 @@ export const navItems = [
   { href: "/reportes", label: "Reportes", icon: BarChart3, color: "#60A5FA" },
   { href: "/usuarios", label: "Usuarios", icon: Users, color: "#F2A7C3" },
   { href: "/fidelidad", label: "Fidelidad", icon: Heart, color: "#B8A9EA" },
+  { href: "/inventario", label: "Inventario", icon: Package, color: "#F59E0B" },
   { href: "/configuracion", label: "Config", icon: Settings, color: "#94A3B8" },
 ];
 
@@ -147,7 +150,7 @@ export default function Sidebar() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.18 }}
-                  className="text-[10px] text-text-25 uppercase tracking-[0.18em] whitespace-nowrap mt-0.5"
+                  className="text-xs text-text-25 uppercase tracking-[0.18em] whitespace-nowrap mt-0.5"
                 >
                   Punto de venta
                 </motion.span>

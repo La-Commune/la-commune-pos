@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Heart,
   Search,
@@ -14,14 +14,46 @@ import {
   UserPlus,
   Loader2,
   Mail,
+  Bell,
+  Send,
+  Megaphone,
+  Palette,
+  Check,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import { useClientes, insertRecordReturning, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
+import { supabase } from "@/lib/supabase";
+import { authFetch } from "@/lib/auth-fetch";
 import { useAuthStore } from "@/store/auth.store";
 import { showToast } from "@/components/ui/Toast";
 import Modal from "@/components/ui/Modal";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useSearch } from "@/hooks/useSearch";
+
+/** IDs válidos de ilustración — debe coincidir con el catálogo del frontend */
+type IlustracionId =
+  | "flat-white-cenital" | "latte-lateral" | "cappuccino-cenital" | "espresso-shot"
+  | "cupcake" | "rebanada-pastel" | "tag-descuento" | "monedas"
+  | "grano-cenital" | "grano-aroma" | "cold-brew" | "matcha-latte";
+
+/** Catálogo de ilustraciones para la stamp card del cliente */
+const ILUSTRACIONES: { id: IlustracionId; name: string; category: string; emoji: string }[] = [
+  { id: "flat-white-cenital", name: "Flat White", category: "Tazas", emoji: "☕" },
+  { id: "latte-lateral", name: "Latte Lateral", category: "Tazas", emoji: "☕" },
+  { id: "cappuccino-cenital", name: "Cappuccino", category: "Tazas", emoji: "☕" },
+  { id: "espresso-shot", name: "Espresso Shot", category: "Tazas", emoji: "☕" },
+  { id: "cupcake", name: "Cupcake", category: "Postres", emoji: "🧁" },
+  { id: "rebanada-pastel", name: "Rebanada Pastel", category: "Postres", emoji: "🍰" },
+  { id: "tag-descuento", name: "Tag Descuento", category: "Descuento", emoji: "%" },
+  { id: "monedas", name: "Monedas", category: "Descuento", emoji: "🪙" },
+  { id: "grano-cenital", name: "Grano de Café", category: "Universal", emoji: "🫘" },
+  { id: "grano-aroma", name: "Grano Aroma", category: "Universal", emoji: "🫘" },
+  { id: "cold-brew", name: "Cold Brew", category: "Bebida Especial", emoji: "🧋" },
+  { id: "matcha-latte", name: "Matcha Latte", category: "Bebida Especial", emoji: "🍵" },
+];
+
+/** Categorías pre-calculadas (evita recalcular Set en cada render) */
+const ILUSTRACION_CATEGORIAS = Array.from(new Set(ILUSTRACIONES.map((i) => i.category)));
 
 interface Cliente {
   id: string;
@@ -60,6 +92,14 @@ function FidelidadPageContent() {
   const [modalEditarCliente, setModalEditarCliente] = useState(false);
   const [modalCanjear, setModalCanjear] = useState<{ nombre: string; puntos: number } | null>(null);
   const [canjeando, setCanjando] = useState(false);
+  const [modalNotificacion, setModalNotificacion] = useState<"individual" | "broadcast" | null>(null);
+  const [enviandoNotif, setEnviandoNotif] = useState(false);
+  const [modalIlustracion, setModalIlustracion] = useState(false);
+  const [ilustracionActual, setIlustracionActual] = useState<IlustracionId>("flat-white-cenital");
+  const [guardandoIlustracion, setGuardandoIlustracion] = useState(false);
+  // Push subscriptions: mapa de cliente_id → cantidad de dispositivos activos
+  const [pushSubs, setPushSubs] = useState<Record<string, number>>({});
+  const [totalPushSubs, setTotalPushSubs] = useState(0);
 
   const clientesList = clientes as unknown as Cliente[];
 
@@ -74,6 +114,74 @@ function FidelidadPageContent() {
     const sub = subscribeToTable("clientes", () => refetch());
     return () => sub.unsubscribe();
   }, [refetch]);
+
+  // Cargar estado de push subscriptions
+  const fetchPushSubs = useCallback(async () => {
+    if (!supabase) return;
+    // push_subscriptions aún no está en los tipos generados — usar query directa
+    const { data: subs } = await supabase
+      .from("push_subscriptions" as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+      .select("cliente_id")
+      .eq("activa", true) as { data: { cliente_id: string | null }[] | null };
+    if (subs) {
+      const map: Record<string, number> = {};
+      for (const s of subs) {
+        if (s.cliente_id) {
+          map[s.cliente_id] = (map[s.cliente_id] || 0) + 1;
+        }
+      }
+      setPushSubs(map);
+      setTotalPushSubs(subs.length);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPushSubs();
+    // Refrescar cuando cambian las suscripciones (tabla no está en tipos generados)
+    const sub = subscribeToTable("push_subscriptions" as any, () => fetchPushSubs());
+    return () => sub.unsubscribe();
+  }, [fetchPushSubs]);
+
+  // Cargar ilustración actual de la recompensa default
+  useEffect(() => {
+    if (!supabase || !user?.negocio_id) return;
+    (supabase
+      .from("recompensas")
+      .select("ilustracion")
+      .eq("negocio_id", user.negocio_id)
+      .eq("es_default", true)
+      .limit(1)
+      .maybeSingle() as unknown as Promise<{ data: { ilustracion?: string } | null }>)
+      .then(({ data }) => {
+        if (data?.ilustracion && ILUSTRACIONES.some((i) => i.id === data.ilustracion)) {
+          setIlustracionActual(data.ilustracion as IlustracionId);
+        }
+      });
+  }, [user?.negocio_id]);
+
+  // Cambiar ilustración de la recompensa default
+  const handleCambiarIlustracion = async (id: IlustracionId) => {
+    if (!supabase || !user?.negocio_id) return;
+    setGuardandoIlustracion(true);
+    try {
+      const { error } = await supabase
+        .from("recompensas")
+        .update({ ilustracion: id, actualizado_en: new Date().toISOString() })
+        .eq("negocio_id", user.negocio_id)
+        .eq("es_default", true);
+      if (error) {
+        showToast("Error al cambiar ilustración", "error");
+      } else {
+        setIlustracionActual(id);
+        showToast("Ilustración actualizada", "success");
+        setModalIlustracion(false);
+      }
+    } catch {
+      showToast("Error de conexión", "error");
+    } finally {
+      setGuardandoIlustracion(false);
+    }
+  };
 
   // Sync selected client with realtime data
   useEffect(() => {
@@ -163,6 +271,47 @@ function FidelidadPageContent() {
     }
   };
 
+  // Enviar notificación push
+  const handleEnviarNotificacion = async (datos: { titulo: string; mensaje: string }) => {
+    setEnviandoNotif(true);
+    try {
+      const payload: Record<string, unknown> = {
+        title: datos.titulo,
+        body: datos.mensaje,
+        tipo: modalNotificacion === "broadcast" ? "manual_broadcast" : "manual_individual",
+        enviadoPor: user?.id,
+      };
+      if (modalNotificacion === "individual" && clienteSeleccionado) {
+        payload.clienteId = clienteSeleccionado.id;
+      }
+
+      const res = await authFetch("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast(data?.error || "Error al enviar notificación", "error");
+      } else {
+        const env = data?.enviadas ?? 0;
+        const fall = data?.fallidas ?? 0;
+        if (env > 0) {
+          showToast(`Notificación enviada a ${env} dispositivo${env !== 1 ? "s" : ""}${fall > 0 ? ` (${fall} fallida${fall !== 1 ? "s" : ""})` : ""}`, "success");
+        } else {
+          showToast("No hay suscripciones activas para enviar", "info");
+        }
+      }
+    } catch {
+      showToast("Error de conexión", "error");
+    } finally {
+      setEnviandoNotif(false);
+      setModalNotificacion(null);
+    }
+  };
+
   return (
     <div className="h-[calc(100vh-3.5rem-4rem)] flex flex-col">
       {/* Header */}
@@ -173,20 +322,41 @@ function FidelidadPageContent() {
             Programa de puntos
           </span>
         </div>
-        <button
-          onClick={() => setModalNuevoCliente(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl btn-primary text-[13px] min-h-[44px]"
-        >
-          <UserPlus size={16} />
-          Nuevo cliente
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setModalNotificacion("broadcast")}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl btn-ghost text-[13px] min-h-[44px] border border-border"
+          >
+            <Megaphone size={16} />
+            Notificar a todos
+            {totalPushSubs > 0 && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-accent-soft text-accent tabular-nums">
+                {totalPushSubs}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setModalIlustracion(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl btn-ghost text-[13px] min-h-[44px] border border-border"
+          >
+            <Palette size={16} />
+            Ilustración
+          </button>
+          <button
+            onClick={() => setModalNuevoCliente(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl btn-primary text-[13px] min-h-[44px]"
+          >
+            <UserPlus size={16} />
+            Nuevo cliente
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         <div className="p-4 rounded-xl bg-surface-2 border border-border">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Clientes</span>
+            <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Clientes</span>
             <Users size={14} className="text-text-25 opacity-40" />
           </div>
           <p className="text-xl font-semibold text-text-100 tabular-nums">{stats.totalClientes}</p>
@@ -194,7 +364,7 @@ function FidelidadPageContent() {
         </div>
         <div className="p-4 rounded-xl bg-surface-2 border border-border">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Puntos en circulación</span>
+            <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Puntos en circulación</span>
             <Star size={14} className="text-text-25 opacity-40" />
           </div>
           <p className="text-xl font-semibold text-text-100 tabular-nums">{stats.puntosEmitidos.toLocaleString("es-MX")}</p>
@@ -202,7 +372,7 @@ function FidelidadPageContent() {
         </div>
         <div className="p-4 rounded-xl bg-surface-2 border border-border">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Niveles</span>
+            <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Niveles</span>
             <Award size={14} className="text-text-25 opacity-40" />
           </div>
           <div className="flex items-center gap-2 mt-1">
@@ -210,7 +380,7 @@ function FidelidadPageContent() {
               const count = clientesList.filter((c) => c.nivel === n).length;
               const conf = nivelConfig[n];
               return (
-                <span key={n} className={cn("text-[10px] font-medium px-2 py-0.5 rounded-lg", conf.bg, conf.color)}>
+                <span key={n} className={cn("text-xs font-medium px-2 py-0.5 rounded-lg", conf.bg, conf.color)}>
                   {count} {conf.label}
                 </span>
               );
@@ -262,12 +432,15 @@ function FidelidadPageContent() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
-                      <span className={cn("text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg", nivel.bg, nivel.color)}>
+                      {pushSubs[cliente.id] && (
+                        <Bell size={12} className="text-accent opacity-60" aria-label="Push activo" />
+                      )}
+                      <span className={cn("text-xs font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg", nivel.bg, nivel.color)}>
                         {nivel.label}
                       </span>
                       <div className="text-right">
                         <p className="text-xs font-semibold text-text-100 tabular-nums">{cliente.puntos.toLocaleString("es-MX")}</p>
-                        <p className="text-[10px] text-text-25">puntos</p>
+                        <p className="text-xs text-text-25">puntos</p>
                       </div>
                       <ChevronRight size={14} className="text-text-25" />
                     </div>
@@ -315,7 +488,7 @@ function FidelidadPageContent() {
                   </p>
                 )}
                 <span className={cn(
-                  "inline-flex items-center gap-1 mt-2 text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg",
+                  "inline-flex items-center gap-1 mt-2 text-xs font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg",
                   (nivelConfig[clienteSeleccionado.nivel] ?? nivelConfig.bronce).bg,
                   (nivelConfig[clienteSeleccionado.nivel] ?? nivelConfig.bronce).color,
                 )}>
@@ -326,11 +499,11 @@ function FidelidadPageContent() {
               <div className="grid grid-cols-2 gap-2.5 mb-5">
                 <div className="p-3 rounded-xl bg-surface-3 text-center">
                   <p className="text-lg font-semibold text-text-100 tabular-nums">{clienteSeleccionado.puntos.toLocaleString("es-MX")}</p>
-                  <p className="text-[10px] text-text-25 uppercase tracking-widest">Puntos</p>
+                  <p className="text-xs text-text-25 uppercase tracking-widest">Puntos</p>
                 </div>
                 <div className="p-3 rounded-xl bg-surface-3 text-center">
                   <p className="text-lg font-semibold text-text-100 tabular-nums">{clienteSeleccionado.total_visitas}</p>
-                  <p className="text-[10px] text-text-25 uppercase tracking-widest">Visitas</p>
+                  <p className="text-xs text-text-25 uppercase tracking-widest">Visitas</p>
                 </div>
               </div>
 
@@ -355,12 +528,23 @@ function FidelidadPageContent() {
                   <span className="text-text-45">Miembro desde</span>
                   <span className="text-text-100 font-medium">{new Date(clienteSeleccionado.creado_en).toLocaleDateString("es-MX")}</span>
                 </div>
+                <div className="flex justify-between text-xs items-center">
+                  <span className="text-text-45">Notificaciones push</span>
+                  {pushSubs[clienteSeleccionado.id] ? (
+                    <span className="flex items-center gap-1 text-status-ok font-medium">
+                      <Bell size={11} />
+                      Activas ({pushSubs[clienteSeleccionado.id]} {pushSubs[clienteSeleccionado.id] === 1 ? "dispositivo" : "dispositivos"})
+                    </span>
+                  ) : (
+                    <span className="text-text-25">No activadas</span>
+                  )}
+                </div>
               </div>
 
               {/* Progreso de nivel */}
               <div className="mb-5">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Progreso al siguiente nivel</span>
+                  <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Progreso al siguiente nivel</span>
                 </div>
                 {clienteSeleccionado.nivel !== "oro" ? (
                   <>
@@ -372,20 +556,20 @@ function FidelidadPageContent() {
                         }}
                       />
                     </div>
-                    <p className="text-[10px] text-text-25">
+                    <p className="text-xs text-text-25">
                       {clienteSeleccionado.nivel === "bronce"
                         ? `${Math.max(0, 500 - clienteSeleccionado.puntos)} puntos para Plata`
                         : `${Math.max(0, 1000 - clienteSeleccionado.puntos)} puntos para Oro`}
                     </p>
                   </>
                 ) : (
-                  <p className="text-[10px] text-accent font-medium">Nivel máximo alcanzado</p>
+                  <p className="text-xs text-accent font-medium">Nivel máximo alcanzado</p>
                 )}
               </div>
 
               {/* Recompensas */}
               <div className="mb-5">
-                <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">Recompensas disponibles</span>
+                <span className="text-xs font-medium text-text-25 uppercase tracking-widest block mb-2">Recompensas disponibles</span>
                 <div className="space-y-1.5">
                   {RECOMPENSAS.map((r) => (
                     <div key={r.nombre} className="flex items-center justify-between p-2.5 rounded-xl bg-surface-3">
@@ -401,7 +585,7 @@ function FidelidadPageContent() {
                         }}
                         disabled={clienteSeleccionado.puntos < r.puntos}
                         className={cn(
-                          "text-[10px] font-medium px-2.5 py-1.5 rounded-lg transition-all duration-300 min-h-[32px]",
+                          "text-xs font-medium px-2.5 py-1.5 rounded-lg transition-all duration-300 min-h-[32px]",
                           clienteSeleccionado.puntos >= r.puntos
                             ? "bg-accent-soft text-accent hover:opacity-80"
                             : "bg-surface-2 text-text-25 cursor-not-allowed",
@@ -415,12 +599,21 @@ function FidelidadPageContent() {
               </div>
 
               {/* Acciones */}
-              <button
-                onClick={() => setModalEditarCliente(true)}
-                className="w-full py-2.5 rounded-xl btn-ghost text-xs min-h-[44px]"
-              >
-                Editar datos del cliente
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={() => setModalNotificacion("individual")}
+                  className="w-full py-2.5 rounded-xl btn-ghost text-xs min-h-[44px] flex items-center justify-center gap-2 border border-border"
+                >
+                  <Bell size={14} />
+                  Enviar notificación
+                </button>
+                <button
+                  onClick={() => setModalEditarCliente(true)}
+                  className="w-full py-2.5 rounded-xl btn-ghost text-xs min-h-[44px]"
+                >
+                  Editar datos del cliente
+                </button>
+              </div>
             </div>
           ) : (
             <div className="flex-shrink-0 flex items-center justify-center bg-surface-2 border-l border-border rounded-2xl" style={{ width: "var(--panel-xl)" }}>
@@ -452,6 +645,23 @@ function FidelidadPageContent() {
           onCancel={() => setModalEditarCliente(false)}
         />
       </Modal>
+
+      {/* Modal enviar notificación */}
+      {modalNotificacion && (
+        <Modal
+          open={true}
+          onClose={() => setModalNotificacion(null)}
+          title={modalNotificacion === "broadcast" ? "Notificar a todos los clientes" : `Notificar a ${clienteSeleccionado?.nombre ?? "cliente"}`}
+        >
+          <NotificacionForm
+            tipo={modalNotificacion}
+            clienteNombre={clienteSeleccionado?.nombre}
+            onSend={handleEnviarNotificacion}
+            onCancel={() => setModalNotificacion(null)}
+            loading={enviandoNotif}
+          />
+        </Modal>
+      )}
 
       {/* Confirm canje */}
       {modalCanjear && (
@@ -485,7 +695,169 @@ function FidelidadPageContent() {
           </div>
         </Modal>
       )}
+
+      {/* Modal selector de ilustración */}
+      <Modal open={modalIlustracion} onClose={() => setModalIlustracion(false)} title="Ilustración de la tarjeta">
+        <div className="space-y-4">
+          <p className="text-xs text-text-25">
+            Elige cómo se verá la tarjeta de sellos de tus clientes. El cambio se aplica a todas las tarjetas activas.
+          </p>
+          {/* Agrupado por categoría */}
+          {(() => {
+            return ILUSTRACION_CATEGORIAS.map((cat) => (
+              <div key={cat}>
+                <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest block mb-2">{cat}</span>
+                <div className="grid grid-cols-4 gap-2">
+                  {ILUSTRACIONES.filter((i) => i.category === cat).map((ilu) => {
+                    const isSelected = ilustracionActual === ilu.id;
+                    return (
+                      <button
+                        key={ilu.id}
+                        onClick={() => handleCambiarIlustracion(ilu.id)}
+                        disabled={guardandoIlustracion}
+                        className={cn(
+                          "relative flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-300 min-h-[80px]",
+                          isSelected
+                            ? "border-accent bg-accent-soft ring-2 ring-accent/20"
+                            : "border-border bg-surface-3 hover:border-border-hover hover:bg-surface-2",
+                          guardandoIlustracion && "opacity-50 cursor-not-allowed",
+                        )}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-accent flex items-center justify-center">
+                            <Check size={10} className="text-white" />
+                          </div>
+                        )}
+                        <span className="text-2xl">{ilu.emoji}</span>
+                        <span className="text-[10px] text-text-45 text-center leading-tight">{ilu.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ));
+          })()}
+          <div className="pt-3 border-t border-border">
+            <button
+              onClick={() => setModalIlustracion(false)}
+              className="w-full py-2.5 rounded-xl btn-ghost text-[13px] min-h-[44px]"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
+  );
+}
+
+const PLANTILLAS_NOTIFICACION = [
+  { titulo: "Promoción especial", mensaje: "Hoy tenemos una promoción especial para ti. ¡Visítanos!" },
+  { titulo: "Nuevo en el menú", mensaje: "Descubre nuestras nuevas creaciones. ¡Te van a encantar!" },
+  { titulo: "Te extrañamos", mensaje: "Hace tiempo que no te vemos. Tu próximo café te acerca a tu cortesía." },
+  { titulo: "Happy Hour", mensaje: "Happy Hour de 3 a 5 PM. ¡Bebidas con descuento especial!" },
+];
+
+function NotificacionForm({
+  tipo,
+  clienteNombre,
+  onSend,
+  onCancel,
+  loading,
+}: {
+  tipo: "individual" | "broadcast";
+  clienteNombre?: string;
+  onSend: (datos: { titulo: string; mensaje: string }) => Promise<void>;
+  onCancel: () => void;
+  loading: boolean;
+}) {
+  const [titulo, setTitulo] = useState("");
+  const [mensaje, setMensaje] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!titulo.trim() || !mensaje.trim()) return;
+    await onSend({ titulo: titulo.trim(), mensaje: mensaje.trim() });
+  };
+
+  const aplicarPlantilla = (p: typeof PLANTILLAS_NOTIFICACION[0]) => {
+    setTitulo(p.titulo);
+    setMensaje(p.mensaje);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {tipo === "broadcast" && (
+        <div className="p-3 rounded-xl bg-status-warn-bg border border-status-warn/20">
+          <p className="text-xs text-status-warn">
+            <Megaphone size={12} className="inline mr-1" />
+            Se enviará a todos los clientes con notificaciones activas.
+          </p>
+        </div>
+      )}
+
+      {/* Plantillas rápidas */}
+      <div>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-2">Plantillas</label>
+        <div className="flex flex-wrap gap-1.5">
+          {PLANTILLAS_NOTIFICACION.map((p) => (
+            <button
+              key={p.titulo}
+              type="button"
+              onClick={() => aplicarPlantilla(p)}
+              className="text-[11px] px-2.5 py-1.5 rounded-lg bg-surface-3 text-text-45 hover:text-text-100 hover:bg-surface-2 transition-all border border-transparent hover:border-border"
+            >
+              {p.titulo}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">Título *</label>
+        <input
+          type="text"
+          value={titulo}
+          onChange={(e) => setTitulo(e.target.value)}
+          required
+          maxLength={60}
+          placeholder="Ej: Promoción especial"
+          className="w-full px-3 py-2.5 rounded-xl bg-surface-3 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 min-h-[44px]"
+        />
+        <p className="text-[10px] text-text-25 mt-1 text-right">{titulo.length}/60</p>
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">Mensaje *</label>
+        <textarea
+          value={mensaje}
+          onChange={(e) => setMensaje(e.target.value)}
+          required
+          maxLength={200}
+          rows={3}
+          placeholder="Escribe tu mensaje..."
+          className="w-full px-3 py-2.5 rounded-xl bg-surface-3 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 resize-none"
+        />
+        <p className="text-[10px] text-text-25 mt-1 text-right">{mensaje.length}/200</p>
+      </div>
+      <div className="flex items-center gap-3 pt-3 border-t border-border">
+        <button
+          type="submit"
+          disabled={loading || !titulo.trim() || !mensaje.trim()}
+          className="flex-1 py-3 rounded-xl btn-primary text-[13px] min-h-[44px] flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {loading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+          {loading ? "Enviando..." : "Enviar notificación"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={loading}
+          className="flex-1 py-3 rounded-xl btn-ghost text-[13px] min-h-[44px]"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -514,7 +886,7 @@ function ClienteForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">Nombre completo *</label>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">Nombre completo *</label>
         <input
           type="text"
           value={nombre}
@@ -525,7 +897,7 @@ function ClienteForm({
         />
       </div>
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">Teléfono</label>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">Teléfono</label>
         <input
           type="tel"
           value={telefono}
@@ -535,7 +907,7 @@ function ClienteForm({
         />
       </div>
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">Email (opcional)</label>
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">Email (opcional)</label>
         <input
           type="email"
           value={email}

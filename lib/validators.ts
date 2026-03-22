@@ -72,7 +72,6 @@ export const OrdenSchema = z.object({
   estado: EstadoOrden.default("nueva"),
   origen: OrigenOrden.default("mesa"),
   notas: z.string().optional(),
-  cliente_firebase_id: z.string().nullable().optional(),
 });
 
 export const PagoSchema = z.object({
@@ -198,7 +197,6 @@ export const NegocioSchema = z.object({
   rfc: z.string().optional(),
   divisa: z.string().default("MXN"),
   zona_horaria: z.string().default("America/Mexico_City"),
-  firebase_project_id: z.string().optional(),
 });
 
 // ── Schemas V2 (migration-v2.sql) ──
@@ -247,7 +245,6 @@ export const NivelCliente = z.enum(["bronce", "plata", "oro"]);
 export const ClienteSchema = z.object({
   id: z.string().uuid().optional(),
   negocio_id: z.string().uuid(),
-  firebase_id: z.string().nullable().optional(),
   nombre: z.string().min(1, "Nombre requerido"),
   telefono: z.string().nullable().optional(),
   email: z.string().email("Email inválido").nullable().optional(),

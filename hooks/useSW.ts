@@ -23,7 +23,7 @@ export function useSW() {
         if (process.env.NODE_ENV === "development") console.log(`[SW] Procesando acción offline: ${action.type}`, action.payload);
         await removeAction(action.id!);
       } catch (err) {
-        console.error(`[SW] Error procesando acción ${action.id}:`, err);
+        if (process.env.NODE_ENV === "development") console.error(`[SW] Error procesando acción ${action.id}:`, err);
         break; // Parar al primer error para reintentar después
       }
     }
@@ -54,7 +54,7 @@ export function useSW() {
             }
           });
         })
-        .catch((err) => console.error("[SW] Error al registrar:", err));
+        .catch((err) => { if (process.env.NODE_ENV === "development") console.error("[SW] Error al registrar:", err); });
 
       // Escuchar mensajes del SW (sync offline)
       navigator.serviceWorker.addEventListener("message", (event) => {
