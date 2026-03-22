@@ -10,7 +10,7 @@ test.describe("POS — Flujo de Órdenes (mock mode)", () => {
   });
 
   test("muestra el tab de nueva orden y el tab de órdenes activas", async ({ page }) => {
-    await expect(page.getByText("Nueva orden")).toBeVisible();
+    await expect(page.getByText("Nueva orden").first()).toBeVisible();
   });
 
   test("muestra categorías del menú en el catálogo", async ({ page }) => {
@@ -30,13 +30,15 @@ test.describe("POS — Flujo de Órdenes (mock mode)", () => {
     await americano.click();
 
     // El carrito debería mostrar al menos 1 item
-    // Buscar el botón de enviar orden que muestra el total
-    await expect(page.getByText("Enviar").first()).toBeVisible({ timeout: 5_000 });
+    // Buscar el botón de enviar orden (puede decir "Enviar orden" o "Enviar a cocina")
+    await expect(
+      page.locator("button").filter({ hasText: /enviar/i }).first()
+    ).toBeVisible({ timeout: 5_000 });
   });
 
   test("selecciona origen Para llevar", async ({ page }) => {
     // Buscar el botón de origen "Para llevar"
-    const paraLlevar = page.locator("button:has-text('Para llevar')").first();
+    const paraLlevar = page.locator("button").filter({ hasText: /para llevar/i }).first();
     if (await paraLlevar.isVisible()) {
       await paraLlevar.click();
       // Verificar que se seleccionó
@@ -47,7 +49,7 @@ test.describe("POS — Flujo de Órdenes (mock mode)", () => {
   test("muestra órdenes mock en el panel de activas", async ({ page }) => {
     // Las órdenes mock tienen estados: confirmada, preparando, nueva, lista
     // Buscar el tab o sección de órdenes activas
-    const activasTab = page.locator("button:has-text('activas')").first();
+    const activasTab = page.locator("button").filter({ hasText: /activas/i }).first();
     if (await activasTab.isVisible()) {
       await activasTab.click();
     }
