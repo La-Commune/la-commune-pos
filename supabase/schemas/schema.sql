@@ -90,6 +90,7 @@ CREATE TABLE categorias_menu (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   negocio_id  UUID NOT NULL REFERENCES negocios(id) ON DELETE CASCADE,
   nombre      TEXT NOT NULL,
+  descripcion TEXT,
   tipo        TEXT NOT NULL DEFAULT 'drink',
   orden       INTEGER NOT NULL DEFAULT 0,
   activo      BOOLEAN NOT NULL DEFAULT TRUE,
