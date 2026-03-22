@@ -6,17 +6,22 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "dev": "next dev -p 3001",
-    "dev:clean": "rm -rf .next && next dev -p 3001",
+    "dev": "dotenv -e .env.development -- next dev -p 3001",
+    "dev:prod": "dotenv -e .env.production -- next dev -p 3001",
+    "dev:clean": "rm -rf .next && dotenv -e .env.development -- next dev -p 3001",
     "build": "next build",
+    "build:dev": "dotenv -e .env.development -- next build",
+    "build:prod": "dotenv -e .env.production -- next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test --project=chromium",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:staging": "playwright test --project=staging",
+    "test:e2e:staging:headed": "playwright test --project=staging --headed"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -31,7 +36,6 @@
     "@supabase/supabase-js": "^2.98.0",
     "clsx": "^2.1.1",
     "dexie": "^4.3.0",
-    "firebase": "^12.10.0",
     "framer-motion": "^12.35.0",
     "lucide-react": "^0.577.0",
     "next": "14.2.35",
@@ -41,6 +45,7 @@
     "recharts": "^3.7.0",
     "sharp": "^0.34.5",
     "tailwind-merge": "^3.5.0",
+    "web-push": "^3.6.7",
     "zod": "^4.3.6",
     "zustand": "^5.0.11"
   },
@@ -49,6 +54,8 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/web-push": "^3.6.4",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "happy-dom": "^20.8.3",

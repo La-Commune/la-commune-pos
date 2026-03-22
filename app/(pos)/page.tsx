@@ -13,12 +13,12 @@ import {
   Clock,
   AlertTriangle,
   CreditCard,
-  Loader2,
+  Package,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import { supabase, USE_MOCK } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth.store";
-import { useMesas, useOrdenes, subscribeToTable } from "@/hooks/useSupabase";
+import { useMesas, useOrdenes, useInventario, subscribeToTable } from "@/hooks/useSupabase";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import type { Mesa, Orden } from "@/types/database";
 
@@ -57,7 +57,7 @@ function KPICard({
         <Icon size={20} className="text-white" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1">{label}</p>
+        <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-1">{label}</p>
         <p className="text-xl font-bold text-text-100 tracking-tight">{value}</p>
       </div>
       {onClick && (
@@ -127,9 +127,10 @@ function DashboardContent() {
   const user = useAuthStore((s) => s.user);
   const { data: mesas } = useMesas();
   const { data: ordenes, refetch: refetchOrdenes } = useOrdenes();
+  const { data: inventario } = useInventario();
   const [ventasHoy, setVentasHoy] = useState(0);
   const [ordenesHoyCount, setOrdenesHoyCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!USE_MOCK);
 
   // Cargar ventas de hoy desde pagos
   const cargarVentas = async () => {
@@ -196,6 +197,11 @@ function DashboardContent() {
   ).length;
   const ticketPromedio = ordenesHoyCount > 0 ? ventasHoy / ordenesHoyCount : 0;
 
+  // Ingredientes con stock bajo (stock_actual <= stock_minimo)
+  const ingredientesBajos = (inventario as any[]).filter(
+    (i) => Number(i.stock_actual ?? 0) <= Number(i.stock_minimo ?? 0) && i.activo !== false,
+  ).length;
+
   // Hora actual
   const [hora, setHora] = useState(new Date());
   useEffect(() => {
@@ -220,74 +226,73 @@ function DashboardContent() {
         </p>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-text-25" />
-        </div>
-      ) : (
-        <>
-          {/* KPIs */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <KPICard
-              label="Ventas hoy"
-              value={formatMXN(ventasHoy)}
-              icon={DollarSign}
-              color="bg-status-ok"
-              onClick={() => router.push("/reportes")}
-            />
-            <KPICard
-              label="Órdenes completadas"
-              value={String(ordenesHoyCount)}
-              icon={ClipboardList}
-              color="bg-[#9B8AFB]"
-              onClick={() => router.push("/ordenes")}
-            />
-            <KPICard
-              label="Ticket promedio"
-              value={formatMXN(ticketPromedio)}
-              icon={TrendingUp}
-              color="bg-[#60A5FA]"
-            />
-            <KPICard
-              label="Mesas ocupadas"
-              value={`${mesasOcupadas} / ${mesasList.length}`}
-              icon={LayoutGrid}
-              color="bg-[#7EC8E3]"
-              onClick={() => router.push("/mesas")}
-            />
-          </div>
+      {/* KPIs — siempre visibles, muestran $0 mientras cargan */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <KPICard
+          label="Ventas hoy"
+          value={loading ? "..." : formatMXN(ventasHoy)}
+          icon={DollarSign}
+          color="bg-status-ok"
+          onClick={() => router.push("/reportes")}
+        />
+        <KPICard
+          label="Órdenes completadas"
+          value={loading ? "..." : String(ordenesHoyCount)}
+          icon={ClipboardList}
+          color="bg-cat-4"
+          onClick={() => router.push("/ordenes")}
+        />
+        <KPICard
+          label="Ticket promedio"
+          value={loading ? "..." : formatMXN(ticketPromedio)}
+          icon={TrendingUp}
+          color="bg-[var(--info)]"
+        />
+        <KPICard
+          label="Mesas ocupadas"
+          value={`${mesasOcupadas} / ${mesasList.length}`}
+          icon={LayoutGrid}
+          color="bg-cat-3"
+          onClick={() => router.push("/mesas")}
+        />
+      </div>
 
-          {/* Alertas */}
-          <div className="space-y-2 mb-6">
-            <AlertCard
-              label={ordenesPendientes === 1 ? "orden pendiente de confirmar" : "órdenes pendientes de confirmar"}
-              count={ordenesPendientes}
-              icon={AlertTriangle}
-              color="bg-status-warn-bg text-status-warn border-status-warn/20"
-              onClick={() => router.push("/ordenes")}
-            />
-            <AlertCard
-              label={ordenesEnKDS === 1 ? "orden en cocina" : "órdenes en cocina"}
-              count={ordenesEnKDS}
-              icon={ChefHat}
-              color="bg-status-info-bg text-status-info border-status-info/20"
-              onClick={() => router.push("/kds")}
-            />
-          </div>
+      {/* Alertas */}
+      <div className="space-y-2 mb-6">
+        <AlertCard
+          label={ordenesPendientes === 1 ? "orden pendiente de confirmar" : "órdenes pendientes de confirmar"}
+          count={ordenesPendientes}
+          icon={AlertTriangle}
+          color="bg-status-warn-bg text-status-warn border-status-warn/20"
+          onClick={() => router.push("/ordenes")}
+        />
+        <AlertCard
+          label={ordenesEnKDS === 1 ? "orden en cocina" : "órdenes en cocina"}
+          count={ordenesEnKDS}
+          icon={ChefHat}
+          color="bg-status-info-bg text-status-info border-status-info/20"
+          onClick={() => router.push("/kds")}
+        />
+        <AlertCard
+          label={ingredientesBajos === 1 ? "ingrediente con stock bajo" : "ingredientes con stock bajo"}
+          count={ingredientesBajos}
+          icon={Package}
+          color="bg-status-error-bg text-status-error border-status-error/20"
+          onClick={() => router.push("/inventario")}
+        />
+      </div>
 
-          {/* Accesos rápidos */}
-          <div className="mb-2">
-            <h2 className="text-xs font-medium text-text-25 uppercase tracking-widest mb-3">Accesos rápidos</h2>
-          </div>
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-            <QuickLink label="Mesas" icon={LayoutGrid} color="bg-[#7EC8E3]" onClick={() => router.push("/mesas")} />
-            <QuickLink label="Órdenes" icon={ClipboardList} color="bg-[#9B8AFB]" onClick={() => router.push("/ordenes")} />
-            <QuickLink label="Cocina" icon={ChefHat} color="bg-[#FFB347]" onClick={() => router.push("/kds")} />
-            <QuickLink label="Cobros" icon={CreditCard} color="bg-[#F5C26B]" onClick={() => router.push("/cobros")} />
-            <QuickLink label="Reportes" icon={TrendingUp} color="bg-[#60A5FA]" onClick={() => router.push("/reportes")} />
-          </div>
-        </>
-      )}
+      {/* Accesos rápidos */}
+      <div className="mb-2">
+        <h2 className="text-xs font-medium text-text-25 uppercase tracking-widest mb-3">Accesos rápidos</h2>
+      </div>
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+        <QuickLink label="Mesas" icon={LayoutGrid} color="bg-cat-3" onClick={() => router.push("/mesas")} />
+        <QuickLink label="Órdenes" icon={ClipboardList} color="bg-cat-4" onClick={() => router.push("/ordenes")} />
+        <QuickLink label="Cocina" icon={ChefHat} color="bg-cat-5" onClick={() => router.push("/kds")} />
+        <QuickLink label="Cobros" icon={CreditCard} color="bg-cat-1" onClick={() => router.push("/cobros")} />
+        <QuickLink label="Reportes" icon={TrendingUp} color="bg-[var(--info)]" onClick={() => router.push("/reportes")} />
+      </div>
     </div>
   );
 }

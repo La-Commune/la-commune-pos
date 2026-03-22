@@ -24,6 +24,7 @@ import {
   ChevronDown,
   Settings,
 } from "lucide-react";
+import { authFetch } from "@/lib/auth-fetch";
 import { cn } from "@/lib/utils";
 import { useNegocioCompleto } from "@/hooks/useSupabase";
 import { showToast } from "@/components/ui/Toast";
@@ -311,7 +312,7 @@ function ConfiguracionContent() {
       formData.append("file", file);
       formData.append("negocio_id", negocio.id);
 
-      const res = await fetch("/api/upload-logo", { method: "POST", body: formData });
+      const res = await authFetch("/api/upload-logo", { method: "POST", body: formData });
       const data = await res.json();
 
       if (!res.ok) {
@@ -321,6 +322,8 @@ function ConfiguracionContent() {
 
       set("logo_url", data.url);
       await refetch();
+      // Notificar al sidebar que el logo cambió
+      window.dispatchEvent(new Event("negocio-updated"));
       showToast("Logo actualizado", "success");
     } catch {
       showToast("Error de conexión al subir imagen", "error");
@@ -371,6 +374,8 @@ function ConfiguracionContent() {
     setSaving(false);
     if (result.success) {
       setDirty(false);
+      // Notificar al sidebar/navbar que se actualizó el negocio (logo, nombre, etc.)
+      window.dispatchEvent(new Event("negocio-updated"));
       showToast("Configuración guardada", "success");
     } else {
       showToast(result.error ?? "Error al guardar", "error");

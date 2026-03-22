@@ -10,10 +10,16 @@ import {
   MOCK_PRODUCTOS,
   MOCK_ORDENES,
   MOCK_TICKETS_KDS,
+  MOCK_INVENTARIO,
+  MOCK_MOVIMIENTOS,
+  MOCK_RECETAS,
   type MockCategoria,
   type MockProducto,
   type MockOrden,
   type MockTicketKDS,
+  type MockInventario,
+  type MockMovimientoInventario,
+  type MockReceta,
 } from "@/lib/mock-data";
 
 // ── Tipos auxiliares ──
@@ -53,7 +59,10 @@ function useQuery<T>(
       return;
     }
 
-    setLoading(true);
+    // Solo mostrar loading en la carga inicial, no en refetch
+    if (!hasFetched.current) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -178,6 +187,27 @@ export function useClientes() {
   });
 }
 
+export function useInventario() {
+  return useQuery<MockInventario>("inventario", MOCK_INVENTARIO, {
+    orderBy: { column: "nombre", ascending: true },
+  });
+}
+
+export function useMovimientosInventario(inventarioId?: string) {
+  const filters = inventarioId ? { inventario_id: inventarioId } : undefined;
+  return useQuery<MockMovimientoInventario>("movimientos_inventario", MOCK_MOVIMIENTOS, {
+    filters,
+    orderBy: { column: "creado_en", ascending: false },
+  });
+}
+
+export function useRecetas(productoId?: string) {
+  const filters = productoId ? { producto_id: productoId } : undefined;
+  return useQuery<MockReceta>("recetas", MOCK_RECETAS, {
+    filters,
+  });
+}
+
 // ── Negocio (nombre del negocio para sidebar, etc.) ──
 
 interface NegocioInfo {
@@ -192,6 +222,7 @@ const MOCK_NEGOCIO: NegocioInfo = { id: "dev-negocio-1", nombre: "La Commune", l
 
 export function useNegocio() {
   const [negocio, setNegocio] = useState<NegocioInfo>(MOCK_NEGOCIO);
+  const [refreshKey, setRefreshKey] = useState(0);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const negocioId = useAuthStore((s) => s.user?.negocio_id);
 
@@ -206,7 +237,14 @@ export function useNegocio() {
       .then(({ data }) => {
         if (data) setNegocio(data);
       });
-  }, [isAuthenticated, negocioId]);
+  }, [isAuthenticated, negocioId, refreshKey]);
+
+  // Escuchar evento custom para refrescar cuando configuración guarda cambios
+  useEffect(() => {
+    const handler = () => setRefreshKey((k) => k + 1);
+    window.addEventListener("negocio-updated", handler);
+    return () => window.removeEventListener("negocio-updated", handler);
+  }, []);
 
   return negocio;
 }
@@ -230,7 +268,6 @@ export function useNegocioCompleto() {
         rfc: null,
         divisa: "MXN",
         zona_horaria: "America/Mexico_City",
-        firebase_project_id: null,
         creado_en: new Date().toISOString(),
         actualizado_en: new Date().toISOString(),
         eliminado_en: null,

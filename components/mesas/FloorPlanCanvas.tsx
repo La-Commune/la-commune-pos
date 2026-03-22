@@ -123,24 +123,27 @@ export default function FloorPlanCanvas({
         <div className="flex items-center gap-1.5">
           <button
             onClick={zoomOut}
-            className="p-1.5 rounded-lg hover:bg-surface-3 text-text-45 transition-colors"
+            aria-label="Alejar vista del plano"
+            className="p-1.5 rounded-lg hover:bg-surface-3 text-text-45 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             title="Alejar"
           >
             <ZoomOut size={16} />
           </button>
-          <span className="text-[10px] text-text-25 w-10 text-center tabular-nums">
+          <span className="text-xs text-text-25 w-10 text-center tabular-nums">
             {Math.round(scale * 100)}%
           </span>
           <button
             onClick={zoomIn}
-            className="p-1.5 rounded-lg hover:bg-surface-3 text-text-45 transition-colors"
+            aria-label="Acercar vista del plano"
+            className="p-1.5 rounded-lg hover:bg-surface-3 text-text-45 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             title="Acercar"
           >
             <ZoomIn size={16} />
           </button>
           <button
             onClick={zoomFit}
-            className="p-1.5 rounded-lg hover:bg-surface-3 text-text-45 transition-colors"
+            aria-label="Ajustar vista al 100%"
+            className="p-1.5 rounded-lg hover:bg-surface-3 text-text-45 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             title="Ajustar"
           >
             <Maximize2 size={16} />
@@ -189,6 +192,9 @@ export default function FloorPlanCanvas({
                 onContextMenu={onContextMenu}
                 onResize={onResizeMesa}
                 onRotate={onRotateMesa}
+                onMove={onMoveMesa}
+                canvasWidth={canvasW}
+                canvasHeight={CANVAS_H}
               />
             ))}
           </div>
@@ -214,8 +220,8 @@ export default function FloorPlanCanvas({
 
       {/* Hint */}
       {isAdmin && mesas.length > 0 && (
-        <p className="text-[10px] text-text-25 mt-2 text-center">
-          Arrastra para mover · Handles para redimensionar · Icono superior para rotar (Shift = snap 45°) · Click derecho para más opciones
+        <p className="text-xs text-text-25 mt-2 text-center">
+          Arrastra para mover · Flechas del teclado para mover (Shift = fino) · Handles para redimensionar · Icono superior para rotar (Shift = snap 45°) · Click derecho para más opciones
         </p>
       )}
     </div>

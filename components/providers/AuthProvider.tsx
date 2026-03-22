@@ -13,6 +13,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   const router = useRouter();
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
+  const [exiting, setExiting] = useState(false);
+  const [show, setShow] = useState(false);
 
   // Registrar Service Worker y listeners online/offline
   useSW();
@@ -35,21 +37,30 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
             isLoading: false,
           });
         }
-        setReady(true);
+        setExiting(true);
+        setTimeout(() => {
+          setReady(true);
+          setShow(true);
+        }, 250);
         return;
       }
 
       try {
         await checkSession();
       } catch (error) {
-        console.error("Error verificando sesión:", error);
+        if (process.env.NODE_ENV === "development") console.error("Error verificando sesión:", error);
         useAuthStore.setState({
           isAuthenticated: false,
           user: null,
           isLoading: false,
         });
       } finally {
-        setReady(true);
+        // Animate loading screen out before showing app
+        setExiting(true);
+        setTimeout(() => {
+          setReady(true);
+          setShow(true);
+        }, 250);
       }
     }
 
@@ -75,7 +86,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   if (!ready) {
     return (
       <div
-        className="min-h-screen bg-surface-0 flex items-center justify-center"
+        className={`min-h-screen bg-surface-0 flex items-center justify-center ${exiting ? "auth-loading-exit" : ""}`}
         role="status"
         aria-live="polite"
         aria-label="Cargando aplicación"
@@ -87,7 +98,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           <p className="text-text-25 text-xs uppercase tracking-widest animate-pulse">
             Cargando...
           </p>
-          <p className="text-text-25 text-[10px] mt-1">
+          <p className="text-text-25 text-xs mt-1">
             {DEV_MODE ? "Modo desarrollo" : "Verificando sesión"}
           </p>
         </div>

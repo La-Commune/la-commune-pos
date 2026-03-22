@@ -279,7 +279,7 @@ export default function OrdenesPage() {
       refetchOrdenes();
     } catch (err) {
       showToast("Error inesperado al crear orden", "error");
-      console.error(err);
+      if (process.env.NODE_ENV === "development") console.error(err);
     } finally {
       setEnviandoOrden(false);
     }
@@ -325,7 +325,7 @@ export default function OrdenesPage() {
       refetchOrdenes();
     } catch (err) {
       showToast("Error al confirmar orden", "error");
-      console.error(err);
+      if (process.env.NODE_ENV === "development") console.error(err);
     } finally {
       setConfirmandoOrden(false);
     }
@@ -359,7 +359,7 @@ export default function OrdenesPage() {
       refetchOrdenes();
     } catch (err) {
       showToast("Error al cancelar", "error");
-      console.error(err);
+      if (process.env.NODE_ENV === "development") console.error(err);
     }
   };
 
@@ -382,7 +382,7 @@ export default function OrdenesPage() {
       refetchOrdenes();
     } catch (err) {
       showToast("Error al enviar a cocina", "error");
-      console.error(err);
+      if (process.env.NODE_ENV === "development") console.error(err);
     }
   };
 
@@ -478,7 +478,7 @@ export default function OrdenesPage() {
                         <span className="text-sm font-medium text-text-100">
                           {orden.mesa_numero ? `Mesa ${orden.mesa_numero}` : origenLabel[orden.origen as keyof typeof origenLabel]}
                         </span>
-                        <span className={cn("text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg", config?.bg, config?.text)}>
+                        <span className={cn("text-xs font-medium uppercase tracking-wider px-2.5 py-1 rounded-lg", config?.bg, config?.text)}>
                           {config?.label}
                         </span>
                       </div>
@@ -586,7 +586,7 @@ export default function OrdenesPage() {
                       )}>
                         {mesa.numero}
                       </div>
-                      <div className="text-[10px] text-text-25">{mesa.ubicacion} · {mesa.capacidad}p</div>
+                      <div className="text-xs text-text-25">{mesa.ubicacion} · {mesa.capacidad}p</div>
                     </button>
                   ))}
                 </div>
@@ -665,7 +665,7 @@ export default function OrdenesPage() {
             {/* Favoritos */}
             {favoriteProductIds.length > 0 && (
               <div className="mb-4">
-                <p className="text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">Favoritos</p>
+                <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-2">Favoritos</p>
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {favoriteProductIds.map((fid) => {
                     const prod = (productos as Producto[]).find((p) => p.id === fid);
@@ -681,9 +681,9 @@ export default function OrdenesPage() {
                         )}
                       >
                         <span className="text-[11px] font-medium text-text-100 block truncate">{prod.nombre}</span>
-                        <span className="text-[10px] text-accent tabular-nums">{formatMXN(prod.precio_base)}</span>
+                        <span className="text-xs text-accent tabular-nums">{formatMXN(prod.precio_base)}</span>
                         {enCarrito && (
-                          <span className="text-[10px] text-accent font-bold ml-1">x{enCarrito.cantidad}</span>
+                          <span className="text-xs text-accent font-bold ml-1">x{enCarrito.cantidad}</span>
                         )}
                       </button>
                     );
@@ -902,7 +902,7 @@ export default function OrdenesPage() {
                 {(() => {
                   const config = estadoOrdenConfig[ordenSeleccionada.estado as keyof typeof estadoOrdenConfig];
                   return (
-                    <span className={cn("text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-lg", config?.bg, config?.text)}>
+                    <span className={cn("text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-lg", config?.bg, config?.text)}>
                       {config?.label}
                     </span>
                   );

@@ -141,10 +141,10 @@ ALTER TABLE secciones_menu ENABLE ROW LEVEL SECURITY;
 ALTER TABLE items_menu ENABLE ROW LEVEL SECURITY;
 ALTER TABLE config_admin ENABLE ROW LEVEL SECURITY;
 
--- SELECT público (anon) para todas las tablas de fidelidad
-CREATE POLICY recompensas_select_anon ON recompensas FOR SELECT USING (true);
-CREATE POLICY tarjetas_select_anon ON tarjetas FOR SELECT USING (true);
-CREATE POLICY eventos_sello_select_anon ON eventos_sello FOR SELECT USING (true);
+-- SELECT público (anon) para tablas de fidelidad
+-- NOTA: recompensas_select_anon, tarjetas_select_anon, eventos_sello_select_anon
+-- fueron eliminadas en M4 (19-Mar-2026) por ser redundantes con las policies
+-- anon_* específicas y las ALL authenticated. Ver m4-drop-duplicate-policies.sql
 CREATE POLICY secciones_menu_select_anon ON secciones_menu FOR SELECT USING (true);
 CREATE POLICY items_menu_select_anon ON items_menu FOR SELECT USING (true);
 CREATE POLICY config_admin_select_anon ON config_admin FOR SELECT USING (true);
@@ -253,7 +253,7 @@ BEGIN
     'evento_id', v_evento_id
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Helper: bono referido
 CREATE OR REPLACE FUNCTION _otorgar_bono_referido(p_cliente_referido_id UUID)
@@ -291,7 +291,7 @@ BEGIN
   UPDATE clientes SET bono_referido_entregado = TRUE, actualizado_en = NOW()
   WHERE id = p_cliente_referido_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Función: deshacer_sello
 CREATE OR REPLACE FUNCTION deshacer_sello(p_tarjeta_id UUID, p_evento_id UUID)
@@ -323,7 +323,7 @@ BEGIN
   RETURN json_build_object('sellos', v_sellos_nuevos, 'estado',
     CASE WHEN v_tarjeta.estado = 'completada' AND v_sellos_nuevos < v_tarjeta.sellos_maximos THEN 'activa' ELSE v_tarjeta.estado END);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Función: canjear_tarjeta
 CREATE OR REPLACE FUNCTION canjear_tarjeta(p_tarjeta_id UUID, p_cliente_id UUID, p_recompensa_id UUID)
@@ -353,7 +353,7 @@ BEGIN
 
   RETURN v_nueva_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- ── 10. Seed: Recompensa default ──
 

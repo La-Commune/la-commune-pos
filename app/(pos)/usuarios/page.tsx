@@ -18,6 +18,7 @@ import {
   ToggleLeft,
   ToggleRight,
 } from "lucide-react";
+import { authFetch } from "@/lib/auth-fetch";
 import { cn } from "@/lib/utils";
 import { useUsuarios, subscribeToTable } from "@/hooks/useSupabase";
 import { useAuthStore } from "@/store/auth.store";
@@ -35,7 +36,7 @@ interface Usuario {
   nombre: string;
   email: string;
   rol: Rol;
-  pin: string | null;
+  pin_hash: string | null;
   activo: boolean;
   ultimo_acceso: string | null;
   creado_en: string;
@@ -132,7 +133,7 @@ function UsuariosPageContent() {
     setDesactivando(true);
     try {
       const nuevoEstado = !usuarioADesactivar.activo;
-      const res = await fetch("/api/usuarios", {
+      const res = await authFetch("/api/usuarios", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -169,7 +170,7 @@ function UsuariosPageContent() {
   }) => {
     if (usuarioEditando) {
       // EDIT
-      const res = await fetch("/api/usuarios", {
+      const res = await authFetch("/api/usuarios", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -190,7 +191,7 @@ function UsuariosPageContent() {
       }
     } else {
       // CREATE
-      const res = await fetch("/api/usuarios", {
+      const res = await authFetch("/api/usuarios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -269,12 +270,12 @@ function UsuariosPageContent() {
           <div className="rounded-xl border border-border overflow-hidden min-w-[750px]">
             {/* Header */}
             <div className="grid grid-cols-[1fr_minmax(120px,200px)_100px_80px_100px_90px_48px] gap-3 px-5 py-3 bg-surface-2 border-b border-border">
-              <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Nombre</span>
-              <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Email</span>
-              <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Rol</span>
-              <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">PIN</span>
-              <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Último acceso</span>
-              <span className="text-[10px] font-medium text-text-25 uppercase tracking-widest">Estado</span>
+              <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Nombre</span>
+              <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Email</span>
+              <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Rol</span>
+              <span className="text-xs font-medium text-text-25 uppercase tracking-widest">PIN</span>
+              <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Último acceso</span>
+              <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Estado</span>
               <span />
             </div>
             {/* Rows */}
@@ -306,20 +307,20 @@ function UsuariosPageContent() {
                     <span className="text-xs text-text-45 truncate">{usuario.email}</span>
                   </div>
                   <div className="flex items-center">
-                    <span className={cn("flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg", rol.bg, rol.color)}>
+                    <span className={cn("flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg", rol.bg, rol.color)}>
                       <RolIcon size={11} />{rol.label}
                     </span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-xs text-text-25 font-mono">
-                      {usuario.pin ? `${usuario.pin.slice(0, 2)}••` : "—"}
+                      {usuario.pin_hash ? "••••" : "—"}
                     </span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-[11px] text-text-25 tabular-nums">{tiempoRelativo(usuario.ultimo_acceso)}</span>
                   </div>
                   <div className="flex items-center">
-                    <span className={cn("flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg", usuario.activo ? "bg-status-ok-bg text-status-ok" : "bg-status-err-bg text-status-err")}>
+                    <span className={cn("flex items-center gap-1 text-xs font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg", usuario.activo ? "bg-status-ok-bg text-status-ok" : "bg-status-err-bg text-status-err")}>
                       {usuario.activo ? <UserCheck size={10} /> : <UserX size={10} />}
                       {usuario.activo ? "Activo" : "Inactivo"}
                     </span>
@@ -424,7 +425,7 @@ function UsuarioForm({
   const [nombre, setNombre] = useState(usuario?.nombre ?? "");
   const [email, setEmail] = useState(usuario?.email ?? "");
   const [rol, setRol] = useState<Rol>(usuario?.rol ?? "barista");
-  const [pin, setPin] = useState(usuario?.pin ?? "");
+  const [pin, setPin] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -458,7 +459,7 @@ function UsuarioForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
           Nombre completo *
         </label>
         <input
@@ -471,7 +472,7 @@ function UsuarioForm({
         />
       </div>
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
           Email *
         </label>
         <input
@@ -487,11 +488,11 @@ function UsuarioForm({
           )}
         />
         {usuario && (
-          <p className="text-[10px] text-text-25 mt-1">El email no se puede cambiar después de crear el usuario</p>
+          <p className="text-xs text-text-25 mt-1">El email no se puede cambiar después de crear el usuario</p>
         )}
       </div>
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-1.5">
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-1.5">
           <KeyRound size={10} className="inline mr-1" />
           PIN (4 dígitos)
         </label>
@@ -504,10 +505,10 @@ function UsuarioForm({
           placeholder="Ej: 1234"
           className="w-full px-3 py-2.5 rounded-xl bg-surface-3 border border-border text-text-100 text-sm placeholder:text-text-25 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-300 min-h-[44px] font-mono tracking-[0.5em]"
         />
-        <p className="text-[10px] text-text-25 mt-1">Para inicio de sesión rápido. Dejar vacío si no usa PIN.</p>
+        <p className="text-xs text-text-25 mt-1">Para inicio de sesión rápido. Dejar vacío si no usa PIN.</p>
       </div>
       <div>
-        <label className="block text-[10px] font-medium text-text-25 uppercase tracking-widest mb-2">
+        <label className="block text-xs font-medium text-text-25 uppercase tracking-widest mb-2">
           Rol *
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -528,7 +529,7 @@ function UsuarioForm({
                   <span className={cn("text-xs font-medium block", rol === key ? "text-accent" : "text-text-70")}>
                     {config.label}
                   </span>
-                  <span className="text-[10px] text-text-25">{config.desc}</span>
+                  <span className="text-xs text-text-25">{config.desc}</span>
                 </div>
               </button>
             );

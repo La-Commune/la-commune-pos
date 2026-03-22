@@ -125,7 +125,6 @@ export type Database = {
           creado_en: string
           eliminado_en: string | null
           email: string | null
-          firebase_id: string | null
           id: string
           id_referidor: string | null
           negocio_id: string
@@ -150,7 +149,6 @@ export type Database = {
           creado_en?: string
           eliminado_en?: string | null
           email?: string | null
-          firebase_id?: string | null
           id?: string
           id_referidor?: string | null
           negocio_id: string
@@ -175,7 +173,6 @@ export type Database = {
           creado_en?: string
           eliminado_en?: string | null
           email?: string | null
-          firebase_id?: string | null
           id?: string
           id_referidor?: string | null
           negocio_id?: string
@@ -236,6 +233,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      intentos_pin: {
+        Row: {
+          id: string
+          ip: string
+          intentos: number
+          bloqueado_hasta: string | null
+          creado_en: string
+          actualizado_en: string
+        }
+        Insert: {
+          id?: string
+          ip: string
+          intentos?: number
+          bloqueado_hasta?: string | null
+          creado_en?: string
+          actualizado_en?: string
+        }
+        Update: {
+          id?: string
+          ip?: string
+          intentos?: number
+          bloqueado_hasta?: string | null
+          creado_en?: string
+          actualizado_en?: string
+        }
+        Relationships: []
       }
       cortes_caja: {
         Row: {
@@ -445,7 +469,6 @@ export type Database = {
       }
       historico_ordenes: {
         Row: {
-          cliente_firebase_id: string | null
           completada_en: string
           creado_en: string
           descuento: number
@@ -463,7 +486,6 @@ export type Database = {
           usuario_nombre: string | null
         }
         Insert: {
-          cliente_firebase_id?: string | null
           completada_en?: string
           creado_en?: string
           descuento?: number
@@ -481,7 +503,6 @@ export type Database = {
           usuario_nombre?: string | null
         }
         Update: {
-          cliente_firebase_id?: string | null
           completada_en?: string
           creado_en?: string
           descuento?: number
@@ -861,7 +882,6 @@ export type Database = {
           divisa: string
           eliminado_en: string | null
           email: string | null
-          firebase_project_id: string | null
           footer_ticket: string | null
           horario: Json | null
           id: string
@@ -888,7 +908,6 @@ export type Database = {
           divisa?: string
           eliminado_en?: string | null
           email?: string | null
-          firebase_project_id?: string | null
           footer_ticket?: string | null
           horario?: Json | null
           id?: string
@@ -915,7 +934,6 @@ export type Database = {
           divisa?: string
           eliminado_en?: string | null
           email?: string | null
-          firebase_project_id?: string | null
           footer_ticket?: string | null
           horario?: Json | null
           id?: string
@@ -980,7 +998,6 @@ export type Database = {
       ordenes: {
         Row: {
           actualizado_en: string
-          cliente_firebase_id: string | null
           cliente_id: string | null
           creado_en: string
           descuento: number
@@ -1001,7 +1018,6 @@ export type Database = {
         }
         Insert: {
           actualizado_en?: string
-          cliente_firebase_id?: string | null
           cliente_id?: string | null
           creado_en?: string
           descuento?: number
@@ -1022,7 +1038,6 @@ export type Database = {
         }
         Update: {
           actualizado_en?: string
-          cliente_firebase_id?: string | null
           cliente_id?: string | null
           creado_en?: string
           descuento?: number
@@ -1540,7 +1555,7 @@ export type Database = {
           id: string
           negocio_id: string
           nombre: string
-          pin: string | null
+          pin_hash: string | null
           rol: Database["public"]["Enums"]["rol_usuario"]
           ultimo_acceso: string | null
         }
@@ -1554,7 +1569,7 @@ export type Database = {
           id?: string
           negocio_id: string
           nombre: string
-          pin?: string | null
+          pin_hash?: string | null
           rol?: Database["public"]["Enums"]["rol_usuario"]
           ultimo_acceso?: string | null
         }
@@ -1568,7 +1583,7 @@ export type Database = {
           id?: string
           negocio_id?: string
           nombre?: string
-          pin?: string | null
+          pin_hash?: string | null
           rol?: Database["public"]["Enums"]["rol_usuario"]
           ultimo_acceso?: string | null
         }
@@ -1702,7 +1717,8 @@ export type Database = {
         Returns: Database["public"]["Enums"]["rol_usuario"]
       }
       get_next_folio_orden: { Args: { p_negocio_id: string }; Returns: number }
-      login_por_pin: { Args: { pin_input: string }; Returns: Json }
+      limpiar_intentos_pin_viejos: { Args: Record<string, never>; Returns: undefined }
+      login_por_pin: { Args: { pin_input: string; client_ip?: string }; Returns: Json }
       swap_mesa_numeros: {
         Args: {
           mesa_a_id: string
@@ -1962,4 +1978,17 @@ export type PagoWithOrden = Pago & {
 export type TicketKDSWithJoin = TicketKDS & {
   ordenes?: { folio: number; origen: string; estado: string; mesa_id: string | null; mesas?: { numero: number } | null } | null
   mesa_numero?: number | null
+}
+
+export type MovimientoWithInventario = MovimientoInventario & {
+  inventario: { nombre: string } | null
+}
+
+export type RecetaWithProductoAndInventario = Receta & {
+  productos?: { nombre: string } | null
+  inventario?: { nombre: string } | null
+}
+
+export type InventarioWithStock = Inventario & {
+  stock_bajo: boolean
 }

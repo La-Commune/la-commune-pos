@@ -1064,6 +1064,18 @@ body {
 }
 
 /* ══════════════════════════════════════════════
+   BUTTONS — base touch target (WCAG 2.5.8)
+   ══════════════════════════════════════════════ */
+
+/* Ensure all interactive elements meet 44px minimum touch target.
+   Use .touch-compact to opt out for inline/toolbar icon buttons. */
+button:not(.touch-compact),
+a[role="button"]:not(.touch-compact),
+[role="button"]:not(.touch-compact) {
+  min-height: 44px;
+}
+
+/* ══════════════════════════════════════════════
    BUTTONS — base styles (all themes)
    ══════════════════════════════════════════════ */
 
@@ -1324,6 +1336,24 @@ body {
   80% { transform: translateX(2px); }
 }
 
+@keyframes login-verifying-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.7); opacity: 0.4; }
+}
+
+/* ── PIN Indicator (editorial dot + line) ── */
+.pin-indicator-dot {
+  will-change: transform, opacity;
+}
+
+/* ── PIN Key — hover/active for tablet ── */
+.login-pin-key:not(:disabled):hover {
+  background: var(--surface-2) !important;
+}
+.login-pin-key:not(:disabled):active {
+  background: var(--surface-3) !important;
+}
+
 @keyframes login-spin {
   to { transform: rotate(360deg); }
 }
@@ -1485,6 +1515,47 @@ body {
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .login-forgot-link:hover::after { width: 100%; }
+
+/* ══════════════════════════════════════════════
+   POS — Page transitions & loading
+   ══════════════════════════════════════════════ */
+
+@keyframes pos-page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pos-page-enter {
+  animation: pos-page-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Skeleton shimmer effect */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    var(--surface-3) 50%,
+    var(--surface-2) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius);
+}
+
+/* Auth provider fade out → app fade in */
+@keyframes auth-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.auth-loading-exit {
+  animation: auth-fade-out 0.25s ease-out forwards;
+}
 
 /* ══════════════════════════════════════════════
    FONT SCALE — user adjustable
