@@ -12,7 +12,11 @@ test.describe("POS — Navegación (mock mode)", () => {
       page.getByText("David").first()
     ).toBeVisible({ timeout: 15_000 });
 
-    // Verificar que hay KPIs visibles
+    // Diagnóstico: capturar el contenido de main para entender qué se renderiza
+    const mainContent = await page.locator("main").first().textContent().catch(() => "NO MAIN FOUND");
+    console.log("[DIAG] main content:", mainContent?.substring(0, 500));
+
+    // Verificar que hay KPIs visibles (siempre se renderizan, incluso durante carga)
     await expect(page.getByText("Ventas hoy").first()).toBeVisible({ timeout: 10_000 });
   });
 
