@@ -240,8 +240,57 @@ Ambos proyectos (POS y frontend de fidelidad) comparten la misma instancia de Su
 - `supabase/scripts/a3-fix-search-path.sql` — script del fix M2 (search_path)
 - `supabase/scripts/m2-pin-hash-bcrypt.sql` — script del fix M3 (PIN bcrypt)
 
+## Motion System — Premium Animations (23-Mar-2026) ✅
+
+Sistema centralizado de animaciones premium para el POS.
+
+### Archivos creados
+
+| Archivo | Descripción |
+|---------|-------------|
+| `lib/motion.ts` | Tokens de animación: timing (instant→dramatic), easings (out/in/inOut/spring), spring configs (snappy/gentle/bouncy), transition presets, stagger variants, interactive variants (cardHover, buttonPress) |
+| `components/ui/AnimatedCounter.tsx` | Count-up animado con spring physics. `AnimatedCounter` (acepta `format` para MXN) + `FractionCounter` ("3 / 8"). Solo anima cuando está en viewport |
+| `components/ui/MotionCard.tsx` | `MotionCard` (card con hover scale+shadow, tap feedback), `StaggerGrid` (container con staggerChildren), `MotionItem` (child wrapper para stagger) |
+| `components/ui/LoadingButton.tsx` | Botón con spinner integrado. 4 variantes (primary/secondary/ghost/danger), 3 tamaños. Usa CSS vars del design system → adapta a los 5 temas |
+
+### Archivos modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `components/ui/EmptyState.tsx` | Reescrito: ahora tiene 5 ilustraciones SVG animadas (coffee/orders/search/offline/error), entrada con framer-motion (fade+scale+slide), separador decorativo animado, usa CSS vars del design system. Backwards-compatible (sigue aceptando LucideIcon) |
+| `components/ui/Toast.tsx` | Upgrade a framer-motion: spring entry (x+scale+blur), smooth exit, `AnimatePresence mode="popLayout"` para stacking animado cuando hay múltiples toasts, botón dismiss con whileHover/whileTap |
+| `app/globals.css` | Shimmer sincronizado: `background-attachment: fixed` (todas las skeletons brillan al unísono), easing mejorado a `cubic-bezier(0.4,0,0.2,1)`, highlight más visible con `color-mix(--surface-4 80%, --text-25)`, `will-change: background-position`, soporte `prefers-reduced-motion: reduce` |
+| `app/(pos)/page.tsx` (Dashboard) | KPIs con `AnimatedCounter` (count-up suave para ventas, órdenes, ticket promedio), grid con `staggerContainer` variants, KPICards con `whileHover`/`whileTap` micro-interactions, iconos con spring entry (`scale 0.8→1`), AlertCards con hover slide (x:4), QuickLinks con spring bounce (`y:-2`), header con fade-up entrance |
+
+### Cómo usar
+
+```tsx
+// Stagger grid con micro-interactions
+import { staggerContainer, fadeUp, cardHover } from "@/lib/motion";
+
+<motion.div variants={staggerContainer} initial="hidden" animate="show">
+  <motion.div variants={fadeUp} whileHover={cardHover.hover}>
+    Contenido...
+  </motion.div>
+</motion.div>
+
+// Contador animado
+import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
+<AnimatedCounter value={15000} format={formatMXN} />
+
+// Botón con loading
+import { LoadingButton } from "@/components/ui/LoadingButton";
+<LoadingButton loading={saving} loadingText="Guardando...">Guardar</LoadingButton>
+
+// Empty state premium
+import EmptyState from "@/components/ui/EmptyState";
+<EmptyState illustration="orders" title="Sin órdenes" description="Crea una nueva" />
+```
+
 ## Pendiente
 
 1. Crear iconos PWA reales (192x192 y 512x512) en `/public/icons/`
 2. Eliminar dependencia `firebase` de package.json (legacy)
 3. Tests E2E contra Supabase staging (auth real, flujo completo con persistencia)
+4. Integrar MotionCard/StaggerGrid en resto de páginas (mesas, menú, órdenes, cobros, KDS, fidelidad, reportes)
+5. Agregar LoadingButton en acciones críticas (confirmar orden, procesar pago, abrir/cerrar caja)

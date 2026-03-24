@@ -1529,9 +1529,12 @@ a[role="button"]:not(.touch-compact),
   animation: pos-page-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Skeleton shimmer effect */
+/* ── Skeleton shimmer: synchronized wave effect ──
+   Uses background-attachment:fixed so ALL skeleton elements
+   shimmer in sync (single "scan" sweeping across the page).
+   Hardware-accelerated via background-position. */
 @keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
+  0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
@@ -1540,11 +1543,22 @@ a[role="button"]:not(.touch-compact),
   background: linear-gradient(
     90deg,
     var(--surface-3) 25%,
-    color-mix(in srgb, var(--surface-4) 70%, var(--surface-3)) 37%,
+    color-mix(in srgb, var(--surface-4) 80%, var(--text-25)) 37%,
     var(--surface-3) 63%
   );
   background-size: 400% 100%;
-  animation: skeleton-shimmer 2s ease-in-out infinite;
+  background-attachment: fixed;
+  animation: skeleton-shimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: background-position;
+}
+
+/* Respect reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .skeleton-shimmer {
+    animation: none;
+    opacity: 0.6;
+  }
 }
 
 /* ── Content reveal: smooth fade-in when data replaces skeleton ──

@@ -1,8 +1,17 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { timing, ease } from "@/lib/motion";
+
+/* ══════════════════════════════════════════════════════════════
+ * Toast System — Premium framer-motion animated toasts
+ *
+ * Upgrade: CSS slideInRight → framer-motion spring entry/exit,
+ * animated stacking when multiple toasts, y-axis repositioning.
+ * ══════════════════════════════════════════════════════════════ */
 
 type ToastType = "success" | "error" | "info";
 
@@ -25,17 +34,48 @@ const styleMap = {
   info: "bg-status-info-bg border-[rgba(96,165,250,0.2)] text-status-info",
 };
 
-// Simple event-based toast system
+// Event-based toast system (unchanged API)
 const listeners: Set<(toast: Toast) => void> = new Set();
 
 export function showToast(message: string, type: ToastType = "success", duration?: number) {
-  const toast: Toast = { id: `toast-${Date.now()}`, message, type, duration };
+  const toast: Toast = { id: `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, message, type, duration };
   listeners.forEach((fn) => fn(toast));
 }
 
+/* ─── Animation variants ─── */
+const toastVariants = {
+  initial: {
+    opacity: 0,
+    x: 80,
+    scale: 0.92,
+    filter: "blur(4px)",
+  },
+  animate: {
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: {
+      type: "spring" as const,
+      stiffness: 380,
+      damping: 28,
+      mass: 0.8,
+    },
+  },
+  exit: {
+    opacity: 0,
+    x: 60,
+    scale: 0.95,
+    filter: "blur(2px)",
+    transition: {
+      duration: timing.normal,
+      ease: ease.in,
+    },
+  },
+};
+
 export default function ToastContainer() {
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [dismissing, setDismissing] = useState<string | null>(null);
 
   const addToast = useCallback((toast: Toast) => {
     setToasts((prev) => [...prev, toast]);
@@ -51,47 +91,49 @@ export default function ToastContainer() {
   }, [addToast]);
 
   const dismiss = (id: string) => {
-    setDismissing(id);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-      setDismissing(null);
-    }, 200);
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   };
-
-  if (toasts.length === 0) return null;
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"
+      className="fixed bottom-6 right-6 z-50 flex flex-col gap-2.5 pointer-events-none"
       aria-label="Notificaciones"
       role="region"
     >
-      {toasts.map((toast) => {
-        const Icon = iconMap[toast.type];
-        return (
-          <div
-            key={toast.id}
-            role={toast.type === "error" ? "alert" : "status"}
-            aria-live={toast.type === "error" ? "assertive" : "polite"}
-            aria-atomic="true"
-            className={cn(
-              "pointer-events-auto flex items-center gap-2.5 pl-4 pr-3 py-3 rounded-xl border shadow-lg backdrop-blur-sm min-w-[280px] max-w-sm transition-all duration-200",
-              styleMap[toast.type],
-              dismissing === toast.id ? "opacity-0 translate-x-full" : "animate-[slideInRight_0.3s_ease-out]"
-            )}
-          >
-            <Icon size={16} className="flex-shrink-0" aria-hidden="true" />
-            <span className="text-xs font-medium flex-1">{toast.message}</span>
-            <button
-              onClick={() => dismiss(toast.id)}
-              aria-label={`Cerrar notificación: ${toast.message}`}
-              className="p-0.5 rounded-lg opacity-60 hover:opacity-100 transition-opacity"
+      <AnimatePresence mode="popLayout">
+        {toasts.map((toast) => {
+          const Icon = iconMap[toast.type];
+          return (
+            <motion.div
+              key={toast.id}
+              layout
+              variants={toastVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              role={toast.type === "error" ? "alert" : "status"}
+              aria-live={toast.type === "error" ? "assertive" : "polite"}
+              aria-atomic="true"
+              className={cn(
+                "pointer-events-auto flex items-center gap-2.5 pl-4 pr-3 py-3 rounded-xl border shadow-lg backdrop-blur-sm min-w-[280px] max-w-sm",
+                styleMap[toast.type],
+              )}
             >
-              <X size={12} />
-            </button>
-          </div>
-        );
-      })}
+              <Icon size={16} className="flex-shrink-0" aria-hidden="true" />
+              <span className="text-xs font-medium flex-1">{toast.message}</span>
+              <motion.button
+                onClick={() => dismiss(toast.id)}
+                aria-label={`Cerrar notificación: ${toast.message}`}
+                whileHover={{ scale: 1.15, opacity: 1 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-0.5 rounded-lg opacity-60 hover:opacity-100 transition-opacity"
+              >
+                <X size={12} />
+              </motion.button>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
     </div>
   );
 }
