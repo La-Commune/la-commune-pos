@@ -19,6 +19,7 @@ import {
   History,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
+import { SkeletonStatCard, SkeletonChart, SkeletonTopBar } from "@/components/ui/Skeleton";
 import {
   BarChart,
   Bar,
@@ -537,15 +538,44 @@ export default function ReportesPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[calc(100vh-3.5rem-4rem)] items-center justify-center">
-        <Loader2 size={32} className="animate-spin text-accent" />
+      <div className="h-[calc(100vh-3.5rem-4rem)] flex flex-col overflow-y-auto space-y-6">
+        {/* Header skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="skeleton-shimmer h-6 w-32 rounded-md" />
+            <div className="skeleton-shimmer h-4 w-48 rounded-md" />
+          </div>
+          <div className="skeleton-shimmer h-10 w-36 rounded-xl" />
+        </div>
+        {/* KPI cards skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonStatCard key={i} />
+          ))}
+        </div>
+        {/* Charts skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <SkeletonChart height={240} />
+          <SkeletonChart height={240} />
+        </div>
+        {/* Top products skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="p-5 rounded-xl bg-surface-2 border border-border">
+            <div className="skeleton-shimmer h-4 w-32 rounded-md mb-4" />
+            <SkeletonTopBar count={5} />
+          </div>
+          <div className="p-5 rounded-xl bg-surface-2 border border-border">
+            <div className="skeleton-shimmer h-4 w-32 rounded-md mb-4" />
+            <SkeletonTopBar count={5} />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <ErrorBoundary moduleName="Reportes">
-      <div className="h-[calc(100vh-3.5rem-4rem)] flex flex-col overflow-y-auto">
+      <div className="h-[calc(100vh-3.5rem-4rem)] flex flex-col overflow-y-auto content-reveal">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">

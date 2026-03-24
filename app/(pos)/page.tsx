@@ -20,6 +20,7 @@ import { supabase, USE_MOCK } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth.store";
 import { useMesas, useOrdenes, useInventario, subscribeToTable } from "@/hooks/useSupabase";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { SkeletonKPICard, SkeletonAlertCard, SkeletonQuickLink, ContentReveal } from "@/components/ui/Skeleton";
 import type { Mesa, Orden } from "@/types/database";
 
 interface DashboardKPIs {
@@ -226,73 +227,101 @@ function DashboardContent() {
         </p>
       </div>
 
-      {/* KPIs — siempre visibles, muestran $0 mientras cargan */}
+      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KPICard
-          label="Ventas hoy"
-          value={loading ? "..." : formatMXN(ventasHoy)}
-          icon={DollarSign}
-          color="bg-status-ok"
-          onClick={() => router.push("/reportes")}
-        />
-        <KPICard
-          label="Órdenes completadas"
-          value={loading ? "..." : String(ordenesHoyCount)}
-          icon={ClipboardList}
-          color="bg-cat-4"
-          onClick={() => router.push("/ordenes")}
-        />
-        <KPICard
-          label="Ticket promedio"
-          value={loading ? "..." : formatMXN(ticketPromedio)}
-          icon={TrendingUp}
-          color="bg-[var(--info)]"
-        />
-        <KPICard
-          label="Mesas ocupadas"
-          value={`${mesasOcupadas} / ${mesasList.length}`}
-          icon={LayoutGrid}
-          color="bg-cat-3"
-          onClick={() => router.push("/mesas")}
-        />
+        {loading ? (
+          <>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonKPICard key={i} />
+            ))}
+          </>
+        ) : (
+          <ContentReveal stagger className="contents">
+            <KPICard
+              label="Ventas hoy"
+              value={formatMXN(ventasHoy)}
+              icon={DollarSign}
+              color="bg-status-ok"
+              onClick={() => router.push("/reportes")}
+            />
+            <KPICard
+              label="Órdenes completadas"
+              value={String(ordenesHoyCount)}
+              icon={ClipboardList}
+              color="bg-cat-4"
+              onClick={() => router.push("/ordenes")}
+            />
+            <KPICard
+              label="Ticket promedio"
+              value={formatMXN(ticketPromedio)}
+              icon={TrendingUp}
+              color="bg-[var(--info)]"
+            />
+            <KPICard
+              label="Mesas ocupadas"
+              value={`${mesasOcupadas} / ${mesasList.length}`}
+              icon={LayoutGrid}
+              color="bg-cat-3"
+              onClick={() => router.push("/mesas")}
+            />
+          </ContentReveal>
+        )}
       </div>
 
       {/* Alertas */}
       <div className="space-y-2 mb-6">
-        <AlertCard
-          label={ordenesPendientes === 1 ? "orden pendiente de confirmar" : "órdenes pendientes de confirmar"}
-          count={ordenesPendientes}
-          icon={AlertTriangle}
-          color="bg-status-warn-bg text-status-warn border-status-warn/20"
-          onClick={() => router.push("/ordenes")}
-        />
-        <AlertCard
-          label={ordenesEnKDS === 1 ? "orden en cocina" : "órdenes en cocina"}
-          count={ordenesEnKDS}
-          icon={ChefHat}
-          color="bg-status-info-bg text-status-info border-status-info/20"
-          onClick={() => router.push("/kds")}
-        />
-        <AlertCard
-          label={ingredientesBajos === 1 ? "ingrediente con stock bajo" : "ingredientes con stock bajo"}
-          count={ingredientesBajos}
-          icon={Package}
-          color="bg-status-error-bg text-status-error border-status-error/20"
-          onClick={() => router.push("/inventario")}
-        />
+        {loading ? (
+          <>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <SkeletonAlertCard key={i} />
+            ))}
+          </>
+        ) : (
+          <ContentReveal>
+            <AlertCard
+              label={ordenesPendientes === 1 ? "orden pendiente de confirmar" : "órdenes pendientes de confirmar"}
+              count={ordenesPendientes}
+              icon={AlertTriangle}
+              color="bg-status-warn-bg text-status-warn border-status-warn/20"
+              onClick={() => router.push("/ordenes")}
+            />
+            <AlertCard
+              label={ordenesEnKDS === 1 ? "orden en cocina" : "órdenes en cocina"}
+              count={ordenesEnKDS}
+              icon={ChefHat}
+              color="bg-status-info-bg text-status-info border-status-info/20"
+              onClick={() => router.push("/kds")}
+            />
+            <AlertCard
+              label={ingredientesBajos === 1 ? "ingrediente con stock bajo" : "ingredientes con stock bajo"}
+              count={ingredientesBajos}
+              icon={Package}
+              color="bg-status-error-bg text-status-error border-status-error/20"
+              onClick={() => router.push("/inventario")}
+            />
+          </ContentReveal>
+        )}
       </div>
 
       {/* Accesos rápidos */}
       <div className="mb-2">
         <h2 className="text-xs font-medium text-text-25 uppercase tracking-widest mb-3">Accesos rápidos</h2>
       </div>
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-        <QuickLink label="Mesas" icon={LayoutGrid} color="bg-cat-3" onClick={() => router.push("/mesas")} />
-        <QuickLink label="Órdenes" icon={ClipboardList} color="bg-cat-4" onClick={() => router.push("/ordenes")} />
-        <QuickLink label="Cocina" icon={ChefHat} color="bg-cat-5" onClick={() => router.push("/kds")} />
-        <QuickLink label="Cobros" icon={CreditCard} color="bg-cat-1" onClick={() => router.push("/cobros")} />
-        <QuickLink label="Reportes" icon={TrendingUp} color="bg-[var(--info)]" onClick={() => router.push("/reportes")} />
-      </div>
+      {loading ? (
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonQuickLink key={i} />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 content-reveal-stagger">
+          <QuickLink label="Mesas" icon={LayoutGrid} color="bg-cat-3" onClick={() => router.push("/mesas")} />
+          <QuickLink label="Órdenes" icon={ClipboardList} color="bg-cat-4" onClick={() => router.push("/ordenes")} />
+          <QuickLink label="Cocina" icon={ChefHat} color="bg-cat-5" onClick={() => router.push("/kds")} />
+          <QuickLink label="Cobros" icon={CreditCard} color="bg-cat-1" onClick={() => router.push("/cobros")} />
+          <QuickLink label="Reportes" icon={TrendingUp} color="bg-[var(--info)]" onClick={() => router.push("/reportes")} />
+        </div>
+      )}
     </div>
   );
 }

@@ -1531,21 +1531,47 @@ a[role="button"]:not(.touch-compact),
 
 /* Skeleton shimmer effect */
 @keyframes skeleton-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
-.skeleton {
+.skeleton,
+.skeleton-shimmer {
   background: linear-gradient(
     90deg,
-    var(--surface-2) 25%,
-    var(--surface-3) 50%,
-    var(--surface-2) 75%
+    var(--surface-3) 25%,
+    color-mix(in srgb, var(--surface-4) 70%, var(--surface-3)) 37%,
+    var(--surface-3) 63%
   );
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.5s ease-in-out infinite;
-  border-radius: var(--radius);
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 2s ease-in-out infinite;
 }
+
+/* ── Content reveal: smooth fade-in when data replaces skeleton ──
+   Only opacity — PageTransition already handles translateY on nav,
+   so we avoid competing transforms / double-blur. */
+@keyframes content-reveal {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.content-reveal {
+  animation: content-reveal 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Staggered children inside reveal containers */
+.content-reveal-stagger > * {
+  animation: content-reveal 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.content-reveal-stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.content-reveal-stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.content-reveal-stagger > *:nth-child(3) { animation-delay: 0.10s; }
+.content-reveal-stagger > *:nth-child(4) { animation-delay: 0.14s; }
+.content-reveal-stagger > *:nth-child(5) { animation-delay: 0.18s; }
+.content-reveal-stagger > *:nth-child(6) { animation-delay: 0.22s; }
+.content-reveal-stagger > *:nth-child(7) { animation-delay: 0.26s; }
+.content-reveal-stagger > *:nth-child(8) { animation-delay: 0.30s; }
+.content-reveal-stagger > *:nth-child(n+9) { animation-delay: 0.34s; }
 
 /* Auth provider fade out → app fade in */
 @keyframes auth-fade-out {

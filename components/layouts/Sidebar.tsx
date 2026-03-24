@@ -173,7 +173,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className={cn("flex-1 py-4 space-y-1 overflow-y-auto", isCollapsed ? "px-2" : "px-3")}>
+      <nav className={cn("flex-1 py-4 space-y-0.5 overflow-y-auto", isCollapsed ? "px-2" : "px-3")}>
         {filteredItems.map((item) => {
           const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -184,27 +184,51 @@ export default function Sidebar() {
               href={item.href}
               aria-label={item.label}
               aria-current={isActive ? "page" : undefined}
-              title={isCollapsed ? item.label : undefined}
               className={cn(
-                "group relative flex items-center rounded-lg text-[13px] font-medium transition-all duration-200",
+                "group relative flex items-center rounded-xl text-[13px] font-medium transition-all duration-200",
                 isCollapsed
                   ? "justify-center py-2.5 px-0"
                   : "gap-3 px-3 py-2.5",
                 isActive
-                  ? "bg-[rgba(255,255,255,0.06)] text-text-100"
-                  : "text-text-45 hover:text-text-70 hover:bg-[rgba(255,255,255,0.03)]"
+                  ? "text-text-100"
+                  : "text-text-45 hover:text-text-70 hover:bg-[rgba(255,255,255,0.04)]"
               )}
             >
-              {/* Barra lateral activa en modo colapsado */}
-              {isActive && isCollapsed && (
-                <div
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full"
-                  style={{ backgroundColor: item.color }}
+              {/* Animated active background */}
+              {isActive && (
+                <motion.div
+                  layoutId="sidebar-active-bg"
+                  className="absolute inset-0 rounded-xl"
+                  style={{
+                    background: `linear-gradient(135deg, ${item.color}12 0%, ${item.color}08 100%)`,
+                    border: `1px solid ${item.color}18`,
+                  }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 350,
+                    damping: 30,
+                  }}
                 />
               )}
+
+              {/* Active indicator bar (collapsed) */}
+              {isActive && isCollapsed && (
+                <motion.div
+                  layoutId="sidebar-active-bar"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full"
+                  style={{ backgroundColor: item.color }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 350,
+                    damping: 30,
+                  }}
+                />
+              )}
+
+              {/* Icon container */}
               <div
                 className={cn(
-                  "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200",
+                  "relative w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200",
                   isActive
                     ? "shadow-sm"
                     : "bg-transparent group-hover:bg-[rgba(255,255,255,0.03)]"
@@ -220,24 +244,51 @@ export default function Sidebar() {
                   style={isActive ? { color: item.color } : undefined}
                   className={cn(
                     "transition-all duration-200",
-                    !isActive && "text-text-45 group-hover:text-text-70"
+                    !isActive && "text-text-45 group-hover:text-text-70",
+                    !isActive && "group-hover:scale-110"
                   )}
                 />
               </div>
+
+              {/* Label text */}
               {!isCollapsed && (
                 <motion.span
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="truncate"
+                  className="relative truncate"
                 >
                   {item.label}
                 </motion.span>
               )}
+
+              {/* Active dot (expanded) */}
               {isActive && !isCollapsed && (
-                <div
-                  className="ml-auto w-1.5 h-1.5 rounded-full"
+                <motion.div
+                  layoutId="sidebar-active-dot"
+                  className="relative ml-auto w-1.5 h-1.5 rounded-full"
                   style={{ backgroundColor: item.color }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 350,
+                    damping: 30,
+                  }}
                 />
+              )}
+
+              {/* Tooltip (collapsed mode) */}
+              {isCollapsed && (
+                <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 translate-x-1 group-hover:translate-x-0 z-50">
+                  <div
+                    className="text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap border"
+                    style={{
+                      backgroundColor: `color-mix(in srgb, ${item.color} 10%, var(--surface-3))`,
+                      borderColor: `${item.color}20`,
+                      color: "var(--text-100)",
+                    }}
+                  >
+                    {item.label}
+                  </div>
+                </div>
               )}
             </Link>
           );
@@ -251,7 +302,7 @@ export default function Sidebar() {
             onClick={() => collapseSidebar(!sidebarCollapsed)}
             aria-label={sidebarCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
             aria-expanded={!sidebarCollapsed}
-            className="w-full flex items-center justify-center py-2.5 rounded-lg text-text-45 hover:text-text-70 hover:bg-[rgba(255,255,255,0.03)] transition-all duration-200"
+            className="w-full flex items-center justify-center py-2.5 rounded-xl text-text-45 hover:text-text-70 hover:bg-[rgba(255,255,255,0.04)] transition-all duration-200"
           >
             {sidebarCollapsed ? (
               <ChevronRight size={16} />

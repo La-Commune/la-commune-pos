@@ -28,6 +28,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { showToast } from "@/components/ui/Toast";
 import Modal from "@/components/ui/Modal";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { SkeletonList, SkeletonFidelidadDetail } from "@/components/ui/Skeleton";
 import { useSearch } from "@/hooks/useSearch";
 
 /** IDs válidos de ilustración — debe coincidir con el catálogo del frontend */
@@ -390,11 +391,17 @@ function FidelidadPageContent() {
       </div>
 
       {loading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 size={24} className="animate-spin text-text-25" />
+        <div className="flex gap-6 flex-1 min-h-0">
+          <div className="flex-1">
+            <div className="skeleton-shimmer h-11 w-full rounded-xl mb-4" />
+            <SkeletonList count={6} />
+          </div>
+          <div className="flex-shrink-0" style={{ width: "var(--panel-lg)" }}>
+            <SkeletonFidelidadDetail />
+          </div>
         </div>
       ) : (
-        <div className="flex gap-6 flex-1 min-h-0">
+        <div className="flex gap-6 flex-1 min-h-0 content-reveal">
           {/* Lista de clientes */}
           <div className="flex-1 flex flex-col min-w-0">
             <div className="relative mb-4">

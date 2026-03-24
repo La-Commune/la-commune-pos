@@ -724,16 +724,31 @@ export default function Navbar() {
 
         {/* R14: Title muestra módulo activo + breadcrumb */}
         {!showTopNav && !showHamburger && (() => {
-          const activeItem = navItems.find((item) => pathname.startsWith(item.href));
+          const activeItem = navItems.find((item) =>
+            item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
+          );
+          const ActiveIcon = activeItem?.icon;
           return (
             <div className="flex items-center gap-2.5">
               <span className="text-[13px] text-text-45 font-medium">La Commune</span>
               {activeItem && (
                 <>
-                  <span className="text-text-25">/</span>
-                  <span className="text-[15px] font-semibold text-text-100 tracking-tight">
-                    {activeItem.label}
-                  </span>
+                  <span className="text-text-25 text-xs">/</span>
+                  <div className="flex items-center gap-2">
+                    {ActiveIcon && (
+                      <div
+                        className="w-6 h-6 rounded-md flex items-center justify-center"
+                        style={{
+                          backgroundColor: `${activeItem.color}15`,
+                        }}
+                      >
+                        <ActiveIcon size={13} style={{ color: activeItem.color }} />
+                      </div>
+                    )}
+                    <span className="text-[14px] font-semibold text-text-100 tracking-tight">
+                      {activeItem.label}
+                    </span>
+                  </div>
                 </>
               )}
             </div>

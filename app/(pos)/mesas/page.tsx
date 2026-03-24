@@ -20,6 +20,7 @@ import { useZonasStore } from "@/store/zonas.store";
 import { ESTADO_MESA_CONFIG } from "@/lib/constants";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { SkeletonMesaGrid } from "@/components/ui/Skeleton";
 import MesaTimer, { getMins, getLevel, UMBRAL_WARN } from "@/components/mesas/MesaTimer";
 import FloorPlanCanvas from "@/components/mesas/FloorPlanCanvas";
 import ZonaManager from "@/components/mesas/ZonaManager";
@@ -569,16 +570,12 @@ function MesasPageContent() {
       </div>
 
       {/* ── Loading ── */}
-      {loading && (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-text-45" />
-        </div>
-      )}
+      {loading && <SkeletonMesaGrid count={8} />}
 
       {/* ── Banner: mesas estancadas ── */}
       {!loading && staleMesas.length > 0 && (
         <div
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg mb-4 text-sm"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-lg mb-4 text-sm content-reveal"
           style={{
             backgroundColor: "color-mix(in srgb, var(--err) 10%, var(--surface-1))",
             color: "var(--err)",
