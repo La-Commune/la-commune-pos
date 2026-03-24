@@ -21,6 +21,7 @@ import { supabase, USE_MOCK } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth.store";
 import { insertRecordReturning, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
 import { showToast } from "@/components/ui/Toast";
+import { SkeletonCaja } from "@/components/ui/Skeleton";
 import type { Pago, PagoWithOrden } from "@/types/database";
 
 // ── TIPOS ──
@@ -301,14 +302,26 @@ export default function CajaPage() {
   // ── LOADING ──
   if (estadoTurno === "cargando") {
     return (
-      <div className="flex h-[calc(100vh-3.5rem-4rem)] items-center justify-center">
-        <Loader2 size={32} className="animate-spin text-accent" />
+      <div className="flex h-[calc(100vh-3.5rem-4rem)]" style={{ gap: "var(--density-gap)" }}>
+        {/* Left panel skeleton */}
+        <div className="flex-shrink-0 bg-surface-2 border-r border-border rounded-2xl p-5" style={{ width: "var(--panel-sm)" }}>
+          <div className="skeleton-shimmer h-5 w-32 rounded-md mb-4" />
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="skeleton-shimmer h-16 w-full rounded-xl" />
+            ))}
+          </div>
+        </div>
+        {/* Main content skeleton */}
+        <div className="flex-1 p-6">
+          <SkeletonCaja />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem-4rem)]" style={{ gap: "var(--density-gap)" }}>
+    <div className="flex h-[calc(100vh-3.5rem-4rem)] content-reveal" style={{ gap: "var(--density-gap)" }}>
       {/* ── PANEL IZQUIERDO: Historial de cortes ── */}
       <div className="flex-shrink-0 bg-surface-2 border-r border-border rounded-2xl flex flex-col shadow-xl shadow-black/20" style={{ width: "var(--panel-sm)" }}>
         <div className="p-5 border-b border-border/50">

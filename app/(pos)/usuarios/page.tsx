@@ -26,6 +26,7 @@ import { showToast } from "@/components/ui/Toast";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import Modal from "@/components/ui/Modal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { SkeletonTable } from "@/components/ui/Skeleton";
 
 type Rol = "admin" | "barista" | "camarero" | "cocina";
 
@@ -259,14 +260,14 @@ function UsuariosPageContent() {
 
       {/* Loading */}
       {loading && (
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 size={24} className="animate-spin text-text-25" />
+        <div className="flex-1 px-1">
+          <SkeletonTable rows={6} cols={7} />
         </div>
       )}
 
       {/* Tabla */}
       {!loading && (
-        <div className="flex-1 overflow-y-auto overflow-x-auto">
+        <div className="flex-1 overflow-y-auto overflow-x-auto content-reveal">
           <div className="rounded-xl border border-border overflow-hidden min-w-[750px]">
             {/* Header */}
             <div className="grid grid-cols-[1fr_minmax(120px,200px)_100px_80px_100px_90px_48px] gap-3 px-5 py-3 bg-surface-2 border-b border-border">

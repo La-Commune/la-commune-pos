@@ -23,6 +23,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { useUIStore } from "@/store/ui.store";
 import { showToast } from "@/components/ui/Toast";
 import { Grid3X3, List } from "lucide-react";
+import { SkeletonProductGrid } from "@/components/ui/Skeleton";
 import type { Producto, CategoriaMenu, OpcionTamano } from "@/types/database";
 
 type ProductoConTamanos = Producto & { tamanos?: OpcionTamano[] };
@@ -320,9 +321,11 @@ export default function MenuPage() {
 
         {/* Grid/List de productos */}
         <div className="flex-1 overflow-y-auto -mx-1 px-1">
-          {menuViewMode === "grid" ? (
+          {loading ? (
+            <SkeletonProductGrid count={menuTileSize === "sm" ? 10 : 6} />
+          ) : menuViewMode === "grid" ? (
             <div className={cn(
-              "grid pt-1 pb-2",
+              "grid pt-1 pb-2 content-reveal-stagger",
               menuTileSize === "sm" && "grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 auto-rows-fr",
               menuTileSize === "md" && "grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5",
               menuTileSize === "lg" && "grid-cols-2 md:grid-cols-3 gap-3"
