@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Plus,
   Search,
   MoreHorizontal,
   Pencil,
-  Trash2,
   Shield,
   ShieldCheck,
   ShieldAlert,
@@ -71,7 +70,7 @@ function UsuariosPageContent() {
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
   const [confirmDesactivar, setConfirmDesactivar] = useState(false);
   const [usuarioADesactivar, setUsuarioADesactivar] = useState<Usuario | null>(null);
-  const [desactivando, setDesactivando] = useState(false);
+  const [, setDesactivando] = useState(false);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});

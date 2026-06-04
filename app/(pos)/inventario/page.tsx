@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -13,9 +13,7 @@ import {
   ChefHat,
   History,
   TrendingDown,
-  Filter,
   X,
-  MoreHorizontal,
   Loader2,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
@@ -615,7 +613,6 @@ export default function InventarioPage() {
             <div className="flex-1 overflow-y-auto -mx-1 px-1">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1 pb-2">
                 {invFiltrado.map((inv) => {
-                  const invList = inventario as MockInventario[];
                   return (
                     <div
                       key={inv.id}

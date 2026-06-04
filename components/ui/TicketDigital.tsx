@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import {
   X,
-  Share2,
   MessageCircle,
   Copy,
   Printer,
@@ -63,7 +62,6 @@ interface TicketDigitalProps {
 export default function TicketDigital({ ticket, onClose, className }: TicketDigitalProps) {
   const ticketRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
-  const [showShareMenu, setShowShareMenu] = useState(false);
 
   const desglose = calcularIVA(ticket.subtotal - ticket.descuento);
 

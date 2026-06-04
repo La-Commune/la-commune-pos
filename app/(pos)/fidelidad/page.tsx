@@ -5,8 +5,6 @@ import {
   Heart,
   Search,
   Star,
-  Gift,
-  TrendingUp,
   Users,
   Award,
   Phone,
@@ -773,7 +771,6 @@ const PLANTILLAS_NOTIFICACION = [
 
 function NotificacionForm({
   tipo,
-  clienteNombre,
   onSend,
   onCancel,
   loading,

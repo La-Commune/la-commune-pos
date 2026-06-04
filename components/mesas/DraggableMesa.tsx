@@ -32,7 +32,6 @@ export default function DraggableMesa({
   mesa,
   isDragging = false,
   isAdmin = false,
-  onEdit,
   onClick,
   onContextMenu,
   onResize,
@@ -204,7 +203,7 @@ export default function DraggableMesa({
         "relative flex flex-col items-center justify-center border-2 bg-surface-1 shadow-card select-none group",
         isStale && "mesa-stale-pulse border-status-err"
       )}
-      onClick={(e) => {
+      onClick={() => {
         if (isResizing || isRotating || justFinishedInteractionRef.current) return;
         if (onClick) onClick(mesa);
       }}

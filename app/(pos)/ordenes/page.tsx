@@ -30,7 +30,7 @@ import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { useUIStore } from "@/store/ui.store";
 import { showToast } from "@/components/ui/Toast";
 import { Star } from "lucide-react";
-import type { Mesa, Producto, CategoriaMenu, Orden, OrdenWithMesa, ItemOrdenJSON } from "@/types/database";
+import type { Mesa, Producto, CategoriaMenu, OrdenWithMesa, ItemOrdenJSON } from "@/types/database";
 
 /* P11: Colores migrados al design system */
 const estadoOrdenConfig = {

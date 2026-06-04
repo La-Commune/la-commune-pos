@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   Calendar,
   FileText,
-  Loader2,
   X,
 } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
@@ -22,7 +21,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { insertRecordReturning, updateRecord, subscribeToTable } from "@/hooks/useSupabase";
 import { showToast } from "@/components/ui/Toast";
 import { SkeletonCaja } from "@/components/ui/Skeleton";
-import type { Pago, PagoWithOrden } from "@/types/database";
+import type { PagoWithOrden } from "@/types/database";
 
 // ── TIPOS ──
 

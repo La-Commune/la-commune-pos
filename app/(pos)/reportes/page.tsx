@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -11,7 +11,6 @@ import {
   Coffee,
   BarChart3,
   Calendar,
-  Loader2,
   Heart,
   Stamp,
   Gift,

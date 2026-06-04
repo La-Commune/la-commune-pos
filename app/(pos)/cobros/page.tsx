@@ -113,13 +113,13 @@ export default function CobrosPage() {
   // Cálculos — precios ya incluyen IVA (lógica pura en lib/split-payments.ts)
   // total de la orden = suma directa de items (IVA incluido)
   const totalOrden = ordenSeleccionada ? ordenSeleccionada.total : 0;
-  const { montoDescuento, totalConDescuento, totalFinal, baseGravable, ivaDesglosado } =
+  const { montoDescuento, totalConDescuento, totalFinal, ivaDesglosado } =
     calcularTotalesCobro(totalOrden, descuento, propina);
   const monto = parseFloat(montoRecibido) || 0;
   const cambio = calcularCambio(metodoPago, monto, totalFinal);
 
   // Split payments calculations
-  const { totalSplits, remainingSplit, splitsValid: splitsCuadran, cambioSplit } =
+  const { remainingSplit, splitsValid: splitsCuadran, cambioSplit } =
     calcularEstadoSplits(splits, totalFinal);
   const splitsValid = dividirPago ? splitsCuadran : true;
 
@@ -666,7 +666,7 @@ export default function CobrosPage() {
                     Formas de pago
                   </span>
                   <div className="space-y-2.5">
-                    {splits.map((split, idx) => (
+                    {splits.map((split) => (
                       <div key={split.id} className="flex items-end gap-2">
                         {/* Método selector */}
                         <div className="flex gap-1.5">
