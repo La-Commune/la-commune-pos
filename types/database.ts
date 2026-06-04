@@ -119,6 +119,7 @@ export type Database = {
         Row: {
           activo: boolean
           actualizado_en: string
+          auth_uid: string | null
           bono_referido_entregado: boolean
           consentimiento_email: boolean | null
           consentimiento_whatsapp: boolean | null
@@ -143,6 +144,7 @@ export type Database = {
         Insert: {
           activo?: boolean
           actualizado_en?: string
+          auth_uid?: string | null
           bono_referido_entregado?: boolean
           consentimiento_email?: boolean | null
           consentimiento_whatsapp?: boolean | null
@@ -167,6 +169,7 @@ export type Database = {
         Update: {
           activo?: boolean
           actualizado_en?: string
+          auth_uid?: string | null
           bono_referido_entregado?: boolean
           consentimiento_email?: boolean | null
           consentimiento_whatsapp?: boolean | null
@@ -233,33 +236,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      intentos_pin: {
-        Row: {
-          id: string
-          ip: string
-          intentos: number
-          bloqueado_hasta: string | null
-          creado_en: string
-          actualizado_en: string
-        }
-        Insert: {
-          id?: string
-          ip: string
-          intentos?: number
-          bloqueado_hasta?: string | null
-          creado_en?: string
-          actualizado_en?: string
-        }
-        Update: {
-          id?: string
-          ip?: string
-          intentos?: number
-          bloqueado_hasta?: string | null
-          creado_en?: string
-          actualizado_en?: string
-        }
-        Relationships: []
       }
       cortes_caja: {
         Row: {
@@ -536,6 +512,33 @@ export type Database = {
           },
         ]
       }
+      intentos_pin: {
+        Row: {
+          actualizado_en: string
+          bloqueado_hasta: string | null
+          creado_en: string
+          id: string
+          intentos: number
+          ip: string
+        }
+        Insert: {
+          actualizado_en?: string
+          bloqueado_hasta?: string | null
+          creado_en?: string
+          id?: string
+          intentos?: number
+          ip: string
+        }
+        Update: {
+          actualizado_en?: string
+          bloqueado_hasta?: string | null
+          creado_en?: string
+          id?: string
+          intentos?: number
+          ip?: string
+        }
+        Relationships: []
+      }
       inventario: {
         Row: {
           activo: boolean
@@ -802,6 +805,7 @@ export type Database = {
           creado_en: string
           id: string
           inventario_id: string
+          motivo: string | null
           negocio_id: string
           notas: string | null
           orden_id: string | null
@@ -817,6 +821,7 @@ export type Database = {
           creado_en?: string
           id?: string
           inventario_id: string
+          motivo?: string | null
           negocio_id: string
           notas?: string | null
           orden_id?: string | null
@@ -832,6 +837,7 @@ export type Database = {
           creado_en?: string
           id?: string
           inventario_id?: string
+          motivo?: string | null
           negocio_id?: string
           notas?: string | null
           orden_id?: string | null
@@ -1321,6 +1327,101 @@ export type Database = {
           },
         ]
       }
+      push_notifications_log: {
+        Row: {
+          cliente_id: string | null
+          created_at: string
+          cuerpo: string
+          enviadas: number
+          enviado_por: string | null
+          fallidas: number
+          id: string
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string
+          cuerpo: string
+          enviadas?: number
+          enviado_por?: string | null
+          fallidas?: number
+          id?: string
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string
+          cuerpo?: string
+          enviadas?: number
+          enviado_por?: string | null
+          fallidas?: number
+          id?: string
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_notifications_log_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_notifications_log_enviado_por_fkey"
+            columns: ["enviado_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          activa: boolean
+          auth_key: string
+          cliente_id: string | null
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          activa?: boolean
+          auth_key: string
+          cliente_id?: string | null
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          activa?: boolean
+          auth_key?: string
+          cliente_id?: string | null
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recetas: {
         Row: {
           actualizado_en: string
@@ -1379,6 +1480,7 @@ export type Database = {
           es_default: boolean
           expira_en: string | null
           id: string
+          ilustracion: string
           negocio_id: string
           nombre: string
           sellos_requeridos: number
@@ -1392,6 +1494,7 @@ export type Database = {
           es_default?: boolean
           expira_en?: string | null
           id?: string
+          ilustracion?: string
           negocio_id: string
           nombre: string
           sellos_requeridos?: number
@@ -1405,6 +1508,7 @@ export type Database = {
           es_default?: boolean
           expira_en?: string | null
           id?: string
+          ilustracion?: string
           negocio_id?: string
           nombre?: string
           sellos_requeridos?: number
@@ -1717,8 +1821,19 @@ export type Database = {
         Returns: Database["public"]["Enums"]["rol_usuario"]
       }
       get_next_folio_orden: { Args: { p_negocio_id: string }; Returns: number }
-      limpiar_intentos_pin_viejos: { Args: Record<string, never>; Returns: undefined }
-      login_por_pin: { Args: { pin_input: string; client_ip?: string }; Returns: Json }
+      get_push_vapid_keys: {
+        Args: never
+        Returns: {
+          decrypted_secret: string
+          name: string
+        }[]
+      }
+      hash_pin: { Args: { pin_raw: string }; Returns: string }
+      limpiar_intentos_pin_viejos: { Args: never; Returns: undefined }
+      login_por_pin: {
+        Args: { client_ip?: string; pin_input: string }
+        Returns: Json
+      }
       swap_mesa_numeros: {
         Args: {
           mesa_a_id: string

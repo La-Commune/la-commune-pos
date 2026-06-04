@@ -376,7 +376,9 @@ export async function updateRecord(
     return { success: true };
   }
 
-  const { error } = await supabase!.from(table).update(data as never).eq("id", id);
+  // "id" as never: con tabla genérica (union de TableName), supabase-js ≥2.107
+  // resuelve las columnas del filtro a never — mismo patrón que update(data as never)
+  const { error } = await supabase!.from(table).update(data as never).eq("id" as never, id as never);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
@@ -390,11 +392,11 @@ export async function deleteRecord(
     return { success: true };
   }
 
-  // Soft delete
+  // Soft delete — "id" as never: ver nota en updateRecord
   const { error } = await supabase!
     .from(table)
     .update({ eliminado_en: new Date().toISOString() } as never)
-    .eq("id", id);
+    .eq("id" as never, id as never);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
