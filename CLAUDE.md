@@ -113,7 +113,8 @@ Todos los módulos conectados tienen suscripciones Realtime via `subscribeToTabl
 - `lib/__tests__/split-payments.test.ts` — totales de cobro, IVA, splits, cambio, puedeCobrar (25 tests)
 - `lib/__tests__/offline-queue.test.ts` — cola offline con fake-indexeddb (7 tests)
 - `lib/__tests__/validators.test.ts` — schemas Zod: mesas, órdenes, pagos, productos, usuarios, gastos, cortes (25 tests)
-- Total: 116 tests, todos pasando
+- `lib/__tests__/inventory-deduction.test.ts` — deducción por receta, agrupación, lowStock, errores no bloqueantes (8 tests)
+- Total: 124 tests, todos pasando
 
 ## Cola offline
 
