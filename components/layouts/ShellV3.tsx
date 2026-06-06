@@ -28,9 +28,11 @@ import {
   Users,
   Package,
   Settings,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
+import { useSyncStore } from "@/store/sync.store";
 import styles from "./shell-v3.module.css";
 
 const fontUI = Schibsted_Grotesk({
@@ -78,6 +80,9 @@ export default function ShellV3({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const isOnline = useSyncStore((s) => s.isOnline);
+  const pendientes = useSyncStore((s) => s.pendingActions);
   const hora = useReloj();
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -89,9 +94,18 @@ export default function ShellV3({ children }: { children: React.ReactNode }) {
     .toUpperCase();
 
   const esActiva = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+    href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
 
-  const enMore = MORE.some((m) => pathname.startsWith(m.href));
+  const enMore = MORE.some((m) => esActiva(m.href));
+
+  const syncLabel = !isOnline ? "SIN RED" : pendientes > 0 ? `${pendientes} EN COLA` : "EN VIVO";
+  const syncWarn = !isOnline || pendientes > 0;
+
+  const handleLogout = async () => {
+    setMoreOpen(false);
+    await logout();
+    router.push("/login");
+  };
 
   return (
     <div className={cn(styles.shell, fontUI.variable, fontMono.variable)}>
@@ -121,15 +135,31 @@ export default function ShellV3({ children }: { children: React.ReactNode }) {
           </button>
         </div>
         <div className={styles.railFoot}>
+          <div className={styles.liveTop}>
+            <i className={cn(styles.dot, syncWarn && styles.dotWarn)} />
+            {syncLabel}
+          </div>
           {moreOpen && (
-            <div className={styles.morePop}>
-              {MORE.map(({ href, label, icon: IconComp }) => (
-                <Link key={href} href={href} onClick={() => setMoreOpen(false)}>
-                  <IconComp size={17} strokeWidth={1.75} />
-                  {label}
-                </Link>
-              ))}
-            </div>
+            <>
+              <button
+                type="button"
+                className={styles.morePopBackdrop}
+                aria-label="Cerrar menú"
+                onClick={() => setMoreOpen(false)}
+              />
+              <div className={styles.morePop}>
+                {MORE.map(({ href, label, icon: IconComp }) => (
+                  <Link key={href} href={href} onClick={() => setMoreOpen(false)}>
+                    <IconComp size={17} strokeWidth={1.75} />
+                    {label}
+                  </Link>
+                ))}
+                <button type="button" className={styles.morePopSalir} onClick={handleLogout}>
+                  <LogOut size={17} strokeWidth={1.75} />
+                  Cerrar sesión
+                </button>
+              </div>
+            </>
           )}
           <button
             type="button"
@@ -169,8 +199,8 @@ export default function ShellV3({ children }: { children: React.ReactNode }) {
         </button>
         <div className={styles.dockFoot}>
           <div className={styles.live}>
-            <i className={styles.liveDot} />
-            EN VIVO
+            <i className={cn(styles.dot, syncWarn && styles.dotWarn)} />
+            {syncLabel}
           </div>
           <div>
             {hora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false })}

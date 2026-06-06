@@ -148,7 +148,34 @@
   cursor: pointer;
 }
 
+/* estado de sincronización — visible en topbar (<1024); el dock lo muestra en ≥1024 */
+.liveTop {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-v3-mono), ui-monospace, monospace;
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--v3-ink-3);
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--v3-accent);
+  animation: v3pulse 2.4s ease-in-out infinite;
+}
+.dotWarn { background: var(--v3-warn); animation: none; }
+
 /* popover "Más" */
+.morePopBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  background: transparent;
+  border: none;
+  cursor: default;
+}
 .morePop {
   position: absolute;
   z-index: 40;
@@ -179,6 +206,25 @@
   min-height: 44px;
 }
 .morePop a:hover { background: var(--v3-surface-2); color: var(--v3-ink); }
+.morePopSalir {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 13px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--v3-ink-2);
+  background: none;
+  border: none;
+  border-top: 1px solid var(--v3-line-soft);
+  cursor: pointer;
+  min-height: 44px;
+  font-family: inherit;
+  width: 100%;
+  text-align: left;
+}
+.morePopSalir:hover { background: var(--v3-danger-soft); color: var(--v3-danger); }
 
 /* ---------- DOCK DE ACCIONES (pulgar derecho) — LA FIRMA ---------- */
 .dock { display: none; }
@@ -310,13 +356,7 @@
     color: var(--v3-ink-3);
   }
   .live { display: flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 500; }
-  .liveDot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--v3-accent);
-    animation: v3pulse 2.4s ease-in-out infinite;
-  }
+  .liveTop { display: none; }
   .actionbar { display: none; }
   .main { padding: 22px 26px 28px; }
 }
@@ -347,5 +387,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .liveDot { animation: none; }
+  .dot { animation: none; }
 }

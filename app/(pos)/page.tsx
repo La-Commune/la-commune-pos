@@ -150,7 +150,7 @@ function DashboardContent() {
         .slice(0, 6)
         .map((o) => ({
           folio: `#${String(o.folio ?? "—").padStart(3, "0")}`,
-          titulo: o.notas || `Orden ${o.folio ?? ""}`,
+          titulo: o.notas || `Orden ${o.folio ?? "s/n"}`,
           meta: `${o.origen === "mesa" ? "En mesa" : "Para llevar"} · ${minutosDesde(o.creado_en)}`,
           monto: formatMXN(o.total ?? 0),
           chip: (["nueva", "confirmada"].includes(o.estado)
