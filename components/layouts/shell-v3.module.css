@@ -1,0 +1,308 @@
+/* ============================================================
+   V3 "BARRA" — shell tablet-nativo · LIGHT
+   Firma: dos pulgares — riel nav (izq) / trabajo (centro) / dock (der)
+   Sistema responsive:
+     phone <640 · tablet portrait 640-1023 ·
+     tablet landscape 1024-1365 (PRIMARIO) · desktop ≥1366
+   Tokens scoped a .shell — cero impacto en los 7 temas globales.
+   ============================================================ */
+
+.shell {
+  /* tokens V3 — papel cálido + tinta espresso + Verde Comuna */
+  --v3-paper: #f6f4ef;
+  --v3-surface: #ffffff;
+  --v3-surface-2: #fbfaf6;
+  --v3-ink: #1b1713;
+  --v3-ink-2: #5f574c;
+  --v3-ink-3: #94897c;
+  --v3-line: #e6e1d7;
+  --v3-line-soft: #efebe2;
+  --v3-accent: #0e5e43;
+  --v3-accent-ink: #ffffff;
+  --v3-accent-soft: #e4efe8;
+  --v3-accent-soft-ink: #0b4a35;
+  --v3-warn: #b4540a;
+  --v3-warn-soft: #f7eadd;
+  --v3-danger: #bc3a31;
+  --v3-danger-soft: #f8e7e4;
+  --v3-occupied: #b4540a;
+
+  font-family: var(--font-v3-ui), -apple-system, sans-serif;
+  background: var(--v3-paper);
+  color: var(--v3-ink);
+  display: grid;
+  height: 100dvh;
+  /* mobile-first: topbar / main / actionbar */
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 1fr;
+  grid-template-areas: "topbar" "main" "actionbar";
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- RIEL DE NAVEGACIÓN (pulgar izquierdo) ---------- */
+.rail {
+  grid-area: topbar;
+  background: var(--v3-surface);
+  border-bottom: 1px solid var(--v3-line);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 8px;
+}
+.logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--v3-ink);
+  color: var(--v3-paper);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: -0.04em;
+  flex-shrink: 0;
+}
+.nav {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  align-items: center;
+}
+.navItem {
+  width: 48px;
+  height: 46px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--v3-ink-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+  font-family: inherit;
+}
+.navItem:hover { color: var(--v3-ink); background: var(--v3-surface-2); }
+.navItem.navOn { color: var(--v3-accent-soft-ink); background: var(--v3-accent-soft); }
+.navLabel { font-size: 8.5px; font-weight: 600; letter-spacing: 0.02em; display: none; }
+.railFoot { margin-top: 0; margin-left: auto; display: flex; flex-direction: row; align-items: center; gap: 10px; position: relative; }
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--v3-accent);
+  color: var(--v3-accent-ink);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+/* popover "Más" */
+.morePop {
+  position: absolute;
+  z-index: 40;
+  background: var(--v3-surface);
+  border: 1px solid var(--v3-line);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(27, 23, 19, 0.16);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 188px;
+  /* mobile/portrait: cuelga del topbar */
+  top: calc(100% + 8px);
+  right: 0;
+}
+.morePop a {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 13px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--v3-ink-2);
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+  min-height: 44px;
+}
+.morePop a:hover { background: var(--v3-surface-2); color: var(--v3-ink); }
+
+/* ---------- DOCK DE ACCIONES (pulgar derecho) — LA FIRMA ---------- */
+.dock { display: none; }
+
+/* barra de acciones inferior (phone + portrait) */
+.actionbar {
+  grid-area: actionbar;
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: var(--v3-surface);
+  border-top: 1px solid var(--v3-line);
+}
+.abAct {
+  flex: 1;
+  height: 56px;
+  border-radius: 13px;
+  border: 1px solid var(--v3-line);
+  background: var(--v3-surface-2);
+  color: var(--v3-ink-2);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.abAct:hover { border-color: var(--v3-ink-3); color: var(--v3-ink); }
+/* primaria a la DERECHA — alcance del pulgar derecho */
+.abPrimary {
+  flex: 1.5;
+  background: var(--v3-accent);
+  color: var(--v3-accent-ink);
+  border-color: var(--v3-accent);
+  order: 9;
+}
+.abPrimary:hover { color: var(--v3-accent-ink); border-color: var(--v3-accent); filter: brightness(1.08); }
+.abLabel { display: none; }
+.abPrimary .abLabel { display: inline; }
+
+/* ---------- ZONA DE TRABAJO ---------- */
+.main {
+  grid-area: main;
+  overflow-y: auto;
+  padding: 16px 14px 20px;
+}
+
+/* ============================================================
+   TABLET PORTRAIT ≥640
+   ============================================================ */
+@media (min-width: 640px) {
+  .navItem { width: 64px; }
+  .abLabel { display: inline; }
+  .main { padding: 20px 22px 24px; }
+}
+
+/* ============================================================
+   TABLET LANDSCAPE ≥1024 — PRIMARIO: riel / trabajo / dock
+   ============================================================ */
+@media (min-width: 1024px) {
+  .shell {
+    grid-template-rows: 1fr;
+    grid-template-columns: 76px 1fr 104px;
+    grid-template-areas: "rail main dock";
+  }
+  .rail {
+    grid-area: rail;
+    flex-direction: column;
+    border-bottom: none;
+    border-right: 1px solid var(--v3-line);
+    padding: 14px 0;
+    gap: 4px;
+    align-items: center;
+  }
+  .logo { width: 44px; height: 44px; font-size: 15px; margin-bottom: 14px; }
+  .nav { flex-direction: column; width: 100%; }
+  .navItem { width: 52px; height: 48px; }
+  .railFoot { margin-left: 0; margin-top: auto; flex-direction: column; }
+  .morePop { top: auto; right: auto; bottom: 8px; left: calc(100% + 10px); }
+
+  .dock {
+    grid-area: dock;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 0 16px;
+    background: var(--v3-surface);
+    border-left: 1px solid var(--v3-line);
+  }
+  .dockAct {
+    width: 76px;
+    height: 68px;
+    border-radius: 14px;
+    border: 1px solid var(--v3-line);
+    background: var(--v3-surface-2);
+    color: var(--v3-ink-2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .dockAct:hover { border-color: var(--v3-ink-3); color: var(--v3-ink); }
+  .dockPrimary {
+    background: var(--v3-accent);
+    color: var(--v3-accent-ink);
+    border-color: var(--v3-accent);
+    height: 76px;
+  }
+  .dockPrimary:hover { color: var(--v3-accent-ink); border-color: var(--v3-accent); filter: brightness(1.08); }
+  .dockFoot {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-v3-mono), ui-monospace, monospace;
+    font-size: 11px;
+    color: var(--v3-ink-3);
+  }
+  .live { display: flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 500; }
+  .liveDot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--v3-accent);
+    animation: v3pulse 2.4s ease-in-out infinite;
+  }
+  .actionbar { display: none; }
+  .main { padding: 22px 26px 28px; }
+}
+
+/* ============================================================
+   DESKTOP ≥1366 — riel con etiquetas
+   ============================================================ */
+@media (min-width: 1366px) {
+  .shell { grid-template-columns: 200px 1fr 104px; }
+  .rail { align-items: stretch; padding: 14px 12px; }
+  .logo { margin-left: 4px; }
+  .nav { align-items: stretch; }
+  .navItem {
+    width: auto;
+    height: 44px;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 0 14px;
+  }
+  .navLabel { display: inline; font-size: 13px; font-weight: 600; }
+  .railFoot { align-items: stretch; }
+  .avatar { margin-left: 4px; }
+}
+
+@keyframes v3pulse {
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liveDot { animation: none; }
+}

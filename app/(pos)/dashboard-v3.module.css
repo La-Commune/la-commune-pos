@@ -1,0 +1,263 @@
+/* ============================================================
+   V3 "BARRA" — Dashboard · tokens heredados del ShellV3 (--v3-*)
+   El número ES la interfaz: KPI hero en mono gigante.
+   ============================================================ */
+
+.hdr {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.hdrTitle {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--v3-ink);
+}
+.fecha { font-size: 13px; color: var(--v3-ink-3); font-weight: 500; }
+.cajaChip {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-v3-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--v3-accent-soft-ink);
+  background: var(--v3-accent-soft);
+  padding: 7px 13px;
+  border-radius: 99px;
+}
+.cajaDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--v3-accent);
+  animation: v3pulse 2.4s ease-in-out infinite;
+}
+
+/* ---------- KPIs ---------- */
+.kpis {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.kpi {
+  background: var(--v3-surface);
+  border: 1px solid var(--v3-line);
+  border-radius: 14px;
+  padding: 16px 18px 14px;
+  text-align: left;
+}
+.kpiBtn { cursor: pointer; transition: border-color 0.15s; font-family: inherit; }
+.kpiBtn:hover { border-color: var(--v3-ink-3); }
+.kpiLbl {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--v3-ink-3);
+  margin-bottom: 8px;
+}
+.kpiVal {
+  font-family: var(--font-v3-mono), ui-monospace, monospace;
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink);
+}
+.kpiSub { font-size: 11.5px; color: var(--v3-ink-3); margin-top: 6px; font-weight: 500; }
+.kpiSub b { color: var(--v3-accent-soft-ink); font-weight: 600; }
+
+/* hero invertido — bloque de tinta (light) */
+.kpiHero { background: var(--v3-ink); border-color: var(--v3-ink); }
+.kpiHero .kpiLbl { color: color-mix(in srgb, var(--v3-paper) 55%, transparent); }
+.kpiHero .kpiVal { color: var(--v3-paper); font-size: 34px; }
+.kpiHero .kpiSub { color: color-mix(in srgb, var(--v3-paper) 50%, transparent); }
+.kpiHero .kpiSub b { color: #3dce92; }
+
+/* ---------- grid principal ---------- */
+.cols {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.colsRight { display: flex; flex-direction: column; gap: 12px; }
+.card {
+  background: var(--v3-surface);
+  border: 1px solid var(--v3-line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.chead { display: flex; align-items: center; padding: 14px 18px 12px; }
+.cheadTitle { font-size: 13.5px; font-weight: 700; letter-spacing: -0.01em; color: var(--v3-ink); }
+.cheadN {
+  font-family: var(--font-v3-mono), ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--v3-ink-3);
+  margin-left: 8px;
+  font-weight: 500;
+}
+.cheadLink {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--v3-accent-soft-ink);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 6px 0 6px 12px;
+}
+
+/* ---------- órdenes activas — filas touch ---------- */
+.orden {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 18px;
+  min-height: 58px;
+  width: 100%;
+  border: none;
+  border-top: 1px solid var(--v3-line-soft);
+  background: none;
+  cursor: pointer;
+  transition: background 0.12s;
+  text-align: left;
+  font-family: inherit;
+}
+.orden:hover { background: var(--v3-surface-2); }
+.folio {
+  font-family: var(--font-v3-mono), ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--v3-ink-3);
+  width: 52px;
+  flex-shrink: 0;
+}
+.que { flex: 1; min-width: 0; }
+.queTitulo {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--v3-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.queMeta { font-size: 11.5px; color: var(--v3-ink-3); }
+.monto {
+  font-family: var(--font-v3-mono), ui-monospace, monospace;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink);
+}
+.chip {
+  font-family: var(--font-v3-mono), ui-monospace, monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 5px 9px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.chipPrep { background: var(--v3-warn-soft); color: var(--v3-warn); }
+.chipLista { background: var(--v3-accent-soft); color: var(--v3-accent-soft-ink); }
+.chipNueva { background: var(--v3-surface-2); color: var(--v3-ink-2); border: 1px solid var(--v3-line); }
+
+/* ---------- mesas mini ---------- */
+.mesas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 4px 18px 16px;
+}
+.mesa {
+  aspect-ratio: 1.05;
+  border-radius: 12px;
+  border: 1px solid var(--v3-line);
+  background: var(--v3-surface-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  font-family: inherit;
+}
+.mesaNum {
+  font-family: var(--font-v3-mono), ui-monospace, monospace;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--v3-ink);
+}
+.mesaSt {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--v3-ink-3);
+}
+.mesaOcupada { background: var(--v3-surface); border-color: var(--v3-occupied); }
+.mesaOcupada .mesaSt, .mesaOcupada .mesaNum { color: var(--v3-occupied); }
+.mesaLibre:hover { border-color: var(--v3-accent); }
+
+/* ---------- avisos ---------- */
+.alerta {
+  display: flex;
+  gap: 12px;
+  padding: 13px 18px;
+  border: none;
+  border-top: 1px solid var(--v3-line-soft);
+  align-items: center;
+  width: 100%;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.12s;
+}
+.alerta:hover { background: var(--v3-surface-2); }
+.alertaIcon { color: var(--v3-warn); flex-shrink: 0; display: flex; }
+.alertaOk .alertaIcon { color: var(--v3-accent); }
+.alertaTxt { font-size: 12.5px; font-weight: 500; color: var(--v3-ink-2); line-height: 1.4; }
+.alertaTxt b { color: var(--v3-ink); font-weight: 600; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (min-width: 640px) {
+  .kpis { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .kpiHero { grid-column: span 2; }
+}
+@media (min-width: 1024px) {
+  .kpis { grid-template-columns: 1.6fr 1fr 1fr 1fr; }
+  .kpiHero { grid-column: auto; }
+  .kpiHero .kpiVal { font-size: 38px; }
+  .cols { grid-template-columns: 1.5fr 1fr; }
+}
+@media (min-width: 1366px) {
+  .hdr, .kpis, .cols { max-width: 1080px; }
+}
+@media (max-width: 639px) {
+  .cajaChip { display: none; }
+  .kpiHero { grid-column: span 2; }
+  .kpiVal { font-size: 19px; }
+  .kpiHero .kpiVal { font-size: 30px; }
+}
+
+@keyframes v3pulse {
+  50% { opacity: 0.35; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cajaDot { animation: none; }
+}
