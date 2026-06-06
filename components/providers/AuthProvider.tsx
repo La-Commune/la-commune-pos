@@ -14,7 +14,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
   const [exiting, setExiting] = useState(false);
-  const [show, setShow] = useState(false);
+  const [, setShow] = useState(false);
 
   // Registrar Service Worker y listeners online/offline
   useSW();

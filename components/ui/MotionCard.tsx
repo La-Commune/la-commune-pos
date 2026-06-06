@@ -3,7 +3,7 @@
 import { forwardRef, type ReactNode } from "react";
 import { motion, type HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { cardHover, fadeUp, timing, ease } from "@/lib/motion";
+import { cardHover, fadeUp } from "@/lib/motion";
 
 /* ══════════════════════════════════════════════════════════════
  * MotionCard — Card with built-in hover/tap micro-interactions

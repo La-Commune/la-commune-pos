@@ -5,8 +5,6 @@ import {
   Heart,
   Search,
   Star,
-  Gift,
-  TrendingUp,
   Users,
   Award,
   Phone,
@@ -28,6 +26,8 @@ import { useAuthStore } from "@/store/auth.store";
 import { showToast } from "@/components/ui/Toast";
 import Modal from "@/components/ui/Modal";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { StaggerGrid, MotionItem } from "@/components/ui/MotionCard";
+import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { SkeletonList, SkeletonFidelidadDetail } from "@/components/ui/Skeleton";
 import { useSearch } from "@/hooks/useSearch";
 
@@ -354,24 +354,28 @@ function FidelidadPageContent() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="p-4 rounded-xl bg-surface-2 border border-border">
+      <StaggerGrid className="grid grid-cols-3 gap-3 mb-6">
+        <MotionItem className="p-4 rounded-xl bg-surface-2 border border-border">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Clientes</span>
             <Users size={14} className="text-text-25 opacity-40" />
           </div>
-          <p className="text-xl font-semibold text-text-100 tabular-nums">{stats.totalClientes}</p>
+          <p className="text-xl font-semibold text-text-100 tabular-nums">
+            <AnimatedCounter value={stats.totalClientes} />
+          </p>
           <p className="text-[11px] text-text-25">{stats.clientesActivos} activos</p>
-        </div>
-        <div className="p-4 rounded-xl bg-surface-2 border border-border">
+        </MotionItem>
+        <MotionItem className="p-4 rounded-xl bg-surface-2 border border-border">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Puntos en circulación</span>
             <Star size={14} className="text-text-25 opacity-40" />
           </div>
-          <p className="text-xl font-semibold text-text-100 tabular-nums">{stats.puntosEmitidos.toLocaleString("es-MX")}</p>
+          <p className="text-xl font-semibold text-text-100 tabular-nums">
+            <AnimatedCounter value={stats.puntosEmitidos} format={(v: number) => v.toLocaleString("es-MX")} />
+          </p>
           <p className="text-[11px] text-text-25">$1 MXN = 1 punto</p>
-        </div>
-        <div className="p-4 rounded-xl bg-surface-2 border border-border">
+        </MotionItem>
+        <MotionItem className="p-4 rounded-xl bg-surface-2 border border-border">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-text-25 uppercase tracking-widest">Niveles</span>
             <Award size={14} className="text-text-25 opacity-40" />
@@ -387,8 +391,8 @@ function FidelidadPageContent() {
               );
             })}
           </div>
-        </div>
-      </div>
+        </MotionItem>
+      </StaggerGrid>
 
       {loading ? (
         <div className="flex gap-6 flex-1 min-h-0">
@@ -767,7 +771,6 @@ const PLANTILLAS_NOTIFICACION = [
 
 function NotificacionForm({
   tipo,
-  clienteNombre,
   onSend,
   onCancel,
   loading,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -11,7 +11,6 @@ import {
   Coffee,
   BarChart3,
   Calendar,
-  Loader2,
   Heart,
   Stamp,
   Gift,
@@ -33,6 +32,8 @@ import {
   Legend,
 } from "recharts";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { StaggerGrid, MotionItem } from "@/components/ui/MotionCard";
+import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { supabase, USE_MOCK } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth.store";
 import { subscribeToTable } from "@/hooks/useSupabase";
@@ -156,7 +157,7 @@ function StatCard({
   const isUp = delta >= 0;
 
   return (
-    <div className="p-5 rounded-xl bg-surface-2 border border-border">
+    <MotionItem className="p-5 rounded-xl bg-surface-2 border border-border">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-medium text-text-25 uppercase tracking-widest">
           {title}
@@ -166,7 +167,10 @@ function StatCard({
       <div className="flex items-end justify-between">
         <div>
           <p className="text-xl font-semibold text-text-100 tabular-nums">
-            {format === "currency" ? formatMXN(value) : value.toLocaleString("es-MX")}
+            <AnimatedCounter
+              value={value}
+              format={format === "currency" ? formatMXN : (v: number) => v.toLocaleString("es-MX")}
+            />
             {suffix && <span className="text-sm text-text-45 ml-1">{suffix}</span>}
           </p>
         </div>
@@ -182,7 +186,7 @@ function StatCard({
           </div>
         )}
       </div>
-    </div>
+    </MotionItem>
   );
 }
 
@@ -600,7 +604,7 @@ export default function ReportesPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      <StaggerGrid className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <StatCard
           title="Ventas"
           value={stats.ventas}
@@ -628,7 +632,7 @@ export default function ReportesPage() {
           format="currency"
           icon={TrendingUp}
         />
-      </div>
+      </StaggerGrid>
 
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">

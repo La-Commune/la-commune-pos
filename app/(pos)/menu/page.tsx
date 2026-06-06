@@ -683,7 +683,8 @@ export default function MenuPage() {
               }
 
               // Separar tamaños del payload principal
-              const { tamanos, ...productoData } = data;
+              const { ...productoData } = data;
+              delete productoData.tamanos;
 
               if (productoEditando) {
                 // ── Editar producto existente ──

@@ -110,7 +110,11 @@ Todos los módulos conectados tienen suscripciones Realtime via `subscribeToTabl
 - `lib/__tests__/utils.test.ts` — formatMXN, formatTime, cn (7 tests)
 - `lib/__tests__/helpers.test.ts` — getInitials, formatOrigen, tiempoTranscurrido, timerColor, esUrgente, getNivelConfig, etc. (25 tests)
 - `hooks/__tests__/useIVA.test.ts` — calcularIVA, desglose fiscal, descuentos, propinas, cobro completo (16 tests)
-- Total: 59 tests, todos pasando
+- `lib/__tests__/split-payments.test.ts` — totales de cobro, IVA, splits, cambio, puedeCobrar (25 tests)
+- `lib/__tests__/offline-queue.test.ts` — cola offline con fake-indexeddb (7 tests)
+- `lib/__tests__/validators.test.ts` — schemas Zod: mesas, órdenes, pagos, productos, usuarios, gastos, cortes (25 tests)
+- `lib/__tests__/inventory-deduction.test.ts` — deducción por receta, agrupación, lowStock, errores no bloqueantes (8 tests)
+- Total: 124 tests, todos pasando
 
 ## Cola offline
 
@@ -287,10 +291,23 @@ import EmptyState from "@/components/ui/EmptyState";
 <EmptyState illustration="orders" title="Sin órdenes" description="Crea una nueva" />
 ```
 
+## Trabajo Nocturno (3-4 Jun 2026) — branch `nocturno-2026-06-03`
+
+- **Seguridad**: `npm audit fix` — 43 vulnerabilidades → 5 (las restantes requieren Next 14→16 major)
+- **split-payments**: lógica de cobros split extraída a `lib/split-payments.ts` (módulo puro) + 25 tests
+- **offline-queue**: 7 tests con `fake-indexeddb` (nueva devDependency)
+- **Usuarios responsive**: tabla desktop + cards móvil (`md` breakpoint), context menu compartido con keys `m-{id}`
+- **Motion**: StaggerGrid + MotionItem + AnimatedCounter integrados en Reportes y Fidelidad (KPI cards)
+- **npm update**: supabase-js 2.98→2.107, playwright, dexie, framer-motion, recharts, zod, zustand (solo lock)
+- **types/database.ts**: regenerado desde Supabase dev (formato nuevo con `__InternalSupabase`); aliases manuales conservados. `useSupabase.ts` usa `.eq("id" as never)` en helpers genéricos (typing nuevo de supabase-js)
+- Detalle completo en `../REPORTE-NOCTURNO.md`
+
 ## Pendiente
 
 1. Crear iconos PWA reales (192x192 y 512x512) en `/public/icons/`
 2. Eliminar dependencia `firebase` de package.json (legacy)
 3. Tests E2E contra Supabase staging (auth real, flujo completo con persistencia)
-4. Integrar MotionCard/StaggerGrid en resto de páginas (mesas, menú, órdenes, cobros, KDS, fidelidad, reportes)
+4. Integrar MotionCard/StaggerGrid en páginas realtime-pesadas (mesas, menú, órdenes, cobros, KDS) — ~~fidelidad, reportes~~ ✅ (3-Jun-2026). Hacerlo con la app corriendo para verificar que el stagger no re-anime con updates realtime
 5. Agregar LoadingButton en acciones críticas (confirmar orden, procesar pago, abrir/cerrar caja)
+6. Upgrade major Next 14→16 + React 18→19 — resuelve 14 advisories de seguridad de Next 14 (ver REPORTE-NOCTURNO.md 3-Jun-2026)
+7. Supabase dev: consolidar policies anon duplicadas (17 WARN multiple_permissive_policies), REVOKE EXECUTE de funciones SECURITY DEFINER que anon no necesita, evaluar deshabilitar pg_graphql

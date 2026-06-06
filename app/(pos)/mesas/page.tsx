@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   Plus,
   Users,
-  Loader2,
   LayoutGrid,
   Map,
   Settings2,
@@ -21,7 +20,7 @@ import { ESTADO_MESA_CONFIG } from "@/lib/constants";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { SkeletonMesaGrid } from "@/components/ui/Skeleton";
-import MesaTimer, { getMins, getLevel, UMBRAL_WARN } from "@/components/mesas/MesaTimer";
+import MesaTimer, { getMins, getLevel } from "@/components/mesas/MesaTimer";
 import FloorPlanCanvas from "@/components/mesas/FloorPlanCanvas";
 import ZonaManager from "@/components/mesas/ZonaManager";
 import MesaFormModal from "@/components/mesas/MesaFormModal";

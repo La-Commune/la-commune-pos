@@ -23,15 +23,18 @@ import { showToast } from "@/components/ui/Toast";
 import { deducirInventarioPorOrden } from "@/lib/inventory-deduction";
 import TicketDigital, { type TicketData, type TicketItem, type TicketPago } from "@/components/ui/TicketDigital";
 import type { Orden, OrdenWithMesa, ItemOrdenJSON } from "@/types/database";
-
-type MetodoPago = "efectivo" | "tarjeta" | "transferencia";
-
-interface PagoSplit {
-  id: string;
-  metodo: MetodoPago;
-  monto: number;
-  montoRecibido?: number;
-}
+import {
+  type MetodoPago,
+  type PagoSplit,
+  splitInicial,
+  calcularTotalesCobro,
+  calcularEstadoSplits,
+  addSplit,
+  removeSplit,
+  updateSplit,
+  calcularCambio,
+  puedeCobrar,
+} from "@/lib/split-payments";
 
 const metodoPagoConfig: Record<MetodoPago, { label: string; icon: typeof Banknote }> = {
   efectivo: { label: "Efectivo", icon: Banknote },
@@ -58,9 +61,7 @@ export default function CobrosPage() {
   const [procesando, setProcesando] = useState(false);
   /* Split payments */
   const [dividirPago, setDividirPago] = useState(false);
-  const [splits, setSplits] = useState<PagoSplit[]>([
-    { id: "1", metodo: "efectivo", monto: 0 }
-  ]);
+  const [splits, setSplits] = useState<PagoSplit[]>(splitInicial());
   /* Ticket digital */
   const [mostrarTicket, setMostrarTicket] = useState(false);
   const [ticketData, setTicketData] = useState<TicketData | null>(null);
@@ -109,33 +110,31 @@ export default function CobrosPage() {
     }
   }, [ordenesNormalizadas, ordenSeleccionada]);
 
-  // Cálculos — precios ya incluyen IVA
+  // Cálculos — precios ya incluyen IVA (lógica pura en lib/split-payments.ts)
   // total de la orden = suma directa de items (IVA incluido)
   const totalOrden = ordenSeleccionada ? ordenSeleccionada.total : 0;
-  const montoDescuento = Math.round(totalOrden * (descuento / 100) * 100) / 100;
-  const totalConDescuento = totalOrden - montoDescuento;
-  const totalFinal = totalConDescuento + propina;
-  // Desglose fiscal (hacia atrás)
-  const baseGravable = Math.round((totalConDescuento / 1.16) * 100) / 100;
-  const ivaDesglosado = Math.round((totalConDescuento - baseGravable) * 100) / 100;
+  const { montoDescuento, totalConDescuento, totalFinal, ivaDesglosado } =
+    calcularTotalesCobro(totalOrden, descuento, propina);
   const monto = parseFloat(montoRecibido) || 0;
-  const cambio = metodoPago === "efectivo" ? Math.max(0, monto - totalFinal) : 0;
+  const cambio = calcularCambio(metodoPago, monto, totalFinal);
 
   // Split payments calculations
-  const totalSplits = splits.reduce((sum, s) => sum + s.monto, 0);
-  const remainingSplit = Math.max(0, totalFinal - totalSplits);
-  const splitsValid = dividirPago ? totalSplits === totalFinal : true;
+  const { remainingSplit, splitsValid: splitsCuadran, cambioSplit } =
+    calcularEstadoSplits(splits, totalFinal);
+  const splitsValid = dividirPago ? splitsCuadran : true;
 
-  // Get efectivo split for change calculation
-  const efectivoSplit = splits.find(s => s.metodo === "efectivo");
+  // Split de efectivo para captura de monto recibido (usado en el JSX)
+  const efectivoSplit = splits.find((s) => s.metodo === "efectivo");
   const montoRecibidoEfectivo = efectivoSplit?.montoRecibido || 0;
-  const cambioSplit = efectivoSplit ? Math.max(0, montoRecibidoEfectivo - (efectivoSplit.monto)) : 0;
 
-  const puedeCobar = ordenSeleccionada && (
-    dividirPago
-      ? splitsValid
-      : (metodoPago !== "efectivo" || monto >= totalFinal)
-  );
+  const puedeCobar = puedeCobrar({
+    haySeleccion: Boolean(ordenSeleccionada),
+    dividirPago,
+    splitsValid,
+    metodoPago,
+    montoRecibido: monto,
+    totalFinal,
+  });
 
   const resetCobro = () => {
     setMontoRecibido("");
@@ -146,7 +145,7 @@ export default function CobrosPage() {
     setVerificando(false);
     setProcesando(false);
     setDividirPago(false);
-    setSplits([{ id: "1", metodo: "efectivo", monto: 0 }]);
+    setSplits(splitInicial());
   };
 
   const handleSeleccionarOrden = (orden: Orden) => {
@@ -154,20 +153,12 @@ export default function CobrosPage() {
     resetCobro();
   };
 
-  const handleAddSplit = () => {
-    if (splits.length >= 3) return;
-    const newId = String(Math.max(...splits.map(s => parseInt(s.id, 10)), 0) + 1);
-    setSplits([...splits, { id: newId, metodo: "tarjeta", monto: 0 }]);
-  };
+  const handleAddSplit = () => setSplits(addSplit(splits));
 
-  const handleRemoveSplit = (id: string) => {
-    if (splits.length === 1) return;
-    setSplits(splits.filter(s => s.id !== id));
-  };
+  const handleRemoveSplit = (id: string) => setSplits(removeSplit(splits, id));
 
-  const handleUpdateSplit = (id: string, updates: Partial<PagoSplit>) => {
-    setSplits(splits.map(s => s.id === id ? { ...s, ...updates } : s));
-  };
+  const handleUpdateSplit = (id: string, updates: Partial<PagoSplit>) =>
+    setSplits(updateSplit(splits, id, updates));
 
   /* R7: Paso 1 — mostrar verificación */
   const handleIniciarCobro = () => {
@@ -675,7 +666,7 @@ export default function CobrosPage() {
                     Formas de pago
                   </span>
                   <div className="space-y-2.5">
-                    {splits.map((split, idx) => (
+                    {splits.map((split) => (
                       <div key={split.id} className="flex items-end gap-2">
                         {/* Método selector */}
                         <div className="flex gap-1.5">

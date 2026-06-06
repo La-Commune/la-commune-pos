@@ -6,12 +6,10 @@ import { motion } from "framer-motion";
 import {
   DollarSign,
   ClipboardList,
-  Users,
   ChefHat,
   LayoutGrid,
   TrendingUp,
   ArrowRight,
-  Clock,
   AlertTriangle,
   CreditCard,
   Package,
@@ -22,8 +20,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { useMesas, useOrdenes, useInventario, subscribeToTable } from "@/hooks/useSupabase";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { SkeletonKPICard, SkeletonAlertCard, SkeletonQuickLink } from "@/components/ui/Skeleton";
-import { AnimatedCounter, FractionCounter } from "@/components/ui/AnimatedCounter";
-import { StaggerGrid, MotionItem } from "@/components/ui/MotionCard";
+import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { staggerContainer, fadeUp, cardHover, timing, ease } from "@/lib/motion";
 import type { Mesa, Orden } from "@/types/database";
 

@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Plus,
   Search,
   MoreHorizontal,
   Pencil,
-  Trash2,
   Shield,
   ShieldCheck,
   ShieldAlert,
@@ -71,7 +70,7 @@ function UsuariosPageContent() {
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
   const [confirmDesactivar, setConfirmDesactivar] = useState(false);
   const [usuarioADesactivar, setUsuarioADesactivar] = useState<Usuario | null>(null);
-  const [desactivando, setDesactivando] = useState(false);
+  const [, setDesactivando] = useState(false);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const menuBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -265,9 +264,9 @@ function UsuariosPageContent() {
         </div>
       )}
 
-      {/* Tabla */}
+      {/* Tabla (desktop) */}
       {!loading && (
-        <div className="flex-1 overflow-y-auto overflow-x-auto content-reveal">
+        <div className="hidden md:block flex-1 overflow-y-auto overflow-x-auto content-reveal">
           <div className="rounded-xl border border-border overflow-hidden min-w-[750px]">
             {/* Header */}
             <div className="grid grid-cols-[1fr_minmax(120px,200px)_100px_80px_100px_90px_48px] gap-3 px-5 py-3 bg-surface-2 border-b border-border">
@@ -343,9 +342,68 @@ function UsuariosPageContent() {
         </div>
       )}
 
+      {/* Cards (móvil) — tabla de usuarios responsive */}
+      {!loading && (
+        <div className="md:hidden flex-1 overflow-y-auto content-reveal space-y-2.5 pb-4">
+          {usuariosFiltrados.length === 0 && (
+            <div className="px-5 py-10 text-center text-sm text-text-25 rounded-xl border border-border">
+              No se encontraron usuarios
+            </div>
+          )}
+          {usuariosFiltrados.map((usuario) => {
+            const rol = rolConfig[usuario.rol];
+            const RolIcon = rol.icon;
+            const mobileKey = `m-${usuario.id}`;
+            return (
+              <div
+                key={mobileKey}
+                className={cn(
+                  "rounded-xl border border-border bg-surface-1 p-4",
+                  !usuario.activo && "opacity-50",
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-lg bg-surface-3 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-medium text-text-45">
+                        {usuario.nombre.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-text-100 truncate">{usuario.nombre}</p>
+                      <p className="text-xs text-text-45 truncate">{usuario.email}</p>
+                    </div>
+                  </div>
+                  <button
+                    ref={(el) => { menuBtnRefs.current[mobileKey] = el; }}
+                    onClick={() => setMenuAbierto(menuAbierto === mobileKey ? null : mobileKey)}
+                    className="p-2 rounded-xl text-text-25 hover:text-text-45 hover:bg-surface-2 transition-all duration-300 min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0"
+                  >
+                    <MoreHorizontal size={16} />
+                  </button>
+                </div>
+                <div className="flex items-center flex-wrap gap-2 mt-3">
+                  <span className={cn("flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg", rol.bg, rol.color)}>
+                    <RolIcon size={11} />{rol.label}
+                  </span>
+                  <span className={cn("flex items-center gap-1 text-xs font-medium uppercase tracking-wider px-2 py-0.5 rounded-lg", usuario.activo ? "bg-status-ok-bg text-status-ok" : "bg-status-err-bg text-status-err")}>
+                    {usuario.activo ? <UserCheck size={10} /> : <UserX size={10} />}
+                    {usuario.activo ? "Activo" : "Inactivo"}
+                  </span>
+                  <span className="text-[11px] text-text-25 tabular-nums ml-auto">
+                    {tiempoRelativo(usuario.ultimo_acceso)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Context menu flotante (fixed para no cortarse por overflow) */}
       {menuAbierto && menuPos && (() => {
-        const usr = usuariosList.find((u) => u.id === menuAbierto);
+        // menuAbierto puede venir de la tabla (id) o de las cards móviles (m-{id})
+        const usr = usuariosList.find((u) => u.id === menuAbierto.replace(/^m-/, ""));
         if (!usr) return null;
         return (
           <div
