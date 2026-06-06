@@ -34,8 +34,9 @@ export default function POSLayout({
         <RouteGuard>
           <PageTransition>{children}</PageTransition>
         </RouteGuard>
+        {/* dentro del shell: hereda el puente de tokens V3 (posición fixed no cambia) */}
+        <ToastContainer />
       </ShellV3>
-      <ToastContainer />
     </div>
   );
 }

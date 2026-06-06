@@ -27,6 +27,49 @@
   --v3-danger-soft: #f8e7e4;
   --v3-occupied: #b4540a;
 
+  /* ---- PUENTE DE TOKENS: el sistema de temas existente se re-mapea a V3
+     dentro del shell — TODAS las pantallas (cobros, mesas, KDS…) renderizan
+     con paleta y tipografía V3 sin tocar su código. Solo vive en esta branch. */
+  --surface-0: #f6f4ef;
+  --surface-1: #f6f4ef;
+  --surface-2: #ffffff;
+  --surface-3: #fbfaf6;
+  --surface-4: #efebe2;
+  --glass: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(27, 23, 19, 0.06);
+  --glass-hover: rgba(27, 23, 19, 0.04);
+  --border: #e6e1d7;
+  --border-hover: #d8d2c5;
+  --border-active: #c9c2b2;
+  --text-100: #1b1713;
+  --text-70: #5f574c;
+  --text-45: #94897c;
+  --text-25: #b0a799;
+  --accent: #0e5e43;
+  --accent-soft: rgba(14, 94, 67, 0.08);
+  --accent-mid: rgba(14, 94, 67, 0.16);
+  --cat-1: #0e5e43;
+  --ok: #0e5e43;
+  --warn: #b4540a;
+  --err: #bc3a31;
+  --info: #4a6b8a;
+  --ok-bg: rgba(14, 94, 67, 0.09);
+  --warn-bg: rgba(180, 84, 10, 0.09);
+  --err-bg: rgba(188, 58, 49, 0.09);
+  --info-bg: rgba(74, 107, 138, 0.09);
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --shadow-card: none;
+  --shadow-btn: none;
+  --shadow-glow: none;
+  --font-display: var(--font-v3-ui), system-ui, sans-serif;
+  --font-ui: var(--font-v3-ui), system-ui, sans-serif;
+  --btn-gradient: linear-gradient(135deg, #0e5e43 0%, #0e5e43 100%);
+  --btn-glow: rgba(14, 94, 67, 0.15);
+
   font-family: var(--font-v3-ui), -apple-system, sans-serif;
   background: var(--v3-paper);
   color: var(--v3-ink);
