@@ -1,15 +1,13 @@
 "use client";
 
 /* ============================================================
-   ShellV3 — "Barra" · shell tablet-nativo (PoC dirección V3)
-   Firma dos-pulgares: riel de navegación (pulgar izquierdo) /
-   trabajo al centro / dock de acciones (pulgar derecho).
-   Landscape ≥1024 = riel + dock laterales (PRIMARIO).
-   Portrait/phone = topbar + barra de acciones inferior.
-   Fuentes y tokens scoped — cero impacto en los 7 temas.
+   ShellV3 — "Barra" · Decisiones V3 aprobadas
+   ≥1024px: solo dock derecho (sin rail). Dock colapsado 72px /
+   expandido 200px como overlay. Split-dock-item "Nueva orden".
+   ≤1023px: topbar horizontal + barra de acciones inferior.
    ============================================================ */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Schibsted_Grotesk, IBM_Plex_Mono } from "next/font/google";
@@ -84,7 +82,28 @@ export default function ShellV3({ children }: { children: React.ReactNode }) {
   const isOnline = useSyncStore((s) => s.isOnline);
   const pendientes = useSyncStore((s) => s.pendingActions);
   const hora = useReloj();
+
   const [moreOpen, setMoreOpen] = useState(false);
+  const [dockOpen, setDockOpen] = useState(false);
+
+  const dockRef = useRef<HTMLElement>(null);
+
+  // Cerrar dock al hacer tap fuera (tablet)
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (dockRef.current && !dockRef.current.contains(e.target as Node)) {
+        setDockOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Cerrar dock al navegar
+  useEffect(() => {
+    setDockOpen(false);
+    setMoreOpen(false);
+  }, [pathname]);
 
   const iniciales = (user?.nombre ?? "David San")
     .split(" ")
@@ -92,6 +111,8 @@ export default function ShellV3({ children }: { children: React.ReactNode }) {
     .slice(0, 2)
     .join("")
     .toUpperCase();
+
+  const nombreCorto = user?.nombre?.split(" ")[0] ?? "David";
 
   const esActiva = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
@@ -103,13 +124,20 @@ export default function ShellV3({ children }: { children: React.ReactNode }) {
 
   const handleLogout = async () => {
     setMoreOpen(false);
+    setDockOpen(false);
     await logout();
     router.push("/login");
   };
 
+  const horaStr = hora.toLocaleTimeString("es-MX", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
   return (
     <div className={cn(styles.shell, fontUI.variable, fontMono.variable)}>
-      {/* RIEL: navegación, pulgar izquierdo */}
+      {/* ── TOPBAR (mobile + portrait tablet) ── */}
       <nav className={styles.rail}>
         <div className={styles.logo}>LC</div>
         <div className={styles.nav}>
@@ -172,43 +200,132 @@ export default function ShellV3({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      {/* ZONA DE TRABAJO */}
+      {/* ── ZONA DE TRABAJO ── */}
       <main className={styles.main}>{children}</main>
 
-      {/* DOCK: acciones primarias, pulgar derecho — LA FIRMA (landscape) */}
-      <aside className={styles.dock}>
-        <button
-          type="button"
-          className={cn(styles.dockAct, styles.dockPrimary)}
-          onClick={() => router.push("/ordenes")}
-        >
-          <Plus size={22} strokeWidth={2} />
-          Nueva orden
-        </button>
-        <button type="button" className={styles.dockAct} onClick={() => router.push("/cobros")}>
-          <CreditCard size={22} strokeWidth={1.75} />
-          Cobrar
-        </button>
-        <button type="button" className={styles.dockAct} onClick={() => router.push("/mesas")}>
-          <LayoutGrid size={22} strokeWidth={1.75} />
-          Mesas
-        </button>
-        <button type="button" className={styles.dockAct} onClick={() => router.push("/kds")}>
-          <ChefHat size={22} strokeWidth={1.75} />
-          Cocina
-        </button>
-        <div className={styles.dockFoot}>
-          <div className={styles.live}>
-            <i className={cn(styles.dot, syncWarn && styles.dotWarn)} />
-            {syncLabel}
+      {/* ── DOCK (≥1024px: reemplaza al rail como navegación principal) ── */}
+      <aside
+        ref={dockRef}
+        className={styles.dock}
+        onMouseEnter={() => setDockOpen(true)}
+        onMouseLeave={() => {
+          if (!moreOpen) setDockOpen(false);
+        }}
+      >
+        <div className={cn(styles.dockPanel, dockOpen && styles.dockPanelOpen)}>
+          {/* Logo compacto */}
+          <div className={styles.dockLogo}>LC</div>
+
+          {/* Nav items — reemplaza al rail en landscape */}
+          <nav className={styles.dockNav}>
+            {NAV.map(({ href, label, icon: IconComp }) => (
+              <Link
+                key={href}
+                href={href}
+                className={cn(styles.dockNavItem, esActiva(href) && styles.dockNavOn)}
+                title={label}
+              >
+                <span className={styles.dockNavIcon}>
+                  <IconComp size={20} strokeWidth={1.75} />
+                </span>
+                <span className={styles.dockNavLabel}>{label}</span>
+              </Link>
+            ))}
+
+            {/* "Más" con popover */}
+            <button
+              type="button"
+              className={cn(styles.dockNavItem, (moreOpen || enMore) && styles.dockNavOn)}
+              onClick={() => setMoreOpen((v) => !v)}
+              title="Más módulos"
+            >
+              <span className={styles.dockNavIcon}>
+                <MoreHorizontal size={20} strokeWidth={1.75} />
+              </span>
+              <span className={styles.dockNavLabel}>Más</span>
+            </button>
+          </nav>
+
+          {/* Popover "Más" en contexto de dock */}
+          {moreOpen && (
+            <>
+              <button
+                type="button"
+                className={styles.morePopBackdrop}
+                aria-label="Cerrar menú"
+                onClick={() => setMoreOpen(false)}
+              />
+              <div className={styles.morePop}>
+                {MORE.map(({ href, label, icon: IconComp }) => (
+                  <Link key={href} href={href} onClick={() => setMoreOpen(false)}>
+                    <IconComp size={17} strokeWidth={1.75} />
+                    {label}
+                  </Link>
+                ))}
+                <button type="button" className={styles.morePopSalir} onClick={handleLogout}>
+                  <LogOut size={17} strokeWidth={1.75} />
+                  Cerrar sesión
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Separador */}
+          <div className={styles.dockSep} />
+
+          {/* Split-dock-item: "Nueva orden" */}
+          <div className={styles.splitDock}>
+            {/* Cuerpo principal → /ordenes */}
+            <button
+              type="button"
+              className={styles.splitDockMain}
+              onClick={() => router.push("/ordenes")}
+              title="Nueva orden"
+            >
+              <span className={styles.dockNavIcon}>
+                <Plus size={20} strokeWidth={2.2} />
+              </span>
+              <span className={styles.splitDockLabel}>Nueva orden</span>
+            </button>
+            {/* "+" esquina → crear orden rápida */}
+            <button
+              type="button"
+              className={styles.splitDockPlus}
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push("/ordenes?nueva=1");
+              }}
+              aria-label="Crear nueva orden rápida"
+            >
+              <Plus size={11} strokeWidth={2.5} />
+            </button>
           </div>
-          <div>
-            {hora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false })}
+
+          {/* Footer: avatar + sync + hora */}
+          <div className={styles.dockFoot}>
+            {/* Avatar row */}
+            <div className={styles.dockAvatarRow}>
+              <button
+                type="button"
+                className={styles.dockAvatar}
+                title={user?.nombre ?? "Usuario"}
+                onClick={() => router.push("/configuracion")}
+              >
+                {iniciales}
+              </button>
+              <span className={styles.dockAvatarLabel}>{nombreCorto}</span>
+            </div>
+            {/* Sync + hora */}
+            <div className={styles.live}>
+              <i className={cn(styles.dot, syncWarn && styles.dotWarn)} />
+              <span className={styles.liveLabel}>{syncLabel}</span>
+            </div>
+            <div className={styles.horaFoot}>{horaStr}</div>
           </div>
         </div>
       </aside>
 
-      {/* BARRA DE ACCIONES inferior (portrait + phone) */}
+      {/* ── BARRA DE ACCIONES inferior (portrait + phone) ── */}
       <div className={styles.actionbar}>
         <button type="button" className={styles.abAct} onClick={() => router.push("/mesas")}>
           <LayoutGrid size={20} strokeWidth={1.75} />

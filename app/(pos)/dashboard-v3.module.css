@@ -232,6 +232,75 @@
 .alertaTxt { font-size: 12.5px; font-weight: 500; color: var(--v3-ink-2); line-height: 1.4; }
 .alertaTxt b { color: var(--v3-ink); font-weight: 600; }
 
+/* ---------- fila de orden completada (muted) ---------- */
+.ordenCompletada {
+  opacity: 0.62;
+}
+.ordenCompletadaTag {
+  font-family: var(--font-v3-mono), ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--v3-ink-3);
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: var(--v3-surface-2);
+  border: 1px solid var(--v3-line);
+  flex-shrink: 0;
+}
+
+/* ---------- Widget "Resumen del día" ---------- */
+.resumen {
+  margin-top: 14px;
+}
+.resumenTitle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--v3-ink-3);
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+.resumenGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.resumenItem {
+  background: var(--v3-surface);
+  border: 1px solid var(--v3-line);
+  border-radius: 12px;
+  padding: 14px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.resumenLbl {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--v3-ink-3);
+}
+.resumenVal {
+  font-family: var(--font-v3-mono), ui-monospace, monospace;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--v3-ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.resumenSub {
+  font-size: 10.5px;
+  color: var(--v3-ink-3);
+  font-weight: 500;
+}
+
 /* ============================================================
    RESPONSIVE
    ============================================================ */
@@ -246,7 +315,11 @@
   .cols { grid-template-columns: 1.5fr 1fr; }
 }
 @media (min-width: 1366px) {
-  .hdr, .kpis, .cols { max-width: 1080px; }
+  .hdr, .kpis, .cols, .resumen { max-width: 1080px; }
+}
+@media (max-width: 479px) {
+  .resumenGrid { grid-template-columns: 1fr; }
+  .resumenVal { font-size: 14px; }
 }
 @media (max-width: 639px) {
   .cajaChip { display: none; }

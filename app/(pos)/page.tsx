@@ -3,14 +3,14 @@
 /* ============================================================
    Dashboard — PoC dirección V3 "Barra" (tablet-nativo + carácter)
    Misma lógica de datos que main; vestimenta V3:
-   KPI hero en mono gigante, neutros cálidos, Verde Comuna.
-   El shell (riel + dock) vive en ShellV3 via layout.
+   KPI hero en mono gigante, neutros cálidos, Verde Vivo.
+   El shell (dock) vive en ShellV3 via layout.
    ============================================================ */
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { AlertTriangle, ChefHat, Package, Check } from "lucide-react";
+import { AlertTriangle, ChefHat, Package, Check, TrendingUp } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import { supabase, USE_MOCK } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth.store";
@@ -29,6 +29,13 @@ interface OrdenFila {
   meta: string;
   monto: string;
   chip: ChipEstado;
+  completada?: boolean;
+}
+
+interface ResumenHoy {
+  ticketAlto: number | null;
+  horaPico: string | null;
+  topProducto: string | null;
 }
 
 const CHIP_LABEL: Record<ChipEstado, string> = {
@@ -51,24 +58,62 @@ function DashboardContent() {
   const { data: mesas } = useMesas();
   const { data: ordenes, refetch: refetchOrdenes } = useOrdenes();
   const { data: inventario } = useInventario();
+
   const [ventasHoy, setVentasHoy] = useState(0);
   const [ordenesHoyCount, setOrdenesHoyCount] = useState(0);
   const [loading, setLoading] = useState(!USE_MOCK);
+  const [resumenHoy, setResumenHoy] = useState<ResumenHoy>({
+    ticketAlto: null,
+    horaPico: null,
+    topProducto: null,
+  });
+  const [completadasRecientes, setCompletadasRecientes] = useState<OrdenFila[]>([]);
 
   const cargarVentas = async () => {
     if (USE_MOCK || !supabase) {
       setLoading(false);
+      // Mock para resumen del día
+      setResumenHoy({ ticketAlto: 485, horaPico: "11:00", topProducto: "Latte" });
+      setCompletadasRecientes([
+        {
+          folio: "#043",
+          titulo: "2× Cappuccino · Rol de canela",
+          meta: "Completada hoy · hace 45 min",
+          monto: "$215.00",
+          chip: "lista",
+          completada: true,
+        },
+        {
+          folio: "#042",
+          titulo: "Flat White · Brownie",
+          meta: "Completada hoy · hace 1h 12 min",
+          monto: "$145.00",
+          chip: "lista",
+          completada: true,
+        },
+        {
+          folio: "#041",
+          titulo: "Americano 16oz · 2× Croissant",
+          meta: "Completada hoy · hace 1h 38 min",
+          monto: "$175.00",
+          chip: "lista",
+          completada: true,
+        },
+      ]);
       return;
     }
+
     try {
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
+      const hoyISO = hoy.toISOString();
 
+      // 1. Pagos del día (ventas totales + ticket más alto)
       const { data: pagos } = await supabase
         .from("pagos")
         .select("monto")
         .eq("estado", "completado")
-        .gte("creado_en", hoy.toISOString());
+        .gte("creado_en", hoyISO);
 
       const total = (pagos ?? []).reduce(
         (sum: number, p: { monto: number | null }) => sum + (p.monto || 0),
@@ -76,15 +121,64 @@ function DashboardContent() {
       );
       setVentasHoy(total);
 
+      const montos = (pagos ?? []).map((p: { monto: number | null }) => p.monto || 0);
+      const ticketAlto = montos.length > 0 ? Math.max(...montos) : null;
+
+      // 2. Órdenes completadas hoy (count + hora pico + completadas recientes)
       const { data: ordenesCompletadas } = await supabase
         .from("ordenes")
-        .select("id")
+        .select("id, creado_en, folio, notas, total, origen")
         .eq("estado", "completada")
-        .gte("creado_en", hoy.toISOString());
+        .gte("creado_en", hoyISO)
+        .order("creado_en", { ascending: false });
 
       setOrdenesHoyCount(ordenesCompletadas?.length ?? 0);
+
+      // Hora pico: agrupar por hora
+      const byHour: Record<number, number> = {};
+      (ordenesCompletadas ?? []).forEach((o) => {
+        if (o.creado_en) {
+          const h = new Date(o.creado_en).getHours();
+          byHour[h] = (byHour[h] || 0) + 1;
+        }
+      });
+      const peaks = Object.entries(byHour).sort((a, b) => Number(b[1]) - Number(a[1]));
+      const horaPico =
+        peaks.length > 0 ? `${String(peaks[0][0]).padStart(2, "0")}:00` : null;
+
+      // Últimas 3 completadas para card stretch
+      const recientes: OrdenFila[] = (ordenesCompletadas ?? [])
+        .slice(0, 3)
+        .map((o) => ({
+          folio: `#${String(o.folio ?? "—").padStart(3, "0")}`,
+          titulo: o.notas || `Orden ${o.folio ?? "s/n"}`,
+          meta: `Completada hoy · hace ${minutosDesde(o.creado_en)}`,
+          monto: formatMXN(o.total ?? 0),
+          chip: "lista" as ChipEstado,
+          completada: true,
+        }));
+      setCompletadasRecientes(recientes);
+
+      // 3. Producto más vendido hoy
+      let topProducto: string | null = null;
+      const ids = (ordenesCompletadas ?? []).map((o) => o.id);
+      if (ids.length > 0) {
+        const { data: items } = await supabase
+          .from("items_orden")
+          .select("nombre, cantidad")
+          .in("orden_id", ids);
+
+        const counts: Record<string, number> = {};
+        (items ?? []).forEach((i: { nombre: string; cantidad: number }) => {
+          counts[i.nombre] = (counts[i.nombre] || 0) + i.cantidad;
+        });
+        topProducto =
+          Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+      }
+
+      setResumenHoy({ ticketAlto, horaPico, topProducto });
     } catch {
-      // silent
+      // silent — shows "—" in widget
     } finally {
       setLoading(false);
     }
@@ -122,28 +216,55 @@ function DashboardContent() {
     (inventario as { stock_actual?: number; stock_minimo?: number; activo?: boolean }[]) ?? [];
 
   const mesasOcupadas = mesasList.filter((m) => m.estado === "ocupada").length;
-  const ordenesPendientes = ordenesList.filter((o) => ["nueva", "confirmada"].includes(o.estado)).length;
-  const ordenesEnKDS = ordenesList.filter((o) => ["preparando", "lista"].includes(o.estado)).length;
+  const ordenesPendientes = ordenesList.filter((o) =>
+    ["nueva", "confirmada"].includes(o.estado),
+  ).length;
+  const ordenesEnKDS = ordenesList.filter((o) =>
+    ["preparando", "lista"].includes(o.estado),
+  ).length;
   const ordenesActivasCount = ordenesPendientes + ordenesEnKDS;
   const ticketPromedio = ordenesHoyCount > 0 ? ventasHoy / ordenesHoyCount : 0;
   const ingredientesBajos = inventarioList.filter(
-    (i) => Number(i.stock_actual ?? 0) <= Number(i.stock_minimo ?? 0) && i.activo !== false,
+    (i) =>
+      Number(i.stock_actual ?? 0) <= Number(i.stock_minimo ?? 0) && i.activo !== false,
   ).length;
 
   const saludo =
-    hora.getHours() < 12 ? "Buenos días" : hora.getHours() < 18 ? "Buenas tardes" : "Buenas noches";
+    hora.getHours() < 12
+      ? "Buenos días"
+      : hora.getHours() < 18
+        ? "Buenas tardes"
+        : "Buenas noches";
   const nombreCorto = user?.nombre?.split(" ")[0] ?? "David";
-  const fecha = hora.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
+  const fecha = hora.toLocaleDateString("es-MX", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
   const fechaCap = fecha.charAt(0).toUpperCase() + fecha.slice(1);
-  const horaStr = hora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const horaStr = hora.toLocaleTimeString("es-MX", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 
-  /* filas de órdenes activas — mock rico en modo dev, datos reales con Supabase */
-  const filasOrdenes: OrdenFila[] = USE_MOCK
+  /* Órdenes activas — mock rico en dev */
+  const filasActivas: OrdenFila[] = USE_MOCK
     ? [
-        { folio: "#048", titulo: "2× Latte · Rol de canela", meta: "Mesa 3 · hace 4 min", monto: "$165.00", chip: "prep" },
-        { folio: "#047", titulo: "Flat White · Cappuccino · 2× Croissant", meta: "Mesa 5 · hace 9 min", monto: "$248.00", chip: "lista" },
-        { folio: "#046", titulo: "Americano 16oz", meta: "Para llevar · hace 2 min", monto: "$65.00", chip: "nueva" },
-        { folio: "#045", titulo: "Moka · Latte 12oz · Brownie", meta: "Mesa 1 · hace 16 min", monto: "$197.00", chip: "lista" },
+        {
+          folio: "#048",
+          titulo: "2× Latte · Rol de canela",
+          meta: "Mesa 3 · hace 4 min",
+          monto: "$165.00",
+          chip: "prep",
+        },
+        {
+          folio: "#047",
+          titulo: "Flat White · Cappuccino · 2× Croissant",
+          meta: "Mesa 5 · hace 9 min",
+          monto: "$248.00",
+          chip: "lista",
+        },
       ]
     : ordenesList
         .filter((o) => ["nueva", "confirmada", "preparando", "lista"].includes(o.estado))
@@ -160,7 +281,16 @@ function DashboardContent() {
               : "lista") as ChipEstado,
         }));
 
-  /* mini grid de mesas */
+  /* Card stretch: si menos de 3 activas, complementar con completadas recientes */
+  const necesitaStretch = filasActivas.length < 3;
+  const filasOrdenes: OrdenFila[] = necesitaStretch
+    ? [
+        ...filasActivas,
+        ...completadasRecientes.slice(0, Math.max(0, 3 - filasActivas.length)),
+      ]
+    : filasActivas;
+
+  /* Mini grid de mesas */
   const mesasGrid = USE_MOCK
     ? [
         { num: 1, ocupada: true, label: "48 min" },
@@ -175,11 +305,17 @@ function DashboardContent() {
     : mesasList.slice(0, 8).map((m) => ({
         num: m.numero,
         ocupada: m.estado === "ocupada",
-        label: m.estado === "ocupada" ? minutosDesde(m.ocupada_desde) || "Ocupada" : "Libre",
+        label:
+          m.estado === "ocupada" ? minutosDesde(m.ocupada_desde) || "Ocupada" : "Libre",
       }));
 
   const mesasOcupadasGrid = USE_MOCK ? 5 : mesasOcupadas;
   const hayAvisos = ordenesPendientes > 0 || ordenesEnKDS > 0 || ingredientesBajos > 0;
+
+  /* Resumen del día: formatos de visualización */
+  const ticketAltoStr = resumenHoy.ticketAlto != null ? formatMXN(resumenHoy.ticketAlto) : "—";
+  const horaPicoStr = resumenHoy.horaPico ? `${resumenHoy.horaPico}–${String(Number(resumenHoy.horaPico.split(":")[0]) + 1).padStart(2, "0")}:00` : "—";
+  const topProductoStr = resumenHoy.topProducto ?? "—";
 
   return (
     <div>
@@ -200,38 +336,60 @@ function DashboardContent() {
         </span>
       </motion.div>
 
-      {/* ── KPIs — el número es la interfaz ── */}
+      {/* ── KPIs ── */}
       {!loading && (
-        <motion.div className={styles.kpis} variants={staggerContainer} initial="hidden" animate="show">
+        <motion.div
+          className={styles.kpis}
+          variants={staggerContainer}
+          initial="hidden"
+          animate="show"
+        >
           <motion.button
             variants={fadeUp}
             className={cn(styles.kpi, styles.kpiHero, styles.kpiBtn)}
             onClick={() => router.push("/reportes")}
           >
             <div className={styles.kpiLbl}>Ventas de hoy</div>
-            <AnimatedCounter value={ventasHoy} format={formatMXN} className={styles.kpiVal} delay={0.1} />
+            <AnimatedCounter
+              value={ventasHoy}
+              format={formatMXN}
+              className={styles.kpiVal}
+              delay={0.1}
+            />
             <div className={styles.kpiSub}>
               <b>{ordenesHoyCount}</b> órdenes cobradas
             </div>
           </motion.button>
+
           <motion.button
             variants={fadeUp}
             className={cn(styles.kpi, styles.kpiBtn)}
             onClick={() => router.push("/ordenes")}
           >
             <div className={styles.kpiLbl}>Órdenes activas</div>
-            <AnimatedCounter value={ordenesActivasCount} className={styles.kpiVal} delay={0.15} />
+            <AnimatedCounter
+              value={ordenesActivasCount}
+              className={styles.kpiVal}
+              delay={0.15}
+            />
             <div className={styles.kpiSub}>{ordenesPendientes} por confirmar</div>
           </motion.button>
+
           <motion.button
             variants={fadeUp}
             className={cn(styles.kpi, styles.kpiBtn)}
             onClick={() => router.push("/reportes")}
           >
             <div className={styles.kpiLbl}>Ticket promedio</div>
-            <AnimatedCounter value={ticketPromedio} format={formatMXN} className={styles.kpiVal} delay={0.2} />
+            <AnimatedCounter
+              value={ticketPromedio}
+              format={formatMXN}
+              className={styles.kpiVal}
+              delay={0.2}
+            />
             <div className={styles.kpiSub}>{ordenesHoyCount} cobradas</div>
           </motion.button>
+
           <motion.button
             variants={fadeUp}
             className={cn(styles.kpi, styles.kpiBtn)}
@@ -248,6 +406,7 @@ function DashboardContent() {
 
       {/* ── Grid principal ── */}
       <div className={styles.cols}>
+        {/* Card órdenes — stretch: incluye completadas si hay pocas activas */}
         <motion.div
           className={styles.card}
           initial={{ opacity: 0, y: 14 }}
@@ -256,11 +415,16 @@ function DashboardContent() {
         >
           <div className={styles.chead}>
             <span className={styles.cheadTitle}>Órdenes activas</span>
-            <span className={styles.cheadN}>{filasOrdenes.length}</span>
-            <button type="button" className={styles.cheadLink} onClick={() => router.push("/ordenes")}>
+            <span className={styles.cheadN}>{filasActivas.length}</span>
+            <button
+              type="button"
+              className={styles.cheadLink}
+              onClick={() => router.push("/ordenes")}
+            >
               Ver todas
             </button>
           </div>
+
           {filasOrdenes.length === 0 ? (
             <div className={styles.alerta} style={{ cursor: "default" }}>
               <span className={styles.alertaIcon} style={{ color: "var(--v3-ink-3)" }}>
@@ -269,27 +433,41 @@ function DashboardContent() {
               <span className={styles.alertaTxt}>Sin órdenes activas ahora</span>
             </div>
           ) : (
-            filasOrdenes.map((o) => (
-              <button type="button" key={o.folio} className={styles.orden} onClick={() => router.push("/ordenes")}>
+            filasOrdenes.map((o, idx) => (
+              <button
+                type="button"
+                key={`${o.folio}-${idx}`}
+                className={cn(styles.orden, o.completada && styles.ordenCompletada)}
+                onClick={() => router.push("/ordenes")}
+              >
                 <span className={styles.folio}>{o.folio}</span>
                 <span className={styles.que}>
                   <span className={styles.queTitulo}>{o.titulo}</span>
                   <span className={styles.queMeta}>{o.meta}</span>
                 </span>
-                <span
-                  className={cn(
-                    styles.chip,
-                    o.chip === "prep" ? styles.chipPrep : o.chip === "lista" ? styles.chipLista : styles.chipNueva,
-                  )}
-                >
-                  {CHIP_LABEL[o.chip]}
-                </span>
+                {o.completada ? (
+                  <span className={styles.ordenCompletadaTag}>Hoy</span>
+                ) : (
+                  <span
+                    className={cn(
+                      styles.chip,
+                      o.chip === "prep"
+                        ? styles.chipPrep
+                        : o.chip === "lista"
+                          ? styles.chipLista
+                          : styles.chipNueva,
+                    )}
+                  >
+                    {CHIP_LABEL[o.chip]}
+                  </span>
+                )}
                 <span className={styles.monto}>{o.monto}</span>
               </button>
             ))
           )}
         </motion.div>
 
+        {/* Columna derecha: Mesas + Avisos */}
         <div className={styles.colsRight}>
           <motion.div
             className={styles.card}
@@ -302,7 +480,11 @@ function DashboardContent() {
               <span className={styles.cheadN}>
                 {mesasOcupadasGrid}/{mesasGrid.length || 8}
               </span>
-              <button type="button" className={styles.cheadLink} onClick={() => router.push("/mesas")}>
+              <button
+                type="button"
+                className={styles.cheadLink}
+                onClick={() => router.push("/mesas")}
+              >
                 Plano
               </button>
             </div>
@@ -311,7 +493,10 @@ function DashboardContent() {
                 <button
                   type="button"
                   key={m.num}
-                  className={cn(styles.mesa, m.ocupada ? styles.mesaOcupada : styles.mesaLibre)}
+                  className={cn(
+                    styles.mesa,
+                    m.ocupada ? styles.mesaOcupada : styles.mesaLibre,
+                  )}
                   onClick={() => router.push("/mesas")}
                 >
                   <span className={styles.mesaNum}>{m.num}</span>
@@ -331,20 +516,29 @@ function DashboardContent() {
               <span className={styles.cheadTitle}>Avisos</span>
             </div>
             {ordenesPendientes > 0 && (
-              <button type="button" className={styles.alerta} onClick={() => router.push("/ordenes")}>
+              <button
+                type="button"
+                className={styles.alerta}
+                onClick={() => router.push("/ordenes")}
+              >
                 <span className={styles.alertaIcon}>
                   <AlertTriangle size={18} strokeWidth={1.75} />
                 </span>
                 <span className={styles.alertaTxt}>
                   <b>
-                    {ordenesPendientes} {ordenesPendientes === 1 ? "orden pendiente" : "órdenes pendientes"}
+                    {ordenesPendientes}{" "}
+                    {ordenesPendientes === 1 ? "orden pendiente" : "órdenes pendientes"}
                   </b>{" "}
                   de confirmar
                 </span>
               </button>
             )}
             {ordenesEnKDS > 0 && (
-              <button type="button" className={styles.alerta} onClick={() => router.push("/kds")}>
+              <button
+                type="button"
+                className={styles.alerta}
+                onClick={() => router.push("/kds")}
+              >
                 <span className={styles.alertaIcon}>
                   <ChefHat size={18} strokeWidth={1.75} />
                 </span>
@@ -357,20 +551,28 @@ function DashboardContent() {
               </button>
             )}
             {ingredientesBajos > 0 && (
-              <button type="button" className={styles.alerta} onClick={() => router.push("/inventario")}>
+              <button
+                type="button"
+                className={styles.alerta}
+                onClick={() => router.push("/inventario")}
+              >
                 <span className={styles.alertaIcon}>
                   <Package size={18} strokeWidth={1.75} />
                 </span>
                 <span className={styles.alertaTxt}>
                   <b>
-                    {ingredientesBajos} {ingredientesBajos === 1 ? "ingrediente" : "ingredientes"}
+                    {ingredientesBajos}{" "}
+                    {ingredientesBajos === 1 ? "ingrediente" : "ingredientes"}
                   </b>{" "}
                   con stock bajo
                 </span>
               </button>
             )}
             {!hayAvisos && (
-              <div className={cn(styles.alerta, styles.alertaOk)} style={{ cursor: "default" }}>
+              <div
+                className={cn(styles.alerta, styles.alertaOk)}
+                style={{ cursor: "default" }}
+              >
                 <span className={styles.alertaIcon}>
                   <Check size={18} strokeWidth={1.75} />
                 </span>
@@ -382,6 +584,40 @@ function DashboardContent() {
           </motion.div>
         </div>
       </div>
+
+      {/* ── Widget "Resumen del día" ── */}
+      <motion.div
+        className={styles.resumen}
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: timing.smooth, ease: ease.out, delay: 0.38 }}
+      >
+        <div className={styles.resumenTitle}>
+          <TrendingUp
+            size={11}
+            strokeWidth={2}
+            style={{ display: "inline", marginRight: 6, verticalAlign: "middle" }}
+          />
+          Resumen del día
+        </div>
+        <div className={styles.resumenGrid}>
+          <div className={styles.resumenItem}>
+            <span className={styles.resumenLbl}>Ticket más alto</span>
+            <span className={styles.resumenVal}>{ticketAltoStr}</span>
+            <span className={styles.resumenSub}>venta más grande de hoy</span>
+          </div>
+          <div className={styles.resumenItem}>
+            <span className={styles.resumenLbl}>Hora pico</span>
+            <span className={styles.resumenVal}>{horaPicoStr}</span>
+            <span className={styles.resumenSub}>más órdenes en ese lapso</span>
+          </div>
+          <div className={styles.resumenItem}>
+            <span className={styles.resumenLbl}>Más vendido</span>
+            <span className={styles.resumenVal}>{topProductoStr}</span>
+            <span className={styles.resumenSub}>producto más pedido hoy</span>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
