@@ -310,3 +310,19 @@ VAPID_PRIVATE_KEY
 ## Licencia
 
 © 2026 La Commune. Todos los derechos reservados. Código propietario — no licenciado para reutilización, distribución o modificación sin permiso explícito.
+
+---
+
+## Ownership & Independence
+
+**Personal project — La Commune Family Business**
+
+This software is built and maintained by **David San Luis Aguirre** as part of **La Commune**, a family-owned specialty coffee shop in Mineral de la Reforma, Hidalgo, México. The project exists exclusively to serve the operations of this business.
+
+- **Scope**: This codebase is the property of La Commune (family business) and David San Luis Aguirre as sole developer. It is **not** derived from, contracted by, or affiliated with any employer or third-party client.
+- **Independence**: Development occurs outside of any other professional engagement, on personal time and — from **23 May 2026 onward** — using dedicated personal infrastructure.
+- **Stack & decisions**: All architectural choices, code, intellectual property, and design contained in this repository belong to La Commune and the sole author.
+
+This statement is included to provide explicit, public clarification of the project's independent ownership and scope.
+
+For licensing inquiries, contact La Commune.
