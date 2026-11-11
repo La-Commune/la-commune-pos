@@ -1,191 +1,184 @@
 "use client";
 
+/* ============================================================
+   Dashboard — PoC dirección V3 "Barra" (tablet-nativo + carácter)
+   Misma lógica de datos que main; vestimenta V3:
+   KPI hero en mono gigante, neutros cálidos, Verde Vivo.
+   El shell (dock) vive en ShellV3 via layout.
+   ============================================================ */
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import {
-  DollarSign,
-  ClipboardList,
-  ChefHat,
-  LayoutGrid,
-  TrendingUp,
-  ArrowRight,
-  AlertTriangle,
-  CreditCard,
-  Package,
-} from "lucide-react";
+import { AlertTriangle, ChefHat, Package, Check, TrendingUp } from "lucide-react";
 import { cn, formatMXN } from "@/lib/utils";
 import { supabase, USE_MOCK } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth.store";
 import { useMesas, useOrdenes, useInventario, subscribeToTable } from "@/hooks/useSupabase";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
-import { SkeletonKPICard, SkeletonAlertCard, SkeletonQuickLink } from "@/components/ui/Skeleton";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
-import { staggerContainer, fadeUp, cardHover, timing, ease } from "@/lib/motion";
+import { staggerContainer, fadeUp, timing, ease } from "@/lib/motion";
 import type { Mesa, Orden } from "@/types/database";
+import styles from "./dashboard-v3.module.css";
 
-/* ── KPI Card with micro-interactions ── */
-function KPICard({
-  label,
-  value,
-  numericValue,
-  isCurrency,
-  icon: Icon,
-  color,
-  onClick,
-  delay = 0,
-}: {
-  label: string;
-  value: string;
-  numericValue?: number;
-  isCurrency?: boolean;
-  icon: typeof DollarSign;
-  color: string;
-  onClick?: () => void;
-  delay?: number;
-}) {
-  return (
-    <motion.button
-      variants={fadeUp}
-      whileHover={onClick ? cardHover.hover : undefined}
-      whileTap={onClick ? cardHover.tap : undefined}
-      onClick={onClick}
-      className={cn(
-        "flex items-start gap-4 p-5 rounded-xl bg-surface-2 border border-border transition-colors duration-200 text-left group",
-        onClick && "cursor-pointer hover:border-border-hover",
-      )}
-    >
-      <motion.div
-        className={cn("p-3 rounded-xl", color)}
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: timing.smooth, ease: ease.spring, delay: delay + 0.1 }}
-      >
-        <Icon size={20} className="text-white" />
-      </motion.div>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-text-25 uppercase tracking-widest mb-1">{label}</p>
-        {numericValue !== undefined ? (
-          <AnimatedCounter
-            value={numericValue}
-            format={isCurrency ? formatMXN : undefined}
-            className="text-xl font-bold text-text-100 tracking-tight"
-            delay={delay + 0.15}
-          />
-        ) : (
-          <p className="text-xl font-bold text-text-100 tracking-tight">{value}</p>
-        )}
-      </div>
-      {onClick && (
-        <ArrowRight size={16} className="text-text-25 group-hover:text-text-45 mt-3 transition-colors" />
-      )}
-    </motion.button>
-  );
+type ChipEstado = "nueva" | "prep" | "lista";
+
+interface OrdenFila {
+  folio: string;
+  titulo: string;
+  meta: string;
+  monto: string;
+  chip: ChipEstado;
+  completada?: boolean;
 }
 
-/* ── Alert Card with entrance animation ── */
-function AlertCard({
-  label,
-  count,
-  icon: Icon,
-  color,
-  onClick,
-}: {
-  label: string;
-  count: number;
-  icon: typeof AlertTriangle;
-  color: string;
-  onClick?: () => void;
-}) {
-  if (count === 0) return null;
-  return (
-    <motion.button
-      variants={fadeUp}
-      whileHover={{ scale: 1.01, x: 4 }}
-      whileTap={{ scale: 0.99 }}
-      transition={{ duration: timing.fast, ease: ease.out }}
-      onClick={onClick}
-      className={cn(
-        "flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors duration-200 text-left w-full",
-        color,
-      )}
-    >
-      <Icon size={18} />
-      <span className="text-sm font-medium flex-1">
-        {count} {label}
-      </span>
-      <ArrowRight size={14} />
-    </motion.button>
-  );
+interface ResumenHoy {
+  ticketAlto: number | null;
+  horaPico: string | null;
+  topProducto: string | null;
 }
 
-/* ── Quick Link with hover bounce ── */
-function QuickLink({
-  label,
-  icon: Icon,
-  color,
-  onClick,
-}: {
-  label: string;
-  icon: typeof LayoutGrid;
-  color: string;
-  onClick: () => void;
-}) {
-  return (
-    <motion.button
-      variants={fadeUp}
-      whileHover={{ scale: 1.04, y: -2 }}
-      whileTap={{ scale: 0.96 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      onClick={onClick}
-      className="flex flex-col items-center gap-2.5 p-4 rounded-xl bg-surface-2 border border-border hover:border-border-hover transition-colors duration-200 min-h-[44px] cursor-pointer"
-    >
-      <div className={cn("p-3 rounded-xl", color)}>
-        <Icon size={20} className="text-white" />
-      </div>
-      <span className="text-xs font-medium text-text-70">{label}</span>
-    </motion.button>
-  );
+const CHIP_LABEL: Record<ChipEstado, string> = {
+  nueva: "Nueva",
+  prep: "En cocina",
+  lista: "Lista",
+};
+
+function minutosDesde(iso: string | null): string {
+  if (!iso) return "";
+  const min = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  return `${h}h ${String(min % 60).padStart(2, "0")}`;
 }
 
-/* ── Main Dashboard Content ── */
 function DashboardContent() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const { data: mesas } = useMesas();
   const { data: ordenes, refetch: refetchOrdenes } = useOrdenes();
   const { data: inventario } = useInventario();
+
   const [ventasHoy, setVentasHoy] = useState(0);
   const [ordenesHoyCount, setOrdenesHoyCount] = useState(0);
   const [loading, setLoading] = useState(!USE_MOCK);
+  const [resumenHoy, setResumenHoy] = useState<ResumenHoy>({
+    ticketAlto: null,
+    horaPico: null,
+    topProducto: null,
+  });
+  const [completadasRecientes, setCompletadasRecientes] = useState<OrdenFila[]>([]);
 
   const cargarVentas = async () => {
     if (USE_MOCK || !supabase) {
       setLoading(false);
+      // Mock para resumen del día
+      setResumenHoy({ ticketAlto: 485, horaPico: "11:00", topProducto: "Latte" });
+      setCompletadasRecientes([
+        {
+          folio: "#043",
+          titulo: "2× Cappuccino · Rol de canela",
+          meta: "Completada hoy · hace 45 min",
+          monto: "$215.00",
+          chip: "lista",
+          completada: true,
+        },
+        {
+          folio: "#042",
+          titulo: "Flat White · Brownie",
+          meta: "Completada hoy · hace 1h 12 min",
+          monto: "$145.00",
+          chip: "lista",
+          completada: true,
+        },
+        {
+          folio: "#041",
+          titulo: "Americano 16oz · 2× Croissant",
+          meta: "Completada hoy · hace 1h 38 min",
+          monto: "$175.00",
+          chip: "lista",
+          completada: true,
+        },
+      ]);
       return;
     }
+
     try {
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
+      const hoyISO = hoy.toISOString();
 
+      // 1. Pagos del día (ventas totales + ticket más alto)
       const { data: pagos } = await supabase
         .from("pagos")
         .select("monto")
         .eq("estado", "completado")
-        .gte("creado_en", hoy.toISOString());
+        .gte("creado_en", hoyISO);
 
-      const total = (pagos ?? []).reduce((sum: number, p: any) => sum + (p.monto || 0), 0);
+      const total = (pagos ?? []).reduce(
+        (sum: number, p: { monto: number | null }) => sum + (p.monto || 0),
+        0,
+      );
       setVentasHoy(total);
 
+      const montos = (pagos ?? []).map((p: { monto: number | null }) => p.monto || 0);
+      const ticketAlto = montos.length > 0 ? Math.max(...montos) : null;
+
+      // 2. Órdenes completadas hoy (count + hora pico + completadas recientes)
       const { data: ordenesCompletadas } = await supabase
         .from("ordenes")
-        .select("id")
+        .select("id, creado_en, folio, notas, total, origen")
         .eq("estado", "completada")
-        .gte("creado_en", hoy.toISOString());
+        .gte("creado_en", hoyISO)
+        .order("creado_en", { ascending: false });
 
       setOrdenesHoyCount(ordenesCompletadas?.length ?? 0);
+
+      // Hora pico: agrupar por hora
+      const byHour: Record<number, number> = {};
+      (ordenesCompletadas ?? []).forEach((o) => {
+        if (o.creado_en) {
+          const h = new Date(o.creado_en).getHours();
+          byHour[h] = (byHour[h] || 0) + 1;
+        }
+      });
+      const peaks = Object.entries(byHour).sort((a, b) => Number(b[1]) - Number(a[1]));
+      const horaPico =
+        peaks.length > 0 ? `${String(peaks[0][0]).padStart(2, "0")}:00` : null;
+
+      // Últimas 3 completadas para card stretch
+      const recientes: OrdenFila[] = (ordenesCompletadas ?? [])
+        .slice(0, 3)
+        .map((o) => ({
+          folio: `#${String(o.folio ?? "—").padStart(3, "0")}`,
+          titulo: o.notas || `Orden ${o.folio ?? "s/n"}`,
+          meta: `Completada hoy · hace ${minutosDesde(o.creado_en)}`,
+          monto: formatMXN(o.total ?? 0),
+          chip: "lista" as ChipEstado,
+          completada: true,
+        }));
+      setCompletadasRecientes(recientes);
+
+      // 3. Producto más vendido hoy
+      let topProducto: string | null = null;
+      const ids = (ordenesCompletadas ?? []).map((o) => o.id);
+      if (ids.length > 0) {
+        const { data: items } = await supabase
+          .from("items_orden")
+          .select("nombre, cantidad")
+          .in("orden_id", ids);
+
+        const counts: Record<string, number> = {};
+        (items ?? []).forEach((i: { nombre: string; cantidad: number }) => {
+          counts[i.nombre] = (counts[i.nombre] || 0) + i.cantidad;
+        });
+        topProducto =
+          Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+      }
+
+      setResumenHoy({ ticketAlto, horaPico, topProducto });
     } catch {
-      // silent
+      // silent — shows "—" in widget
     } finally {
       setLoading(false);
     }
@@ -193,6 +186,7 @@ function DashboardContent() {
 
   useEffect(() => {
     cargarVentas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -207,10 +201,19 @@ function DashboardContent() {
       sub.unsubscribe();
       subOrdenes.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refetchOrdenes]);
 
-  const mesasList = mesas as unknown as Mesa[];
-  const ordenesList = ordenes as unknown as Orden[];
+  const [hora, setHora] = useState(() => new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setHora(new Date()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const mesasList = (mesas as unknown as Mesa[]) ?? [];
+  const ordenesList = (ordenes as unknown as Orden[]) ?? [];
+  const inventarioList =
+    (inventario as { stock_actual?: number; stock_minimo?: number; activo?: boolean }[]) ?? [];
 
   const mesasOcupadas = mesasList.filter((m) => m.estado === "ocupada").length;
   const ordenesPendientes = ordenesList.filter((o) =>
@@ -219,160 +222,402 @@ function DashboardContent() {
   const ordenesEnKDS = ordenesList.filter((o) =>
     ["preparando", "lista"].includes(o.estado),
   ).length;
+  const ordenesActivasCount = ordenesPendientes + ordenesEnKDS;
   const ticketPromedio = ordenesHoyCount > 0 ? ventasHoy / ordenesHoyCount : 0;
-
-  const ingredientesBajos = (inventario as any[]).filter(
-    (i) => Number(i.stock_actual ?? 0) <= Number(i.stock_minimo ?? 0) && i.activo !== false,
+  const ingredientesBajos = inventarioList.filter(
+    (i) =>
+      Number(i.stock_actual ?? 0) <= Number(i.stock_minimo ?? 0) && i.activo !== false,
   ).length;
 
-  const [hora, setHora] = useState(new Date());
-  useEffect(() => {
-    const interval = setInterval(() => setHora(new Date()), 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const saludo = hora.getHours() < 12 ? "Buenos días" : hora.getHours() < 18 ? "Buenas tardes" : "Buenas noches";
+  const saludo =
+    hora.getHours() < 12
+      ? "Buenos días"
+      : hora.getHours() < 18
+        ? "Buenas tardes"
+        : "Buenas noches";
   const nombreCorto = user?.nombre?.split(" ")[0] ?? "David";
+  const fecha = hora.toLocaleDateString("es-MX", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  const fechaCap = fecha.charAt(0).toUpperCase() + fecha.slice(1);
+  const horaStr = hora.toLocaleTimeString("es-MX", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  /* Órdenes activas — mock rico en dev */
+  const filasActivas: OrdenFila[] = USE_MOCK
+    ? [
+        {
+          folio: "#048",
+          titulo: "2× Latte · Rol de canela",
+          meta: "Mesa 3 · hace 4 min",
+          monto: "$165.00",
+          chip: "prep",
+        },
+        {
+          folio: "#047",
+          titulo: "Flat White · Cappuccino · 2× Croissant",
+          meta: "Mesa 5 · hace 9 min",
+          monto: "$248.00",
+          chip: "lista",
+        },
+      ]
+    : ordenesList
+        .filter((o) => ["nueva", "confirmada", "preparando", "lista"].includes(o.estado))
+        .slice(0, 6)
+        .map((o) => ({
+          folio: `#${String(o.folio ?? "—").padStart(3, "0")}`,
+          titulo: o.notas || `Orden ${o.folio ?? "s/n"}`,
+          meta: `${o.origen === "mesa" ? "En mesa" : "Para llevar"} · ${minutosDesde(o.creado_en)}`,
+          monto: formatMXN(o.total ?? 0),
+          chip: (["nueva", "confirmada"].includes(o.estado)
+            ? "nueva"
+            : o.estado === "preparando"
+              ? "prep"
+              : "lista") as ChipEstado,
+        }));
+
+  /* Card stretch: si menos de 3 activas, complementar con completadas recientes */
+  const necesitaStretch = filasActivas.length < 3;
+  const filasOrdenes: OrdenFila[] = necesitaStretch
+    ? [
+        ...filasActivas,
+        ...completadasRecientes.slice(0, Math.max(0, 3 - filasActivas.length)),
+      ]
+    : filasActivas;
+
+  /* Mini grid de mesas */
+  const mesasGrid = USE_MOCK
+    ? [
+        { num: 1, ocupada: true, label: "48 min" },
+        { num: 2, ocupada: false, label: "Libre" },
+        { num: 3, ocupada: true, label: "12 min" },
+        { num: 4, ocupada: true, label: "1h 02" },
+        { num: 5, ocupada: true, label: "26 min" },
+        { num: 6, ocupada: false, label: "Libre" },
+        { num: 7, ocupada: true, label: "8 min" },
+        { num: 8, ocupada: false, label: "Libre" },
+      ]
+    : mesasList.slice(0, 8).map((m) => ({
+        num: m.numero,
+        ocupada: m.estado === "ocupada",
+        label:
+          m.estado === "ocupada" ? minutosDesde(m.ocupada_desde) || "Ocupada" : "Libre",
+      }));
+
+  const mesasOcupadasGrid = USE_MOCK ? 5 : mesasOcupadas;
+  const hayAvisos = ordenesPendientes > 0 || ordenesEnKDS > 0 || ingredientesBajos > 0;
+
+  /* Resumen del día: formatos de visualización */
+  const ticketAltoStr = resumenHoy.ticketAlto != null ? formatMXN(resumenHoy.ticketAlto) : "—";
+  const horaPicoStr = resumenHoy.horaPico ? `${resumenHoy.horaPico}–${String(Number(resumenHoy.horaPico.split(":")[0]) + 1).padStart(2, "0")}:00` : "—";
+  const topProductoStr = resumenHoy.topProducto ?? "—";
 
   return (
-    <div className="h-[calc(100vh-3.5rem-4rem)] overflow-y-auto">
-      {/* Header */}
+    <div>
+      {/* ── Header ── */}
       <motion.div
-        className="mb-8"
+        className={styles.hdr}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: timing.smooth, ease: ease.out }}
       >
-        <h1 className="text-xl font-medium text-text-100 tracking-tight">
+        <h1 className={styles.hdrTitle}>
           {saludo}, {nombreCorto}
         </h1>
-        <p className="text-sm text-text-25 mt-1">
-          {hora.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
-          {" · "}
-          {hora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
-        </p>
+        <span className={styles.fecha}>{fechaCap}</span>
+        <span className={styles.cajaChip}>
+          <i className={styles.cajaDot} />
+          EN VIVO · {horaStr}
+        </span>
       </motion.div>
 
-      {/* KPIs — staggered grid with animated counters */}
-      {loading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <SkeletonKPICard key={i} />
-          ))}
-        </div>
-      ) : (
+      {/* ── KPIs ── */}
+      {!loading && (
         <motion.div
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
+          className={styles.kpis}
           variants={staggerContainer}
           initial="hidden"
           animate="show"
         >
-          <KPICard
-            label="Ventas hoy"
-            numericValue={ventasHoy}
-            isCurrency
-            value={formatMXN(ventasHoy)}
-            icon={DollarSign}
-            color="bg-status-ok"
+          <motion.button
+            variants={fadeUp}
+            className={cn(styles.kpi, styles.kpiHero, styles.kpiBtn)}
             onClick={() => router.push("/reportes")}
-            delay={0}
-          />
-          <KPICard
-            label="Órdenes completadas"
-            numericValue={ordenesHoyCount}
-            value={String(ordenesHoyCount)}
-            icon={ClipboardList}
-            color="bg-cat-4"
+          >
+            <div className={styles.kpiLbl}>Ventas de hoy</div>
+            <AnimatedCounter
+              value={ventasHoy}
+              format={formatMXN}
+              className={styles.kpiVal}
+              delay={0.1}
+            />
+            <div className={styles.kpiSub}>
+              <b>{ordenesHoyCount}</b> órdenes cobradas
+            </div>
+          </motion.button>
+
+          <motion.button
+            variants={fadeUp}
+            className={cn(styles.kpi, styles.kpiBtn)}
             onClick={() => router.push("/ordenes")}
-            delay={0.07}
-          />
-          <KPICard
-            label="Ticket promedio"
-            numericValue={ticketPromedio}
-            isCurrency
-            value={formatMXN(ticketPromedio)}
-            icon={TrendingUp}
-            color="bg-[var(--info)]"
-            delay={0.14}
-          />
-          <KPICard
-            label="Mesas ocupadas"
-            value={`${mesasOcupadas} / ${mesasList.length}`}
-            icon={LayoutGrid}
-            color="bg-cat-3"
+          >
+            <div className={styles.kpiLbl}>Órdenes activas</div>
+            <AnimatedCounter
+              value={ordenesActivasCount}
+              className={styles.kpiVal}
+              delay={0.15}
+            />
+            <div className={styles.kpiSub}>{ordenesPendientes} por confirmar</div>
+          </motion.button>
+
+          <motion.button
+            variants={fadeUp}
+            className={cn(styles.kpi, styles.kpiBtn)}
+            onClick={() => router.push("/reportes")}
+          >
+            <div className={styles.kpiLbl}>Ticket promedio</div>
+            <AnimatedCounter
+              value={ticketPromedio}
+              format={formatMXN}
+              className={styles.kpiVal}
+              delay={0.2}
+            />
+            <div className={styles.kpiSub}>{ordenesHoyCount} cobradas</div>
+          </motion.button>
+
+          <motion.button
+            variants={fadeUp}
+            className={cn(styles.kpi, styles.kpiBtn)}
             onClick={() => router.push("/mesas")}
-            delay={0.21}
-          />
+          >
+            <div className={styles.kpiLbl}>Mesas</div>
+            <span className={styles.kpiVal}>
+              {mesasOcupadasGrid}/{mesasGrid.length || 8}
+            </span>
+            <div className={styles.kpiSub}>ocupadas ahora</div>
+          </motion.button>
         </motion.div>
       )}
 
-      {/* Alertas — staggered */}
-      {loading ? (
-        <div className="space-y-2 mb-6">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonAlertCard key={i} />
-          ))}
-        </div>
-      ) : (
+      {/* ── Grid principal ── */}
+      <div className={styles.cols}>
+        {/* Card órdenes — stretch: incluye completadas si hay pocas activas */}
         <motion.div
-          className="space-y-2 mb-6"
-          variants={staggerContainer}
-          initial="hidden"
-          animate="show"
+          className={styles.card}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: timing.smooth, ease: ease.out, delay: 0.22 }}
         >
-          <AlertCard
-            label={ordenesPendientes === 1 ? "orden pendiente de confirmar" : "órdenes pendientes de confirmar"}
-            count={ordenesPendientes}
-            icon={AlertTriangle}
-            color="bg-status-warn-bg text-status-warn border-status-warn/20"
-            onClick={() => router.push("/ordenes")}
-          />
-          <AlertCard
-            label={ordenesEnKDS === 1 ? "orden en cocina" : "órdenes en cocina"}
-            count={ordenesEnKDS}
-            icon={ChefHat}
-            color="bg-status-info-bg text-status-info border-status-info/20"
-            onClick={() => router.push("/kds")}
-          />
-          <AlertCard
-            label={ingredientesBajos === 1 ? "ingrediente con stock bajo" : "ingredientes con stock bajo"}
-            count={ingredientesBajos}
-            icon={Package}
-            color="bg-status-error-bg text-status-error border-status-error/20"
-            onClick={() => router.push("/inventario")}
-          />
-        </motion.div>
-      )}
+          <div className={styles.chead}>
+            <span className={styles.cheadTitle}>Órdenes activas</span>
+            <span className={styles.cheadN}>{filasActivas.length}</span>
+            <button
+              type="button"
+              className={styles.cheadLink}
+              onClick={() => router.push("/ordenes")}
+            >
+              Ver todas
+            </button>
+          </div>
 
-      {/* Accesos rápidos — staggered */}
+          {filasOrdenes.length === 0 ? (
+            <div className={styles.alerta} style={{ cursor: "default" }}>
+              <span className={styles.alertaIcon} style={{ color: "var(--v3-ink-3)" }}>
+                <Check size={18} strokeWidth={1.75} />
+              </span>
+              <span className={styles.alertaTxt}>Sin órdenes activas ahora</span>
+            </div>
+          ) : (
+            filasOrdenes.map((o, idx) => (
+              <button
+                type="button"
+                key={`${o.folio}-${idx}`}
+                className={cn(styles.orden, o.completada && styles.ordenCompletada)}
+                onClick={() => router.push("/ordenes")}
+              >
+                <span className={styles.folio}>{o.folio}</span>
+                <span className={styles.que}>
+                  <span className={styles.queTitulo}>{o.titulo}</span>
+                  <span className={styles.queMeta}>{o.meta}</span>
+                </span>
+                {o.completada ? (
+                  <span className={styles.ordenCompletadaTag}>Hoy</span>
+                ) : (
+                  <span
+                    className={cn(
+                      styles.chip,
+                      o.chip === "prep"
+                        ? styles.chipPrep
+                        : o.chip === "lista"
+                          ? styles.chipLista
+                          : styles.chipNueva,
+                    )}
+                  >
+                    {CHIP_LABEL[o.chip]}
+                  </span>
+                )}
+                <span className={styles.monto}>{o.monto}</span>
+              </button>
+            ))
+          )}
+        </motion.div>
+
+        {/* Columna derecha: Mesas + Avisos */}
+        <div className={styles.colsRight}>
+          <motion.div
+            className={styles.card}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: timing.smooth, ease: ease.out, delay: 0.27 }}
+          >
+            <div className={styles.chead}>
+              <span className={styles.cheadTitle}>Mesas</span>
+              <span className={styles.cheadN}>
+                {mesasOcupadasGrid}/{mesasGrid.length || 8}
+              </span>
+              <button
+                type="button"
+                className={styles.cheadLink}
+                onClick={() => router.push("/mesas")}
+              >
+                Plano
+              </button>
+            </div>
+            <div className={styles.mesas}>
+              {mesasGrid.map((m) => (
+                <button
+                  type="button"
+                  key={m.num}
+                  className={cn(
+                    styles.mesa,
+                    m.ocupada ? styles.mesaOcupada : styles.mesaLibre,
+                  )}
+                  onClick={() => router.push("/mesas")}
+                >
+                  <span className={styles.mesaNum}>{m.num}</span>
+                  <span className={styles.mesaSt}>{m.label}</span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+
+          <motion.div
+            className={styles.card}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: timing.smooth, ease: ease.out, delay: 0.32 }}
+          >
+            <div className={styles.chead}>
+              <span className={styles.cheadTitle}>Avisos</span>
+            </div>
+            {ordenesPendientes > 0 && (
+              <button
+                type="button"
+                className={styles.alerta}
+                onClick={() => router.push("/ordenes")}
+              >
+                <span className={styles.alertaIcon}>
+                  <AlertTriangle size={18} strokeWidth={1.75} />
+                </span>
+                <span className={styles.alertaTxt}>
+                  <b>
+                    {ordenesPendientes}{" "}
+                    {ordenesPendientes === 1 ? "orden pendiente" : "órdenes pendientes"}
+                  </b>{" "}
+                  de confirmar
+                </span>
+              </button>
+            )}
+            {ordenesEnKDS > 0 && (
+              <button
+                type="button"
+                className={styles.alerta}
+                onClick={() => router.push("/kds")}
+              >
+                <span className={styles.alertaIcon}>
+                  <ChefHat size={18} strokeWidth={1.75} />
+                </span>
+                <span className={styles.alertaTxt}>
+                  <b>
+                    {ordenesEnKDS} {ordenesEnKDS === 1 ? "orden" : "órdenes"}
+                  </b>{" "}
+                  en cocina
+                </span>
+              </button>
+            )}
+            {ingredientesBajos > 0 && (
+              <button
+                type="button"
+                className={styles.alerta}
+                onClick={() => router.push("/inventario")}
+              >
+                <span className={styles.alertaIcon}>
+                  <Package size={18} strokeWidth={1.75} />
+                </span>
+                <span className={styles.alertaTxt}>
+                  <b>
+                    {ingredientesBajos}{" "}
+                    {ingredientesBajos === 1 ? "ingrediente" : "ingredientes"}
+                  </b>{" "}
+                  con stock bajo
+                </span>
+              </button>
+            )}
+            {!hayAvisos && (
+              <div
+                className={cn(styles.alerta, styles.alertaOk)}
+                style={{ cursor: "default" }}
+              >
+                <span className={styles.alertaIcon}>
+                  <Check size={18} strokeWidth={1.75} />
+                </span>
+                <span className={styles.alertaTxt}>
+                  Todo en orden — <b>sin avisos</b> por ahora
+                </span>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      </div>
+
+      {/* ── Widget "Resumen del día" ── */}
       <motion.div
-        className="mb-2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: timing.normal, delay: 0.3 }}
+        className={styles.resumen}
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: timing.smooth, ease: ease.out, delay: 0.38 }}
       >
-        <h2 className="text-xs font-medium text-text-25 uppercase tracking-widest mb-3">Accesos rápidos</h2>
-      </motion.div>
-      {loading ? (
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <SkeletonQuickLink key={i} />
-          ))}
+        <div className={styles.resumenTitle}>
+          <TrendingUp
+            size={11}
+            strokeWidth={2}
+            style={{ display: "inline", marginRight: 6, verticalAlign: "middle" }}
+          />
+          Resumen del día
         </div>
-      ) : (
-        <motion.div
-          className="grid grid-cols-3 sm:grid-cols-5 gap-3"
-          variants={staggerContainer}
-          initial="hidden"
-          animate="show"
-        >
-          <QuickLink label="Mesas" icon={LayoutGrid} color="bg-cat-3" onClick={() => router.push("/mesas")} />
-          <QuickLink label="Órdenes" icon={ClipboardList} color="bg-cat-4" onClick={() => router.push("/ordenes")} />
-          <QuickLink label="Cocina" icon={ChefHat} color="bg-cat-5" onClick={() => router.push("/kds")} />
-          <QuickLink label="Cobros" icon={CreditCard} color="bg-cat-1" onClick={() => router.push("/cobros")} />
-          <QuickLink label="Reportes" icon={TrendingUp} color="bg-[var(--info)]" onClick={() => router.push("/reportes")} />
-        </motion.div>
-      )}
+        <div className={styles.resumenGrid}>
+          <div className={styles.resumenItem}>
+            <span className={styles.resumenLbl}>Ticket más alto</span>
+            <span className={styles.resumenVal}>{ticketAltoStr}</span>
+            <span className={styles.resumenSub}>venta más grande de hoy</span>
+          </div>
+          <div className={styles.resumenItem}>
+            <span className={styles.resumenLbl}>Hora pico</span>
+            <span className={styles.resumenVal}>{horaPicoStr}</span>
+            <span className={styles.resumenSub}>más órdenes en ese lapso</span>
+          </div>
+          <div className={styles.resumenItem}>
+            <span className={styles.resumenLbl}>Más vendido</span>
+            <span className={styles.resumenVal}>{topProductoStr}</span>
+            <span className={styles.resumenSub}>producto más pedido hoy</span>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
